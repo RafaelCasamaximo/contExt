@@ -1,3 +1,4 @@
+from subprocess import call
 import dearpygui.dearpygui as dpg
 from math import *
 
@@ -55,54 +56,52 @@ class Interface:
                     dpg.add_file_extension("", color=(150, 255, 150, 255))
                     dpg.add_file_extension("Image Files (*.bmp *.pgm *.ppm, *.sr, *.ras, *.jpeg, *.jpg, *.jpe, *.jp2, *.tiff, *.tif, *.png ){.bmp.pgm.ppm,.sr,.ras,.jpeg,.jpg,.jpe,.jp2,.tiff,.tif,.png}", color=(0, 255, 255, 255))
 
+                dpg.add_text('Select a image to use.')
+                dpg.add_button(tag='import_image', label='Import Image', callback=lambda: dpg.show_item("file_dialog_id"))
+                dpg.add_text('File Name:', tag='file_name_text')
+                dpg.add_text('File Path:', tag='file_path_text')
+                dpg.add_separator()
 
                 with dpg.group(horizontal=True):
+                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'crop'))
                     dpg.add_text('Cropping')
-                    dpg.add_button(label='Reset')
-                dpg.add_button(tag='import_image', label='Import Image', callback=lambda: dpg.show_item("file_dialog_id"))
-                dpg.add_text('File Name:')
+                    dpg.add_button(label='Reset', callback=self.callbacks.resetCrop)
                 dpg.add_text('Original Resolution:')
-                dpg.add_text('Width: 1920px')
-                dpg.add_text('Height: 1080px')
+                dpg.add_text('Width:', tag='originalWidth')
+                dpg.add_text('Height:', tag='originalHeight')
                 dpg.add_text('Current Resolution:')
-                dpg.add_text('Width: 1920px')
-                dpg.add_text('Height: 1080px')
+                dpg.add_text('Width:', tag='currentWidth')
+                dpg.add_text('Height:', tag='currentHeight')
                 dpg.add_text('New Resolution')
                 with dpg.group(horizontal=True):
                     dpg.add_text('Start X')
-                    dpg.add_input_int()
+                    dpg.add_input_int(tag='startX')
                 with dpg.group(horizontal=True):
                     dpg.add_text('Start Y')
-                    dpg.add_input_int()
+                    dpg.add_input_int(tag='startY')
                 with dpg.group(horizontal=True):
                     dpg.add_text('End X')
-                    dpg.add_input_int()
+                    dpg.add_input_int(tag='endX')
                 with dpg.group(horizontal=True):
                     dpg.add_text('End Y')
-                    dpg.add_input_int()
-                dpg.add_button(label='Apply Changes')
+                    dpg.add_input_int(tag='endY')
+                dpg.add_button(label='Apply Changes', callback=self.callbacks.crop)
                 dpg.add_separator()
 
                 pass
-            with dpg.child_window():
-                width, height, channels, data = dpg.load_image("test.jpg")
-                with dpg.texture_registry(show=False, tag='texture_registry'):
-                    dpg.add_dynamic_texture(width=width, height=height, default_value=data, tag="processing")
-                dpg.add_button(label='Open Texture Registry')
-                with dpg.drawlist(width=width, height=height):
-                    dpg.draw_image("processing", (0, 0), (width, height), uv_min=(0, 0), uv_max=(1, 1))
+            with dpg.child_window(tag='processingImageParent'):
                 pass
 
     def showFiltering(self):
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'histogramEqualization'))
                     dpg.add_text('Histogram Equalization')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'brightnessAndContrast'))
                     dpg.add_text('Brightness and Contrast')
                 dpg.add_text('Brightness')
                 dpg.add_slider_int()
@@ -111,26 +110,21 @@ class Interface:
                 dpg.add_separator()
                 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'averageBlur'))
                     dpg.add_text('Average Blur')
                 dpg.add_text('Intensity')
                 dpg.add_slider_int()
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'gaussianBlur'))
                     dpg.add_text('Gaussian Blur')
                 dpg.add_text('Intensity')
                 dpg.add_slider_int()
                 dpg.add_separator()
 
                 pass
-            with dpg.child_window():
-                width, height, channels, data = dpg.load_image("test.jpg")
-                with dpg.texture_registry(show=False):
-                    dpg.add_dynamic_texture(width=width, height=height, default_value=data, tag="filtering")
-                with dpg.drawlist(width=width, height=height, ):
-                    dpg.draw_image("filtering", (0, 0), (width, height), uv_min=(0, 0), uv_max=(1, 1))
+            with dpg.child_window(tag='FilteringImageParent'):
                 pass
 
     def showThresholding(self):
