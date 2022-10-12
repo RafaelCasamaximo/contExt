@@ -65,10 +65,11 @@ class Callbacks:
         
     pass
 
-    def setMethodActiveStatus(self, sender = None, app_data = None, method = None):
+    def setMethodActiveStatus(self, sender = None, app_data = None, method = None, methodRun = None):
         self.activationStatus[method] = dpg.get_value(sender)
+        if methodRun != None:
+            methodRun()
         pass
-
 
     def next(self, currentMethod):
         self.blocks[self.nameHelper.index(currentMethod) + 1]()
@@ -127,7 +128,7 @@ class Callbacks:
             return
 
         print('reset crop')
-        croppedImage = self.state['latestOutput']['image']
+        croppedImage = self.state['importImageOutput']['image']
 
         self.state['cropOutput'] = {
             'image': croppedImage,
@@ -213,13 +214,39 @@ class Callbacks:
     def histogramEqualization(self, sender=None, app_data=None):
 
         if self.activationStatus[self.histogramEqualization.__name__] is False:
+            img = self.state['latestOutput']['image']
+            dst = img
+
+            height = dst.shape[0]
+            width = dst.shape[1]
+
+            auxImg = np.flip(dst, 2)
+            auxImg = np.asfarray(auxImg, dtype='f')  # change data type to 32bit floats
+            auxImg = auxImg.ravel()
+            auxImg = np.true_divide(auxImg, 255.0)  # normalize image data to prepare for GPU
+
+            try:
+                # dpg.add_texture_registry(show=False, tag='texture_registry')
+                dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
+                dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
+            except:
+                dpg.delete_item('filtering')
+                dpg.delete_item('filteringImage')
+                dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
+                dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
             self.next(self.histogramEqualization.__name__)
             return
 
         print('histogramEqualization')
 
         img = self.state['latestOutput']['image']
-        dst = cv2.equalizeHist(img)
+        img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+
+        # equalize the histogram of the Y channel
+        img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
+
+        # convert the YUV image back to RGB format
+        dst = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
 
         height = dst.shape[0]
         width = dst.shape[1]
@@ -230,14 +257,14 @@ class Callbacks:
         auxImg = np.true_divide(auxImg, 255.0)  # normalize image data to prepare for GPU
 
         try:
-            dpg.add_texture_registry(show=False, tag='texture_registry')
-            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="processing", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            dpg.add_image('processing', parent='FilteringImageParent', tag='processingImage')
+            # dpg.add_texture_registry(show=False, tag='texture_registry')
+            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
+            dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
         except:
-            dpg.delete_item('processing')
-            dpg.delete_item('processingImage')
-            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="processing", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            dpg.add_image('processing', parent='FilteringImageParent', tag='processingImage')
+            dpg.delete_item('filtering')
+            dpg.delete_item('filteringImage')
+            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
+            dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
 
         self.next(self.histogramEqualization.__name__)
         pass
@@ -245,10 +272,34 @@ class Callbacks:
     def brightnessAndContrast(self, sender=None, app_data=None):
 
         if self.activationStatus[self.brightnessAndContrast.__name__] is False:
+
+            # img = self.state['latestOutput']['image']
+            # dst = img
+
+            # height = dst.shape[0]
+            # width = dst.shape[1]
+
+            # auxImg = np.flip(dst, 2)
+            # auxImg = np.asfarray(auxImg, dtype='f')  # change data type to 32bit floats
+            # auxImg = auxImg.ravel()
+            # auxImg = np.true_divide(auxImg, 255.0)  # normalize image data to prepare for GPU
+
+            # try:
+            #     # dpg.add_texture_registry(show=False, tag='texture_registry')
+            #     dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
+            #     dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
+            # except:
+            #     dpg.delete_item('filtering')
+            #     dpg.delete_item('filteringImage')
+            #     dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
+            #     dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
             self.next(self.brightnessAndContrast.__name__)
             return
 
         print('brightnessAndContrast')
+
+
+
         self.next(self.brightnessAndContrast.__name__)
         pass
 

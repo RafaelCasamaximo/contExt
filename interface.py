@@ -96,7 +96,7 @@ class Interface:
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'histogramEqualization'))
+                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'histogramEqualization', methodRun = self.callbacks.histogramEqualization))
                     dpg.add_text('Histogram Equalization')
                 dpg.add_separator()
 
