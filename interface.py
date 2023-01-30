@@ -70,14 +70,16 @@ class Interface:
 
                 dpg.add_text('Select a image to use.')
                 dpg.add_button(tag='import_image', label='Import Image', callback=lambda: dpg.show_item("file_dialog_id"))
+                with dpg.tooltip("import_image"):
+                    dpg.add_text("Não é possível importar mais de uma imagem! Feche o programa e abra-o novamente para importar outra imagem.")
                 dpg.add_text('File Name:', tag='file_name_text')
                 dpg.add_text('File Path:', tag='file_path_text')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleEffect('crop', sender, app_data))
                     dpg.add_text('Cropping')
-                    dpg.add_button(label='Reset')
+                    dpg.add_button(label='Reset', callback=lambda: self.callbacks.resetCrop())
                 dpg.add_text('Original Resolution:')
                 dpg.add_text('Width:', tag='originalWidth')
                 dpg.add_text('Height:', tag='originalHeight')
@@ -97,18 +99,18 @@ class Interface:
                 with dpg.group(horizontal=True):
                     dpg.add_text('End Y')
                     dpg.add_input_int(tag='endY')
-                dpg.add_button(label='Apply Changes')
+                dpg.add_button(label='Apply Changes', callback=lambda: self.callbacks.executeQuery('crop'))
                 dpg.add_separator()
 
                 pass
-            with dpg.child_window():
+            with dpg.child_window(tag='ProcessingParent'):
                 pass
 
     def showFiltering(self):
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('histogramEqualization', sender, app_data))
                     dpg.add_text('Histogram Equalization')
                 dpg.add_separator()
 
@@ -136,7 +138,7 @@ class Interface:
                 dpg.add_separator()
 
                 pass
-            with dpg.child_window():
+            with dpg.child_window(tag='FilteringParent'):
                 pass
 
     def showThresholding(self):
@@ -174,7 +176,7 @@ class Interface:
 
 
                 pass
-            with dpg.child_window():
+            with dpg.child_window(tag='ThresholdingParent'):
                 pass
 
     def showContourExtraction(self):
@@ -217,19 +219,19 @@ class Interface:
 
 
                 pass
-            with dpg.child_window():
+            with dpg.child_window(tag='ContourExtractionParent'):
                 pass
 
     def showMeshGeneration(self):
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
                 pass
-            with dpg.child_window():
+            with dpg.child_window(tag='MeshGenerationParent'):
                 pass
 
     def showSparseMeshGeneration(self):
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
                 pass
-            with dpg.child_window():
+            with dpg.child_window(tag='SparseMeshGenerationParent'):
                 pass
