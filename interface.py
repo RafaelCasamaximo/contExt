@@ -28,6 +28,7 @@ class Interface:
         pass
 
     def showTabs(self):
+        dpg.add_texture_registry(show=False, tag='textureRegistry')
         with dpg.tab(label='Processing'):
             self.showProcessing()
             pass
@@ -52,9 +53,20 @@ class Interface:
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
 
-                with dpg.file_dialog(directory_selector=False, show=False, tag='file_dialog_id', id="file_dialog_id", callback=self.callbacks.importImage):
+                with dpg.file_dialog(directory_selector=False, show=False, tag='file_dialog_id', id="file_dialog_id", callback=self.callbacks.openFile):
                     dpg.add_file_extension("", color=(150, 255, 150, 255))
-                    dpg.add_file_extension("Image Files (*.bmp *.pgm *.ppm, *.sr, *.ras, *.jpeg, *.jpg, *.jpe, *.jp2, *.tiff, *.tif, *.png ){.bmp.pgm.ppm,.sr,.ras,.jpeg,.jpg,.jpe,.jp2,.tiff,.tif,.png}", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".png", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".jpeg", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".jpg", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".bmp", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".pgm", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".ppm", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".sr", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".ras", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".jpe", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".jp2", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".tiff", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".tif", color=(0, 255, 255, 255))
 
                 dpg.add_text('Select a image to use.')
                 dpg.add_button(tag='import_image', label='Import Image', callback=lambda: dpg.show_item("file_dialog_id"))
@@ -63,9 +75,9 @@ class Interface:
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'crop'))
+                    dpg.add_checkbox()
                     dpg.add_text('Cropping')
-                    dpg.add_button(label='Reset', callback=self.callbacks.resetCrop)
+                    dpg.add_button(label='Reset')
                 dpg.add_text('Original Resolution:')
                 dpg.add_text('Width:', tag='originalWidth')
                 dpg.add_text('Height:', tag='originalHeight')
@@ -85,23 +97,23 @@ class Interface:
                 with dpg.group(horizontal=True):
                     dpg.add_text('End Y')
                     dpg.add_input_int(tag='endY')
-                dpg.add_button(label='Apply Changes', callback=self.callbacks.crop)
+                dpg.add_button(label='Apply Changes')
                 dpg.add_separator()
 
                 pass
-            with dpg.child_window(tag='processingImageParent'):
+            with dpg.child_window():
                 pass
 
     def showFiltering(self):
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'histogramEqualization', methodRun = self.callbacks.histogramEqualization))
+                    dpg.add_checkbox()
                     dpg.add_text('Histogram Equalization')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'brightnessAndContrast'))
+                    dpg.add_checkbox()
                     dpg.add_text('Brightness and Contrast')
                 dpg.add_text('Brightness')
                 dpg.add_slider_int()
@@ -110,21 +122,21 @@ class Interface:
                 dpg.add_separator()
                 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'averageBlur'))
+                    dpg.add_checkbox()
                     dpg.add_text('Average Blur')
                 dpg.add_text('Intensity')
                 dpg.add_slider_int()
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback = lambda sender, app_data: self.callbacks.setMethodActiveStatus(sender = sender, app_data = app_data, method = 'gaussianBlur'))
+                    dpg.add_checkbox()
                     dpg.add_text('Gaussian Blur')
                 dpg.add_text('Intensity')
                 dpg.add_slider_int()
                 dpg.add_separator()
 
                 pass
-            with dpg.child_window(tag='FilteringImageParent'):
+            with dpg.child_window():
                 pass
 
     def showThresholding(self):
@@ -163,11 +175,6 @@ class Interface:
 
                 pass
             with dpg.child_window():
-                width, height, channels, data = dpg.load_image("test.jpg")
-                with dpg.texture_registry(show=False):
-                    dpg.add_dynamic_texture(width=width, height=height, default_value=data, tag="threshold")
-                with dpg.drawlist(width=width, height=height, ):
-                    dpg.draw_image("threshold", (0, 0), (width, height), uv_min=(0, 0), uv_max=(1, 1))
                 pass
 
     def showContourExtraction(self):
@@ -211,11 +218,6 @@ class Interface:
 
                 pass
             with dpg.child_window():
-                width, height, channels, data = dpg.load_image("test.jpg")
-                with dpg.texture_registry(show=False):
-                    dpg.add_dynamic_texture(width=width, height=height, default_value=data, tag="contourExtraction")
-                with dpg.drawlist(width=width, height=height, ):
-                    dpg.draw_image("contourExtraction", (0, 0), (width, height), uv_min=(0, 0), uv_max=(1, 1))
                 pass
 
     def showMeshGeneration(self):
@@ -223,11 +225,6 @@ class Interface:
             with dpg.child_window(width=300):
                 pass
             with dpg.child_window():
-                width, height, channels, data = dpg.load_image("test.jpg")
-                with dpg.texture_registry(show=False):
-                    dpg.add_dynamic_texture(width=width, height=height, default_value=data, tag="meshGeneration")
-                with dpg.drawlist(width=width, height=height, ):
-                    dpg.draw_image("meshGeneration", (0, 0), (width, height), uv_min=(0, 0), uv_max=(1, 1))
                 pass
 
     def showSparseMeshGeneration(self):
@@ -235,9 +232,4 @@ class Interface:
             with dpg.child_window(width=300):
                 pass
             with dpg.child_window():
-                width, height, channels, data = dpg.load_image("test.jpg")
-                with dpg.texture_registry(show=False):
-                    dpg.add_dynamic_texture(width=width, height=height, default_value=data, tag="sparseMeshGeneration")
-                with dpg.drawlist(width=width, height=height, ):
-                    dpg.draw_image("sparseMeshGeneration", (0, 0), (width, height), uv_min=(0, 0), uv_max=(1, 1))
                 pass

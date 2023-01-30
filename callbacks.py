@@ -2,401 +2,236 @@ from pprint import pprint
 import dearpygui.dearpygui as dpg
 import numpy as np
 import cv2
+import enum
+
+class Blocks(enum.Enum):
+    __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour mooreNeighborhood exportSettings'
+    importImage = 0
+    crop = 1
+    histogramEqualization = 2
+    brightnessAndContrast = 3
+    averageBlur = 4
+    gaussianBlur = 5
+    grayscale = 6
+    globalThresholding = 7
+    adaptativeMeanThresholding = 8
+    adaptativeGaussianThresholding = 9
+    otsuBinarization = 10
+    findContour = 11
+    mooreNeighborhood = 12
+    exportSettings = 13
 
 class Callbacks:
     def __init__(self) -> None:
-        self.blocks = [self.importImage, self.crop, self.histogramEqualization, self.brightnessAndContrast,
-        self.averageBlur, self.gaussianBlur, self.grayscale, self.globalThresholding, self.adaptativeMeanThresholding,
-        self.adaptativeGaussianThresholding, self.otsuBinarization, self.findContour, self.mooreNeighborhood, self.exportSettings]
 
-        self.nameHelper = [
-            'importImage',
-            'crop',
-            'histogramEqualization',
-            'brightnessAndContrast',
-            'averageBlur',
-            'gaussianBlur',
-            'grayscale',
-            'globalThresholding',
-            'adaptativeMeanThresholding',
-            'adaptativeGaussianThresholding',
-            'otsuBinarization',
-            'findContour',
-            'mooreNeighborhood',
-            'exportSettings',
+        self.filePath = None
+
+        self.blocks = [
+            {
+                'method': self.importImage,
+                'name': self.importImage.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.crop,
+                'name': self.crop.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.histogramEqualization,
+                'name': self.histogramEqualization.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.brightnessAndContrast,
+                'name': self.brightnessAndContrast.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.averageBlur,
+                'name': self.averageBlur.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.gaussianBlur,
+                'name': self.gaussianBlur.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.grayscale,
+                'name': self.grayscale.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.globalThresholding,
+                'name': self.globalThresholding.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.adaptativeMeanThresholding,
+                'name': self.adaptativeMeanThresholding.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.adaptativeGaussianThresholding,
+                'name': self.adaptativeGaussianThresholding.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.otsuBinarization,
+                'name': self.otsuBinarization.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.findContour,
+                'name': self.findContour.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.mooreNeighborhood,
+                'name': self.mooreNeighborhood.__name__,
+                'status': False,
+                'output': None,
+            },
+            {
+                'method': self.exportSettings,
+                'name': self.exportSettings.__name__,
+                'status': False,
+                'output': None,
+            },
         ]
 
-        self.activationStatus = {
-            'importImage': True,
-            'crop': False,
-            'histogramEqualization': False,
-            'brightnessAndContrast': False,
-            'averageBlur': False,
-            'gaussianBlur': False,
-            'grayscale': True,
-            'globalThresholding': False,
-            'adaptativeMeanThresholding': False,
-            'adaptativeGaussianThresholding': False,
-            'otsuBinarization': False,
-            'findContour': False,
-            'mooreNeighborhood': False,
-            'exportSettings': False,
-        }
-
-        self.state = {
-            'latestOutput'
-            'importImageOutput': None,
-            'cropOutput': None,
-            'histogramEqualizationOutput': None,
-            'brightnessAndContrastOutput': None,
-            'averageBlurOutput': None,
-            'gaussianBlurOutput': None,
-            'grayscaleOutput': None,
-            'globalThresholdingOutput': None,
-            'adaptativeMeanThresholdingOutput': None,
-            'adaptativeGaussianThresholdingOutput': None,
-            'otsuBinarizationOutput': None,
-            'findContourOutput': None,
-            'mooreNeighborhoodOutput': None,
-            'exportSettingsOutput': None,
-        }
-        
-
-        
-    pass
-
-    def setMethodActiveStatus(self, sender = None, app_data = None, method = None, methodRun = None):
-        self.activationStatus[method] = dpg.get_value(sender)
-        if methodRun != None:
-            methodRun()
         pass
 
-    def next(self, currentMethod):
-        self.blocks[self.nameHelper.index(currentMethod) + 1]()
+
+    def executeQuery(self, methodName):
+        executeFlag = 0
+        for entry in self.blocks:
+            if executeFlag == 0 and entry['name'] == methodName:
+                executeFlag = 1
+            if executeFlag == 1 and entry['status'] is True:
+                entry['method']()
+            if executeFlag == 1 and entry['status'] is False:
+                # TODO: Um método que verifica qual o último status true e coloca como resultado do método atual o resultado do último status ativo
+                # (Serve para o método atual sempre poder pegar o output do último método para aplicar o processamento de imagem)
+                pass
         pass
 
-    def importImage(self, sender=None, app_data=None):
+    def openFile(self, sender = None, app_data = None):
+        self.filePath = app_data['file_path_name']
+        self.executeQuery('importImage')
+        pass
 
-        if self.activationStatus[self.importImage.__name__] is False:
-            self.next(self.importImage.__name__)
-            return
+    # TODO: Create Texture
+    def createTexture(self, textureTag, textureImage):
+        height = textureImage.shape[0]
+        width = textureImage.shape[1]
+        textureData = self.textureToData(textureImage)
+        dpg.add_raw_texture(width=width, height=height, default_value=textureData, tag=textureTag, parent='textureRegistry', format=dpg.mvFormat_Float_rgb)
+        dpg.add_image(textureTag, parent=textureTag + 'Parent', tag=textureTag + 'Image')
+        pass
 
-        print('importImage')
-        img = cv2.imread(app_data['file_path_name'], cv2.IMREAD_COLOR)
-        
-        # height, width, number of channels in image
-        height = img.shape[0]
-        width = img.shape[1]
+    # TODO: Delete Texture
+    def deleteTexture(self, textureTag):
+        dpg.delete_item(textureTag)
+        dpg.delete_item(textureTag + 'Image')
+        pass
 
-        dpg.set_value('file_name_text', 'File Name: ' + app_data['file_name'])
-        dpg.set_value('file_path_text', 'File Path: ' + app_data['file_path_name'])
-        dpg.set_value('originalWidth', 'Width: ' + str(width) + 'px')
-        dpg.set_value('originalHeight', 'Height: ' + str(height) + 'px')
-        dpg.set_value('currentWidth', 'Width: ' + str(width) + 'px')
-        dpg.set_value('currentHeight', 'Height: ' + str(height) + 'px')
+    # TODO: Update Texture
+    def updateTexture(self, textureTag, textureImage):
+        textureData = self.textureToData(textureImage)
+        dpg.set_value(textureTag, textureData)
+        pass
 
-        self.state['importImageOutput'] = {
-            'image': img,
-        }
+    # TODO: Create all textures
+    def createAllTextures(self):
+        pass
 
-        self.state['latestOutput'] = {
-            'image': img,
-        }
+    # TODO: Delete all textures
 
-        auxImg = np.flip(img, 2)
+    def deleteAllTextures(self):
+        pass
+    # TODO: Update all textures
+    def updateAllTextures(self):
+        pass
+
+    # TODO: Convert texture to data
+    def textureToData(self, texture):
+        auxImg = np.flip(texture, 2)
         auxImg = np.asfarray(auxImg, dtype='f')  # change data type to 32bit floats
         auxImg = auxImg.ravel()
-        auxImg = np.true_divide(auxImg, 255.0)  # normalize image data to prepare for GPU
+        auxImg = np.true_divide(auxImg, 255.0)
+        return auxImg
 
-        try:
-            dpg.add_texture_registry(show=False, tag='texture_registry')
-            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="processing", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            dpg.add_image('processing', parent='processingImageParent', tag='processingImage')
-        except:
-            dpg.delete_item('processing')
-            dpg.delete_item('processingImage')
-            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="processing", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            dpg.add_image('processing', parent='processingImageParent', tag='processingImage')
 
-            
-        self.next(self.importImage.__name__)
+    def importImage(self, sender = None, app_data = None):
+        self.blocks[Blocks.importImage]['output'] = cv2.imread(self.filePath, cv2.IMREAD_COLOR)
         pass
 
     def resetCrop(self, sender = None, app_data = None):
-        if self.activationStatus[self.crop.__name__] is False:
-            self.next(self.crop.__name__)
-            return
 
-        print('reset crop')
-        croppedImage = self.state['importImageOutput']['image']
-
-        self.state['cropOutput'] = {
-            'image': croppedImage,
-        }
-
-        self.state['latestOutput'] = {
-            'image': croppedImage,
-        }
-
-        height = croppedImage.shape[0]
-        width = croppedImage.shape[1]
-
-        dpg.set_value('currentWidth', 'Width: ' + str(width) + 'px')
-        dpg.set_value('currentHeight', 'Height: ' + str(height) + 'px')
-
-        auxImg = np.flip(croppedImage, 2)
-        auxImg = np.asfarray(auxImg, dtype='f')  # change data type to 32bit floats
-        auxImg = auxImg.ravel()
-        auxImg = np.true_divide(auxImg, 255.0)  # normalize image data to prepare for GPU
-
-        try:
-            dpg.add_texture_registry(show=False, tag='texture_registry')
-            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="processing", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            dpg.add_image('processing', parent='processingImageParent', tag='processingImage')
-        except:
-            dpg.delete_item('processing')
-            dpg.delete_item('processingImage')
-            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="processing", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            dpg.add_image('processing', parent='processingImageParent', tag='processingImage')
-
-
-
-        self.next(self.crop.__name__)
         pass
 
     def crop(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.crop.__name__] is False:
-            self.next(self.crop.__name__)
-            return
-
-        print('crop')
-        startX = dpg.get_value('startX')
-        endX = dpg.get_value('endX')
-        startY = dpg.get_value('startY')
-        endY = dpg.get_value('endY')
-        croppedImage = self.state['latestOutput']['image'][startX:endX, startY:endY]
-
-        self.state['cropOutput'] = {
-            'image': croppedImage,
-        }
-
-        self.state['latestOutput'] = {
-            'image': croppedImage,
-        }
-
-        height = croppedImage.shape[0]
-        width = croppedImage.shape[1]
-
-        dpg.set_value('currentWidth', 'Width: ' + str(width) + 'px')
-        dpg.set_value('currentHeight', 'Height: ' + str(height) + 'px')
-
-        auxImg = np.flip(croppedImage, 2)
-        auxImg = np.asfarray(auxImg, dtype='f')  # change data type to 32bit floats
-        auxImg = auxImg.ravel()
-        auxImg = np.true_divide(auxImg, 255.0)  # normalize image data to prepare for GPU
-
-        try:
-            dpg.add_texture_registry(show=False, tag='texture_registry')
-            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="processing", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            dpg.add_image('processing', parent='processingImageParent', tag='processingImage')
-        except:
-            dpg.delete_item('processing')
-            dpg.delete_item('processingImage')
-            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="processing", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            dpg.add_image('processing', parent='processingImageParent', tag='processingImage')
-
-
-
-        self.next(self.crop.__name__)
         pass
 
     def histogramEqualization(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.histogramEqualization.__name__] is False:
-            img = self.state['latestOutput']['image']
-            dst = img
-
-            height = dst.shape[0]
-            width = dst.shape[1]
-
-            auxImg = np.flip(dst, 2)
-            auxImg = np.asfarray(auxImg, dtype='f')  # change data type to 32bit floats
-            auxImg = auxImg.ravel()
-            auxImg = np.true_divide(auxImg, 255.0)  # normalize image data to prepare for GPU
-
-            try:
-                # dpg.add_texture_registry(show=False, tag='texture_registry')
-                dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-                dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
-            except:
-                dpg.delete_item('filtering')
-                dpg.delete_item('filteringImage')
-                dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-                dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
-            self.next(self.histogramEqualization.__name__)
-            return
-
-        print('histogramEqualization')
-
-        img = self.state['latestOutput']['image']
-        img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
-
-        # equalize the histogram of the Y channel
-        img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
-
-        # convert the YUV image back to RGB format
-        dst = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-
-        height = dst.shape[0]
-        width = dst.shape[1]
-
-        auxImg = np.flip(dst, 2)
-        auxImg = np.asfarray(auxImg, dtype='f')  # change data type to 32bit floats
-        auxImg = auxImg.ravel()
-        auxImg = np.true_divide(auxImg, 255.0)  # normalize image data to prepare for GPU
-
-        try:
-            # dpg.add_texture_registry(show=False, tag='texture_registry')
-            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
-        except:
-            dpg.delete_item('filtering')
-            dpg.delete_item('filteringImage')
-            dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
-
-        self.next(self.histogramEqualization.__name__)
         pass
 
     def brightnessAndContrast(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.brightnessAndContrast.__name__] is False:
-
-            # img = self.state['latestOutput']['image']
-            # dst = img
-
-            # height = dst.shape[0]
-            # width = dst.shape[1]
-
-            # auxImg = np.flip(dst, 2)
-            # auxImg = np.asfarray(auxImg, dtype='f')  # change data type to 32bit floats
-            # auxImg = auxImg.ravel()
-            # auxImg = np.true_divide(auxImg, 255.0)  # normalize image data to prepare for GPU
-
-            # try:
-            #     # dpg.add_texture_registry(show=False, tag='texture_registry')
-            #     dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            #     dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
-            # except:
-            #     dpg.delete_item('filtering')
-            #     dpg.delete_item('filteringImage')
-            #     dpg.add_raw_texture(width=width, height=height, default_value=auxImg, tag="filtering", parent='texture_registry', format=dpg.mvFormat_Float_rgb)
-            #     dpg.add_image('filtering', parent='FilteringImageParent', tag='filteringImage')
-            self.next(self.brightnessAndContrast.__name__)
-            return
-
-        print('brightnessAndContrast')
-
-
-
-        self.next(self.brightnessAndContrast.__name__)
         pass
 
     def averageBlur(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.averageBlur.__name__] is False:
-            self.next(self.averageBlur.__name__)
-            return
-
-        print('averageBlur')
-        self.next(self.averageBlur.__name__)
         pass
 
     def gaussianBlur(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.gaussianBlur.__name__] is False:
-            self.next(self.gaussianBlur.__name__)
-            return
-
-        print('gaussianBlur')
-        self.next(self.gaussianBlur.__name__)
         pass
 
     def grayscale(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.grayscale.__name__] is False:
-            self.next(self.grayscale.__name__)
-            return
-
-        print('grayscale')
-        self.next(self.grayscale.__name__)
         pass
 
     def globalThresholding(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.globalThresholding.__name__] is False:
-            self.next(self.globalThresholding.__name__)
-            return
-        
-        print('globalThresholding')
-        self.next(self.globalThresholding.__name__)
         pass
 
     def adaptativeMeanThresholding(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.adaptativeMeanThresholding.__name__] is False:
-            self.next(self.adaptativeMeanThresholding.__name__)
-            return
-
-        print('adaptativeMeanThresholding')
-        self.next(self.adaptativeMeanThresholding.__name__)
         pass
 
     def adaptativeGaussianThresholding(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.adaptativeGaussianThresholding.__name__] is False:
-            self.next(self.adaptativeGaussianThresholding.__name__)
-            return
-
-        print('adaptativeGaussianThresholding')
-        self.next(self.adaptativeGaussianThresholding.__name__)
         pass
 
     def otsuBinarization(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.otsuBinarization.__name__] is False:
-            self.next(self.otsuBinarization.__name__)
-            return
-
-        print('otsuBinarization')
-        self.next(self.otsuBinarization.__name__)
         pass
 
     def findContour(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.findContour.__name__] is False:
-            self.next(self.findContour.__name__)
-            return
-
-        print('findContour')
-        self.next(self.findContour.__name__)
         pass
 
     def mooreNeighborhood(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.mooreNeighborhood.__name__] is False:
-            self.next(self.mooreNeighborhood.__name__)
-            return
-
-        print('mooreNeighborhood')
-        self.next(self.mooreNeighborhood.__name__)
         pass
 
     def exportSettings(self, sender=None, app_data=None):
 
-        if self.activationStatus[self.exportSettings.__name__] is False:
-            return
-
-        print('exportSettings')
         pass
