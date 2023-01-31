@@ -5,13 +5,11 @@ import cv2
 import enum
 
 class Tabs(enum.Enum):
-    __order__ = 'Processing Filtering Thresholding ContourExtraction MeshGeneration SparseMeshGeneration'
+    __order__ = 'Processing Filtering Thresholding ContourExtraction'
     Processing = 0
     Filtering = 1
     Thresholding = 2
     ContourExtraction = 3
-    MeshGeneration = 4
-    SparseMeshGeneration = 5
 
 class Blocks(enum.Enum):
     __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour mooreNeighborhood exportSettings'
@@ -341,5 +339,19 @@ class Callbacks:
         pass
 
     def exportSettings(self, sender=None, app_data=None):
+
+        pass
+
+    def importContour(self, sender=None, app_data=None):
+
+        pass
+
+    def openTxtFile(self, sender = None, app_data = None):
+        self.filePath = app_data['file_path_name']
+        self.fileName = app_data['file_name']
+        self.executeQuery('importContour')
+        pass
+
+    def GenerateMesh(self, sender=None, app_data=None):
 
         pass

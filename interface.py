@@ -225,6 +225,45 @@ class Interface:
     def showMeshGeneration(self):
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
+                
+                with dpg.file_dialog(directory_selector=False, show=False, tag='txt_file_dialog_id', id="txt_file_dialog_id", callback=self.callbacks.openTxtFile):
+                    dpg.add_file_extension("", color=(150, 255, 150, 255))
+                    dpg.add_file_extension(".txt", color=(0, 255, 255, 255))
+                    dpg.add_file_extension(".dat", color=(0, 255, 255, 255))
+
+
+                dpg.add_text('Select a contour file to use.')
+                dpg.add_button(tag='import_contour', label='Import Contour', callback=lambda: dpg.show_item("txt_file_dialog_id"))
+                 
+                dpg.add_text('Original Node Size:')
+                dpg.add_text('dx:', tag='originalDx')
+                dpg.add_text('dy:', tag='originalDy')
+                dpg.add_text('Current Node Size:')
+                dpg.add_text('dx:', tag='currentDx')
+                dpg.add_text('dy:', tag='currentDy')
+                dpg.add_text('New Node Size')
+                with dpg.group(horizontal=True):
+                    dpg.add_text('dx')
+                    dpg.add_input_float(tag='dx')
+                with dpg.group(horizontal=True):
+                    dpg.add_text('dy')
+                    dpg.add_input_float(tag='dy')
+
+                dpg.add_text('Original Mesh Start:')
+                dpg.add_text('x:', tag='originalXi')
+                dpg.add_text('y:', tag='originalYi')
+                dpg.add_text('Current Node Start:')
+                dpg.add_text('x:', tag='currentXi')
+                dpg.add_text('y:', tag='currentYi')
+                dpg.add_text('New Node Size')
+                with dpg.group(horizontal=True):
+                    dpg.add_text('xi')
+                    dpg.add_input_float(tag='xi')
+                with dpg.group(horizontal=True):
+                    dpg.add_text('yi')
+                    dpg.add_input_float(tag='yi')
+                dpg.add_button(label='Apply Changes', callback=lambda: self.callbacks.executeQuery('GenerateMesh'))
+                dpg.add_separator()
                 pass
             with dpg.child_window(tag='MeshGenerationParent'):
                 pass
