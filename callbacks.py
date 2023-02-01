@@ -13,7 +13,7 @@ class Tabs(enum.Enum):
     ContourExtraction = 3
 
 class Blocks(enum.Enum):
-    __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour mooreNeighborhood exportSettings plotMesh'
+    __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur medianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour mooreNeighborhood exportSettings'
     importImage = 0
     crop = 1
     histogramEqualization = 2
@@ -28,7 +28,6 @@ class Blocks(enum.Enum):
     findContour = 11
     mooreNeighborhood = 12
     exportSettings = 13
-    plotMesh = 14
 
 class Callbacks:
     def __init__(self) -> None:
@@ -66,7 +65,7 @@ class Callbacks:
             {
                 'method': self.brightnessAndContrast,
                 'name': self.brightnessAndContrast.__name__,
-                'status': False,
+                'status': True,
                 'output': None,
                 'tab': 'Filtering'
             },
@@ -85,9 +84,16 @@ class Callbacks:
                 'tab': 'Filtering'
             },
             {
+                'method': self.medianBlur,
+                'name': self.medianBlur.__name__,
+                'status': False,
+                'output': None,
+                'tab': 'Filtering'
+            },
+            {
                 'method': self.grayscale,
                 'name': self.grayscale.__name__,
-                'status': False,
+                'status': True,
                 'output': None,
                 'tab': 'Thresholding'
             },
@@ -161,12 +167,23 @@ class Callbacks:
                 entry['method']()
         pass
 
+    def executeQueryFromNext(self, methodName):
+        executeFlag = 0
+        for entry in self.blocks:
+            if executeFlag == 0 and entry['name'] == methodName:
+                executeFlag = 1
+                continue
+            if executeFlag == 1 and entry['status'] is True:
+                entry['method']()
+        pass
+
     def toggleAndExecuteQuery(self, methodName, sender = None, app_data = None):
         self.toggleEffect(methodName, sender, app_data)
         if dpg.get_value(sender) is True:
             self.executeQuery(methodName)
         else:
             self.retrieveFromLastActive(methodName, sender, app_data)
+            self.executeQueryFromNext(methodName)
         pass
 
     def getIdByMethod(self, methodName):
@@ -286,6 +303,9 @@ class Callbacks:
         dpg.set_value('currentHeight', 'Height: ' + str(shape[0]) + 'px')
 
         self.createAllTextures(self.blocks[Blocks.importImage.value]['output'])
+
+        # TODO: Fazer um método para resetar todas as checkbox e valores depois.
+
         pass
 
     def crop(self, sender=None, app_data=None):
@@ -308,40 +328,127 @@ class Callbacks:
         img_yuv = cv2.cvtColor(self.blocks[self.getLastActiveBeforeMethod('histogramEqualization')]['output'], cv2.COLOR_BGR2YUV)
         img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
         dst = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-
+        self.blocks[Blocks.histogramEqualization.value]['output'] = dst
         self.updateTexture(self.blocks[Blocks.histogramEqualization.value]['tab'], dst)
         pass
 
     def brightnessAndContrast(self, sender=None, app_data=None):
 
+        image = self.blocks[self.getLastActiveBeforeMethod('brightnessAndContrast')]['output']
+        alpha = dpg.get_value('contrastSlider')
+        beta = dpg.get_value('brightnessSlider')
+        outputImage = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+
+        self.blocks[Blocks.brightnessAndContrast.value]['output'] = outputImage
+        self.updateTexture(self.blocks[Blocks.brightnessAndContrast.value]['tab'], outputImage)
         pass
 
     def averageBlur(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('averageBlur')]['output']
 
+        kernelSize = (2 * dpg.get_value('averageBlurSlider')) - 1
+        kernel = np.ones((kernelSize,kernelSize),np.float32)/(kernelSize*kernelSize)
+        dst = cv2.filter2D(image,-1,kernel)
+
+        self.blocks[Blocks.averageBlur.value]['output'] = dst
+        self.updateTexture(self.blocks[Blocks.averageBlur.value]['tab'], dst)
         pass
 
     def gaussianBlur(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('gaussianBlur')]['output']
 
+        kernelSize = (2 * dpg.get_value('gaussianBlurSlider')) - 1
+        dst = cv2.GaussianBlur(image, (kernelSize,kernelSize), 0)
+
+        self.blocks[Blocks.gaussianBlur.value]['output'] = dst
+        self.updateTexture(self.blocks[Blocks.gaussianBlur.value]['tab'], dst)
+        pass
+
+    def medianBlur(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('medianBlur')]['output']
+        kernel = (2 * dpg.get_value('medianBlurSlider')) - 1
+
+        median = cv2.medianBlur(image, kernel)
+
+        self.blocks[Blocks.medianBlur.value]['output'] = median
+        self.updateTexture(self.blocks[Blocks.medianBlur.value]['tab'], median)
         pass
 
     def grayscale(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('grayscale')]['output'].copy()
 
+
+        excludeBlue = dpg.get_value('excludeBlueChannel')
+        excludeGreen = dpg.get_value('excludeGreenChannel')
+        excludeRed = dpg.get_value('excludeRedChannel')
+
+        if excludeBlue:
+            image[:, :, 0] = 0
+        if excludeGreen:
+            image[:, :, 1] = 0
+        if excludeRed:
+            image[:, :, 2] = 0
+
+        grayMask = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        image[:, :, 0] = grayMask
+        image[:, :, 1] = grayMask
+        image[:, :, 2] = grayMask
+
+        self.blocks[Blocks.grayscale.value]['output'] = image
+        self.updateTexture(self.blocks[Blocks.grayscale.value]['tab'], image)
         pass
 
     def globalThresholding(self, sender=None, app_data=None):
+        image = self.blocks[Blocks.grayscale.value]['output'].copy()
+        threshold = dpg.get_value('globalThresholdSlider')
 
+        thresholdMode = cv2.THRESH_BINARY 
+        invertFlag = dpg.get_value('invertGlobalThresholding')
+        if invertFlag:
+            thresholdMode = cv2.THRESH_BINARY_INV
+
+        (T, threshInv) = cv2.threshold(image, threshold, 255, thresholdMode)
+
+        self.blocks[Blocks.globalThresholding.value]['output'] = threshInv
+        self.updateTexture(self.blocks[Blocks.globalThresholding.value]['tab'], threshInv)
         pass
 
     def adaptativeMeanThresholding(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('adaptativeMeanThresholding')]['output'].copy()
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        threshInv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,11,2)
+        image = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
+
+        self.blocks[Blocks.adaptativeMeanThresholding.value]['output'] = image
+        self.updateTexture(self.blocks[Blocks.adaptativeMeanThresholding.value]['tab'], image)
 
         pass
 
     def adaptativeGaussianThresholding(self, sender=None, app_data=None):
 
+        image = self.blocks[self.getLastActiveBeforeMethod('adaptativeGaussianThresholding')]['output'].copy()
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        threshInv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
+        image = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
+
+        self.blocks[Blocks.adaptativeGaussianThresholding.value]['output'] = image
+        self.updateTexture(self.blocks[Blocks.adaptativeGaussianThresholding.value]['tab'], image)
+
         pass
 
     def otsuBinarization(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('adaptativeGaussianThresholding')]['output'].copy()
+        
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        ret, threshInv = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        threshInv = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
 
+
+        self.blocks[Blocks.globalThresholding.value]['output'] = threshInv
+        self.updateTexture(self.blocks[Blocks.globalThresholding.value]['tab'], threshInv)
         pass
 
     def findContour(self, sender=None, app_data=None):

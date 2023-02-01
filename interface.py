@@ -55,9 +55,9 @@ class Interface:
 
                 with dpg.file_dialog(directory_selector=False, min_size=[400,300], show=False, tag='file_dialog_id', id="file_dialog_id", callback=self.callbacks.openFile):
                     dpg.add_file_extension("", color=(150, 255, 150, 255))
+                    dpg.add_file_extension(".jpg", color=(0, 255, 255, 255))
                     dpg.add_file_extension(".png", color=(0, 255, 255, 255))
                     dpg.add_file_extension(".jpeg", color=(0, 255, 255, 255))
-                    dpg.add_file_extension(".jpg", color=(0, 255, 255, 255))
                     dpg.add_file_extension(".bmp", color=(0, 255, 255, 255))
                     dpg.add_file_extension(".pgm", color=(0, 255, 255, 255))
                     dpg.add_file_extension(".ppm", color=(0, 255, 255, 255))
@@ -110,31 +110,38 @@ class Interface:
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('histogramEqualization', sender, app_data))
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('histogramEqualization', sender, app_data));
                     dpg.add_text('Histogram Equalization')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('brightnessAndContrast', sender, app_data))
                     dpg.add_text('Brightness and Contrast')
                 dpg.add_text('Brightness')
-                dpg.add_slider_int()
+                dpg.add_slider_int(default_value=0, min_value=-100, max_value=100, tag='brightnessSlider', callback=lambda: self.callbacks.executeQuery('brightnessAndContrast'))
                 dpg.add_text('Contrast')
-                dpg.add_slider_int()
+                dpg.add_slider_float(default_value=1.0, min_value=0.0, max_value=3.0, tag='contrastSlider', callback=lambda: self.callbacks.executeQuery('brightnessAndContrast'))
                 dpg.add_separator()
                 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('averageBlur', sender, app_data))
                     dpg.add_text('Average Blur')
                 dpg.add_text('Intensity')
-                dpg.add_slider_int()
+                dpg.add_slider_int(tag='averageBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('averageBlur'))
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('gaussianBlur', sender, app_data))
                     dpg.add_text('Gaussian Blur')
                 dpg.add_text('Intensity')
-                dpg.add_slider_int()
+                dpg.add_slider_int(tag='gaussianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('gaussianBlur'))
+                dpg.add_separator()
+
+                with dpg.group(horizontal=True):
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('medianBlur', sender, app_data))
+                    dpg.add_text('Median Blur')
+                dpg.add_text('Intensity')
+                dpg.add_slider_int(tag='medianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('medianBlur'))
                 dpg.add_separator()
 
                 pass
@@ -146,30 +153,33 @@ class Interface:
             with dpg.child_window(width=300):
 
                 dpg.add_text('Grayscale Conversion')
-                dpg.add_checkbox(label='Exclude Blue Channel')
-                dpg.add_checkbox(label='Exclude Green Channel')
-                dpg.add_checkbox(label='Exclude Red Channel')
+                dpg.add_checkbox(label='Exclude Blue Channel', tag='excludeBlueChannel', callback=lambda: self.callbacks.executeQuery('grayscale'))
+                dpg.add_checkbox(label='Exclude Green Channel', tag='excludeGreenChannel', callback=lambda: self.callbacks.executeQuery('grayscale'))
+                dpg.add_checkbox(label='Exclude Red Channel', tag='excludeRedChannel', callback=lambda: self.callbacks.executeQuery('grayscale'))
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('globalThresholding', sender, app_data))
                     dpg.add_text('Global Thresholding')
+                with dpg.group(horizontal=True):
+                    dpg.add_checkbox(tag='invertGlobalThresholding', callback=lambda: self.callbacks.executeQuery('globalThresholding'))
+                    dpg.add_text('Invert Tresholding')
                 dpg.add_text('Threshold')
-                dpg.add_slider_int()
+                dpg.add_slider_int(tag='globalThresholdSlider', default_value=127, min_value=0, max_value=255, callback=lambda: self.callbacks.executeQuery('globalThresholding'))
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('adaptativeMeanThresholding', sender, app_data))
                     dpg.add_text('Adaptative Mean Thresholding')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('adaptativeGaussianThresholding', sender, app_data))
                     dpg.add_text('Adaptative Gaussian Thresholding')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox()
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('otsuBinarization', sender, app_data))
                     dpg.add_text('Otsu\'s Binarization')
                 dpg.add_text('(Works better after Gaussian Blur)')
                 dpg.add_separator()
