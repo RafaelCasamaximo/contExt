@@ -20,14 +20,15 @@ class Blocks(enum.Enum):
     brightnessAndContrast = 3
     averageBlur = 4
     gaussianBlur = 5
-    grayscale = 6
-    globalThresholding = 7
-    adaptativeMeanThresholding = 8
-    adaptativeGaussianThresholding = 9
-    otsuBinarization = 10
-    findContour = 11
-    mooreNeighborhood = 12
-    exportSettings = 13
+    medianBlur = 6
+    grayscale = 7
+    globalThresholding = 8
+    adaptativeMeanThresholding = 9
+    adaptativeGaussianThresholding = 10
+    otsuBinarization = 11
+    findContour = 12
+    mooreNeighborhood = 13
+    exportSettings = 14
 
 class Callbacks:
     def __init__(self) -> None:
