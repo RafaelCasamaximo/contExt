@@ -12,21 +12,22 @@ class Tabs(enum.Enum):
     ContourExtraction = 3
 
 class Blocks(enum.Enum):
-    __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour mooreNeighborhood exportSettings'
+    __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur medianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour mooreNeighborhood exportSettings'
     importImage = 0
     crop = 1
     histogramEqualization = 2
     brightnessAndContrast = 3
     averageBlur = 4
     gaussianBlur = 5
-    grayscale = 6
-    globalThresholding = 7
-    adaptativeMeanThresholding = 8
-    adaptativeGaussianThresholding = 9
-    otsuBinarization = 10
-    findContour = 11
-    mooreNeighborhood = 12
-    exportSettings = 13
+    medianBlur = 6
+    grayscale = 7
+    globalThresholding = 8
+    adaptativeMeanThresholding = 9
+    adaptativeGaussianThresholding = 10
+    otsuBinarization = 11
+    findContour = 12
+    mooreNeighborhood = 13
+    exportSettings = 14
 
 class Callbacks:
     def __init__(self) -> None:
@@ -73,6 +74,13 @@ class Callbacks:
             {
                 'method': self.gaussianBlur,
                 'name': self.gaussianBlur.__name__,
+                'status': False,
+                'output': None,
+                'tab': 'Filtering'
+            },
+            {
+                'method': self.medianBlur,
+                'name': self.medianBlur.__name__,
                 'status': False,
                 'output': None,
                 'tab': 'Filtering'
@@ -325,8 +333,8 @@ class Callbacks:
 
     def averageBlur(self, sender=None, app_data=None):
         image = self.blocks[self.getLastActiveBeforeMethod('averageBlur')]['output']
+
         kernelSize = (2 * dpg.get_value('averageBlurSlider')) - 1
-        
         kernel = np.ones((kernelSize,kernelSize),np.float32)/(kernelSize*kernelSize)
         dst = cv2.filter2D(image,-1,kernel)
 
@@ -336,12 +344,22 @@ class Callbacks:
 
     def gaussianBlur(self, sender=None, app_data=None):
         image = self.blocks[self.getLastActiveBeforeMethod('gaussianBlur')]['output']
+
         kernelSize = (2 * dpg.get_value('gaussianBlurSlider')) - 1
-        
         dst = cv2.GaussianBlur(image, (kernelSize,kernelSize), 0)
 
         self.blocks[Blocks.averageBlur.value]['output'] = dst
         self.updateTexture(self.blocks[Blocks.averageBlur.value]['tab'], dst)
+        pass
+
+    def medianBlur(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('medianBlur')]['output']
+        kernel = (2 * dpg.get_value('medianBlurSlider')) - 1
+
+        median = cv2.medianBlur(image, kernel)
+
+        self.blocks[Blocks.medianBlur.value]['output'] = median
+        self.updateTexture(self.blocks[Blocks.medianBlur.value]['tab'], median)
         pass
 
     def grayscale(self, sender=None, app_data=None):

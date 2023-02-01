@@ -137,6 +137,13 @@ class Interface:
                 dpg.add_slider_int(tag='gaussianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('gaussianBlur'))
                 dpg.add_separator()
 
+                with dpg.group(horizontal=True):
+                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('medianBlur', sender, app_data))
+                    dpg.add_text('Median Blur')
+                dpg.add_text('Intensity')
+                dpg.add_slider_int(tag='medianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('medianBlur'))
+                dpg.add_separator()
+
                 pass
             with dpg.child_window(tag='FilteringParent'):
                 pass
