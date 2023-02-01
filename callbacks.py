@@ -88,7 +88,7 @@ class Callbacks:
             {
                 'method': self.grayscale,
                 'name': self.grayscale.__name__,
-                'status': False,
+                'status': True,
                 'output': None,
                 'tab': 'Thresholding'
             },
@@ -348,8 +348,8 @@ class Callbacks:
         kernelSize = (2 * dpg.get_value('gaussianBlurSlider')) - 1
         dst = cv2.GaussianBlur(image, (kernelSize,kernelSize), 0)
 
-        self.blocks[Blocks.averageBlur.value]['output'] = dst
-        self.updateTexture(self.blocks[Blocks.averageBlur.value]['tab'], dst)
+        self.blocks[Blocks.gaussianBlur.value]['output'] = dst
+        self.updateTexture(self.blocks[Blocks.gaussianBlur.value]['tab'], dst)
         pass
 
     def medianBlur(self, sender=None, app_data=None):
@@ -363,23 +363,80 @@ class Callbacks:
         pass
 
     def grayscale(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('grayscale')]['output'].copy()
 
+
+        excludeBlue = dpg.get_value('excludeBlueChannel')
+        excludeGreen = dpg.get_value('excludeGreenChannel')
+        excludeRed = dpg.get_value('excludeRedChannel')
+
+        if excludeBlue:
+            image[:, :, 0] = 0
+        if excludeGreen:
+            image[:, :, 1] = 0
+        if excludeRed:
+            image[:, :, 2] = 0
+
+        grayMask = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        image[:, :, 0] = grayMask
+        image[:, :, 1] = grayMask
+        image[:, :, 2] = grayMask
+
+        self.blocks[Blocks.grayscale.value]['output'] = image
+        self.updateTexture(self.blocks[Blocks.grayscale.value]['tab'], image)
         pass
 
     def globalThresholding(self, sender=None, app_data=None):
+        image = self.blocks[Blocks.grayscale.value]['output'].copy()
+        threshold = dpg.get_value('globalThresholdSlider')
 
+        thresholdMode = cv2.THRESH_BINARY 
+        invertFlag = dpg.get_value('invertGlobalThresholding')
+        if invertFlag:
+            thresholdMode = cv2.THRESH_BINARY_INV
+
+        (T, threshInv) = cv2.threshold(image, threshold, 255, thresholdMode)
+
+        self.blocks[Blocks.globalThresholding.value]['output'] = threshInv
+        self.updateTexture(self.blocks[Blocks.globalThresholding.value]['tab'], threshInv)
         pass
 
     def adaptativeMeanThresholding(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('adaptativeMeanThresholding')]['output'].copy()
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        threshInv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,11,2)
+        image = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
+
+        self.blocks[Blocks.adaptativeMeanThresholding.value]['output'] = image
+        self.updateTexture(self.blocks[Blocks.adaptativeMeanThresholding.value]['tab'], image)
 
         pass
 
     def adaptativeGaussianThresholding(self, sender=None, app_data=None):
 
+        image = self.blocks[self.getLastActiveBeforeMethod('adaptativeGaussianThresholding')]['output'].copy()
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        threshInv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
+        image = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
+
+        self.blocks[Blocks.adaptativeGaussianThresholding.value]['output'] = image
+        self.updateTexture(self.blocks[Blocks.adaptativeGaussianThresholding.value]['tab'], image)
+
         pass
 
     def otsuBinarization(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('adaptativeGaussianThresholding')]['output'].copy()
+        
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        ret, threshInv = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        threshInv = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
 
+
+        self.blocks[Blocks.globalThresholding.value]['output'] = threshInv
+        self.updateTexture(self.blocks[Blocks.globalThresholding.value]['tab'], threshInv)
         pass
 
     def findContour(self, sender=None, app_data=None):
