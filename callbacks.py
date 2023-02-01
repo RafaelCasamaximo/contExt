@@ -59,7 +59,7 @@ class Callbacks:
             {
                 'method': self.brightnessAndContrast,
                 'name': self.brightnessAndContrast.__name__,
-                'status': False,
+                'status': True,
                 'output': None,
                 'tab': 'Filtering'
             },
@@ -147,12 +147,23 @@ class Callbacks:
                 entry['method']()
         pass
 
+    def executeQueryFromNext(self, methodName):
+        executeFlag = 0
+        for entry in self.blocks:
+            if executeFlag == 0 and entry['name'] == methodName:
+                executeFlag = 1
+                continue
+            if executeFlag == 1 and entry['status'] is True:
+                entry['method']()
+        pass
+
     def toggleAndExecuteQuery(self, methodName, sender = None, app_data = None):
         self.toggleEffect(methodName, sender, app_data)
         if dpg.get_value(sender) is True:
             self.executeQuery(methodName)
         else:
             self.retrieveFromLastActive(methodName, sender, app_data)
+            self.executeQueryFromNext(methodName)
         pass
 
     def getIdByMethod(self, methodName):
@@ -272,6 +283,9 @@ class Callbacks:
         dpg.set_value('currentHeight', 'Height: ' + str(shape[0]) + 'px')
 
         self.createAllTextures(self.blocks[Blocks.importImage.value]['output'])
+
+        # TODO: Fazer um método para resetar todas as checkbox e valores depois.
+
         pass
 
     def crop(self, sender=None, app_data=None):
@@ -294,20 +308,40 @@ class Callbacks:
         img_yuv = cv2.cvtColor(self.blocks[self.getLastActiveBeforeMethod('histogramEqualization')]['output'], cv2.COLOR_BGR2YUV)
         img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
         dst = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-
+        self.blocks[Blocks.histogramEqualization.value]['output'] = dst
         self.updateTexture(self.blocks[Blocks.histogramEqualization.value]['tab'], dst)
         pass
 
     def brightnessAndContrast(self, sender=None, app_data=None):
 
+        image = self.blocks[self.getLastActiveBeforeMethod('brightnessAndContrast')]['output']
+        alpha = dpg.get_value('contrastSlider')
+        beta = dpg.get_value('brightnessSlider')
+        outputImage = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+
+        self.blocks[Blocks.brightnessAndContrast.value]['output'] = outputImage
+        self.updateTexture(self.blocks[Blocks.brightnessAndContrast.value]['tab'], outputImage)
         pass
 
     def averageBlur(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('averageBlur')]['output']
+        kernelSize = (2 * dpg.get_value('averageBlurSlider')) - 1
+        
+        kernel = np.ones((kernelSize,kernelSize),np.float32)/(kernelSize*kernelSize)
+        dst = cv2.filter2D(image,-1,kernel)
 
+        self.blocks[Blocks.averageBlur.value]['output'] = dst
+        self.updateTexture(self.blocks[Blocks.averageBlur.value]['tab'], dst)
         pass
 
     def gaussianBlur(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('gaussianBlur')]['output']
+        kernelSize = (2 * dpg.get_value('gaussianBlurSlider')) - 1
+        
+        dst = cv2.GaussianBlur(image, (kernelSize,kernelSize), 0)
 
+        self.blocks[Blocks.averageBlur.value]['output'] = dst
+        self.updateTexture(self.blocks[Blocks.averageBlur.value]['tab'], dst)
         pass
 
     def grayscale(self, sender=None, app_data=None):
