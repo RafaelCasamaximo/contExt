@@ -53,7 +53,7 @@ class Interface:
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
 
-                with dpg.file_dialog(directory_selector=False, show=False, tag='file_dialog_id', id="file_dialog_id", callback=self.callbacks.openFile):
+                with dpg.file_dialog(directory_selector=False, min_size=[400,300], show=False, tag='file_dialog_id', id="file_dialog_id", callback=self.callbacks.openFile):
                     dpg.add_file_extension("", color=(150, 255, 150, 255))
                     dpg.add_file_extension(".png", color=(0, 255, 255, 255))
                     dpg.add_file_extension(".jpeg", color=(0, 255, 255, 255))
@@ -226,7 +226,7 @@ class Interface:
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
                 
-                with dpg.file_dialog(directory_selector=False, show=False, tag='txt_file_dialog_id', id="txt_file_dialog_id", callback=self.callbacks.openTxtFile):
+                with dpg.file_dialog(directory_selector=False, show=False, min_size=[400,300], tag='txt_file_dialog_id', id="txt_file_dialog_id", callback=self.callbacks.importContour):
                     dpg.add_file_extension("", color=(150, 255, 150, 255))
                     dpg.add_file_extension(".txt", color=(0, 255, 255, 255))
                     dpg.add_file_extension(".dat", color=(0, 255, 255, 255))
@@ -234,14 +234,18 @@ class Interface:
 
                 dpg.add_text('Select a contour file to use.')
                 dpg.add_button(tag='import_contour', label='Import Contour', callback=lambda: dpg.show_item("txt_file_dialog_id"))
-                 
+
+                dpg.add_text('File Name:', tag='contour_file_name_text')
+                dpg.add_text('File Path:', tag='contour_file_path_text')
+                dpg.add_separator()
+
+                dpg.add_text('Contour ordering')
+                dpg.add_button(tag='contour_ordering', enabled=False, label='Anticlockwise', callback=self.callbacks.toggleOrdering)
+
                 dpg.add_text('Original Node Size:')
-                dpg.add_text('dx:', tag='originalDx')
-                dpg.add_text('dy:', tag='originalDy')
-                dpg.add_text('Current Node Size:')
-                dpg.add_text('dx:', tag='currentDx')
-                dpg.add_text('dy:', tag='currentDy')
-                dpg.add_text('New Node Size')
+                dpg.add_text('dx: --', tag='original_dx')
+                dpg.add_text('dy: --', tag='original_dy')
+                dpg.add_text('Node Size')
                 with dpg.group(horizontal=True):
                     dpg.add_text('dx')
                     dpg.add_input_float(tag='dx')
@@ -249,24 +253,28 @@ class Interface:
                     dpg.add_text('dy')
                     dpg.add_input_float(tag='dy')
 
+                dpg.add_text('Nodes Number:')
+                dpg.add_text('nx: --', tag='nx')
+                dpg.add_text('ny: --', tag='ny')
+
                 dpg.add_text('Original Mesh Start:')
-                dpg.add_text('x:', tag='originalXi')
-                dpg.add_text('y:', tag='originalYi')
-                dpg.add_text('Current Node Start:')
-                dpg.add_text('x:', tag='currentXi')
-                dpg.add_text('y:', tag='currentYi')
-                dpg.add_text('New Node Size')
+                dpg.add_text('x: --', tag='original_xi')
+                dpg.add_text('y: --', tag='original_yi')
+                dpg.add_text('Node Start')
                 with dpg.group(horizontal=True):
                     dpg.add_text('xi')
                     dpg.add_input_float(tag='xi')
                 with dpg.group(horizontal=True):
                     dpg.add_text('yi')
                     dpg.add_input_float(tag='yi')
-                dpg.add_button(label='Apply Changes', callback=lambda: self.callbacks.executeQuery('GenerateMesh'))
+                dpg.add_button(label='Apply Changes', callback= self.callbacks.updateMesh)
                 dpg.add_separator()
                 pass
             with dpg.child_window(tag='MeshGenerationParent'):
-                pass
+                with dpg.plot(label="meshPlotParent", height=700, width=700):
+                    dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="x_axis")
+                    dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="y_axis")
+                    pass
 
     def showSparseMeshGeneration(self):
         with dpg.group(horizontal=True):

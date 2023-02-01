@@ -3,6 +3,7 @@ import dearpygui.dearpygui as dpg
 import numpy as np
 import cv2
 import enum
+from processaMalha import ProcessaMalha
 
 class Tabs(enum.Enum):
     __order__ = 'Processing Filtering Thresholding ContourExtraction'
@@ -12,7 +13,7 @@ class Tabs(enum.Enum):
     ContourExtraction = 3
 
 class Blocks(enum.Enum):
-    __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour mooreNeighborhood exportSettings'
+    __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour mooreNeighborhood exportSettings plotMesh'
     importImage = 0
     crop = 1
     histogramEqualization = 2
@@ -27,12 +28,18 @@ class Blocks(enum.Enum):
     findContour = 11
     mooreNeighborhood = 12
     exportSettings = 13
+    plotMesh = 14
 
 class Callbacks:
     def __init__(self) -> None:
 
         self.filePath = None
         self.fileName = None
+        self.txtFilePath = None
+        self.txtFileName = None
+        self.toggleOrderingFlag = True
+        self.xarray = []
+        self.yarray = []
 
         self.blocks = [
             {
@@ -132,6 +139,13 @@ class Callbacks:
                 'status': False,
                 'output': None,
                 'tab': 'ContourExtraction'
+            },
+            {
+                'method': self.plotMesh,
+                'name': self.plotMesh.__name__,
+                'status': True,
+                'output': None,
+                'tab': 'Mesh Generation'
             },
         ]
 
@@ -341,17 +355,65 @@ class Callbacks:
     def exportSettings(self, sender=None, app_data=None):
 
         pass
+        
+    def plotMesh(self, sender=None, app_data=None):
+        nx = self.xarray[0]
+        ny = self.yarray[0]
+        xmin = self.xarray[1]
+        ymin = self.yarray[1]
+        dx = self.xarray[3]
+        dy = self.yarray[3]
 
-    def importContour(self, sender=None, app_data=None):
+        dpg.set_value("original_xi", 'x:' + str(xmin))
+        dpg.set_value("original_yi", 'y:' + str(ymin))
+        dpg.set_value("original_dx", 'dx:' + str(dx))
+        dpg.set_value("original_dy", 'dy:' + str(dy))
+        dpg.set_value("nx", 'nx:' + str(nx))
+        dpg.set_value("ny", 'ny:' + str(ny))
+        dpg.configure_item("dx", default_value = dx)
+        dpg.configure_item("dy", default_value = dy)
+        dpg.configure_item("xi", default_value = xmin)
+        dpg.configure_item("yi", default_value = ymin)
 
+        self.xarray = self.xarray[4:]
+        self.yarray = self.yarray[4:]
+        dpg.add_line_series(self.xarray, self.yarray, label="meshPlot", parent='y_axis')
+        dpg.fit_axis_data("x_axis")
+        dpg.fit_axis_data("y_axis")
+
+    def importContour(self, sender = None, app_data = None):
+        self.txtFilePath = app_data['file_path_name']
+        self.txtFileName = app_data['file_name']
+        dpg.configure_item('contour_ordering', enabled=True)
+
+        dpg.set_value('contour_file_name_text', 'File Name: ' + self.txtFileName)
+        dpg.set_value('contour_file_path_text', 'File Path: ' + self.txtFilePath)
+        self.xarray = []
+        self.yarray = []
+        f = open(self.txtFilePath,'r')
+        for line in f.readlines():
+            aux = line.split()
+            self.xarray.append(float(aux[0]))
+            self.yarray.append(float(aux[1]))
+        f.close()
+        self.executeQuery('plotMesh')
+
+    def toggleOrdering(self, sender = None, app_data = None):
+        self.toggleOrderingFlag = not self.toggleOrderingFlag
+        self.xarray = self.xarray[::-1]
+        self.yarray = self.yarray[::-1]
+        if self.toggleOrderingFlag:
+            dpg.configure_item('contour_ordering', label="Amticlockwise")
+        else:
+            dpg.configure_item('contour_ordering', label="Clockwise")
         pass
 
-    def openTxtFile(self, sender = None, app_data = None):
-        self.filePath = app_data['file_path_name']
-        self.fileName = app_data['file_name']
-        self.executeQuery('importContour')
-        pass
-
-    def GenerateMesh(self, sender=None, app_data=None):
-
+    def updateMesh(self, sender=None, app_data=None):
+        dx = dpg.get_value("dx")
+        dy = dpg.get_value("dy")
+        xmin = dpg.get_value("xi")
+        ymin = dpg.get_value("yi")
+        self.xarray, self.yarray = ProcessaMalha.getMesh(self.xarray, self.yarray, xmin, ymin, dx, dy)
+        dpg.delete_item("meshPlot")
+        self.executeQuery('plotMesh')
         pass
