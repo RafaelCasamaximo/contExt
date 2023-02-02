@@ -263,6 +263,9 @@ class Interface:
                     dpg.add_text('dy')
                     dpg.add_input_float(tag='dy')
 
+                dpg.add_text('Original Nodes Number:')
+                dpg.add_text('nx: --', tag='original_nx')
+                dpg.add_text('ny: --', tag='original_ny')
                 dpg.add_text('Nodes Number:')
                 dpg.add_text('nx: --', tag='nx')
                 dpg.add_text('ny: --', tag='ny')
@@ -281,10 +284,15 @@ class Interface:
                 dpg.add_separator()
                 pass
             with dpg.child_window(tag='MeshGenerationParent'):
-                with dpg.plot(label="meshPlotParent", height=700, width=700):
+                with dpg.plot(tag="meshPlotParent", label="Mesh Plot", height=650, width=750):
+                    dpg.add_plot_legend()
                     dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="x_axis")
                     dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="y_axis")
-                    pass
+
+                dpg.add_text('Original Area: --', tag='original_area')
+                dpg.add_text('Current Area: --', tag='current_area')
+                dpg.add_text('Difference: --', tag='difference')   
+                pass
 
     def showSparseMeshGeneration(self):
         with dpg.group(horizontal=True):

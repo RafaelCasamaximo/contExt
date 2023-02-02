@@ -3,7 +3,7 @@ import dearpygui.dearpygui as dpg
 import numpy as np
 import cv2
 import enum
-from processaMalha import ProcessaMalha
+from mesh import Mesh
 
 class Tabs(enum.Enum):
     __order__ = 'Processing Filtering Thresholding ContourExtraction'
@@ -147,13 +147,6 @@ class Callbacks:
                 'output': None,
                 'tab': 'ContourExtraction'
             },
-            {
-                'method': self.plotMesh,
-                'name': self.plotMesh.__name__,
-                'status': True,
-                'output': None,
-                'tab': 'Mesh Generation'
-            },
         ]
 
         pass
@@ -294,6 +287,7 @@ class Callbacks:
         dpg.set_value('currentWidth', 'Width: ' + str(shape[1]) + 'px')
         dpg.set_value('currentHeight', 'Height: ' + str(shape[0]) + 'px')
         pass
+
 
     def resetCrop(self, sender = None, app_data = None):
         self.blocks[Blocks.crop.value]['output'] = self.blocks[Blocks.importImage.value]['output']
@@ -476,6 +470,8 @@ class Callbacks:
         dpg.set_value("original_yi", 'y:' + str(ymin))
         dpg.set_value("original_dx", 'dx:' + str(dx))
         dpg.set_value("original_dy", 'dy:' + str(dy))
+        dpg.set_value("original_nx", 'nx:' + str(nx))
+        dpg.set_value("original_ny", 'ny:' + str(ny))
         dpg.set_value("nx", 'nx:' + str(nx))
         dpg.set_value("ny", 'ny:' + str(ny))
         dpg.configure_item("dx", default_value = dx)
@@ -485,7 +481,8 @@ class Callbacks:
 
         self.xarray = self.xarray[4:]
         self.yarray = self.yarray[4:]
-        dpg.add_line_series(self.xarray, self.yarray, label="meshPlot", parent='y_axis')
+        dpg.set_value("original_area", "Original Area: " + str(Mesh.get_area(self.xarray, self.yarray)))
+        dpg.add_line_series(self.xarray, self.yarray, label="Original Mesh", tag="originalMeshPlot", parent='y_axis')
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")
 
@@ -504,7 +501,7 @@ class Callbacks:
             self.xarray.append(float(aux[0]))
             self.yarray.append(float(aux[1]))
         f.close()
-        self.executeQuery('plotMesh')
+        self.plotMesh()
 
     def toggleOrdering(self, sender = None, app_data = None):
         self.toggleOrderingFlag = not self.toggleOrderingFlag
@@ -521,7 +518,33 @@ class Callbacks:
         dy = dpg.get_value("dy")
         xmin = dpg.get_value("xi")
         ymin = dpg.get_value("yi")
-        self.xarray, self.yarray = ProcessaMalha.getMesh(self.xarray, self.yarray, xmin, ymin, dx, dy)
+        self.xarray, self.yarray = Mesh.getMesh(self.xarray, self.yarray, xmin, ymin, dx, dy)
+        nx = self.xarray[0]
+        ny = self.yarray[0]
+        xmin = self.xarray[1]
+        ymin = self.yarray[1]
+        dx = self.xarray[3]
+        dy = self.yarray[3]
+
+        dpg.set_value("nx", 'nx:' + str(nx))
+        dpg.set_value("ny", 'ny:' + str(ny))
+        dpg.configure_item("dx", default_value = dx)
+        dpg.configure_item("dy", default_value = dy)
+        dpg.configure_item("xi", default_value = xmin)
+        dpg.configure_item("yi", default_value = ymin)
+
+        self.xarray = self.xarray[4:]
+        self.yarray = self.yarray[4:]
+
+        area = Mesh.get_area(self.xarray, self.yarray)
+        dpg.set_value("current_area", "Currente Area: " + str(area))
+        aux = dpg.get_value("original_area")
+        originalArea = float(aux[15:])
+        dif = abs(originalArea - area)
+        dpg.set_value("difference", "Difference: " + str(dif) + " ({:.2f}%)".format(100*dif/originalArea))
+
         dpg.delete_item("meshPlot")
-        self.executeQuery('plotMesh')
+        dpg.add_line_series(self.xarray, self.yarray, label="Currente Mesh", tag="meshPlot", parent='y_axis')
+        dpg.fit_axis_data("x_axis")
+        dpg.fit_axis_data("y_axis")
         pass

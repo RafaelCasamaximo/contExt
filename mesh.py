@@ -1,4 +1,4 @@
-class ProcessaMalha:
+class Mesh:
 
 
     """
@@ -22,7 +22,7 @@ class ProcessaMalha:
         yResult = []
         xmax = max(x)
         ymax = max(y)
-        prevpoint = ProcessaMalha.getNode(x[0], y[0], xmin, ymin, dx, dy) 
+        prevpoint = Mesh.getNode(x[0], y[0], xmin, ymin, dx, dy) 
         xResult.append(prevpoint[0])
         yResult.append(prevpoint[1])
         flagx = 0
@@ -31,7 +31,7 @@ class ProcessaMalha:
         diry = prevpoint[1] > y[-2]
         tam = len(x)
         for i in range(1,tam):
-            point = ProcessaMalha.getNode(x[i], y[i], xmin, ymin, dx, dy)
+            point = Mesh.getNode(x[i], y[i], xmin, ymin, dx, dy)
             if point[0] != prevpoint[0] or point[1] != prevpoint[1]:
                 if flagx and point[1] == prevpoint[1] and ((point[0] > prevpoint[0]) != diry):
                     xResult[-1] = point[0]
@@ -72,7 +72,6 @@ class ProcessaMalha:
         ny = int((ymax - ymin)/dy) + 1
         xResult = [nx, xmin, xmax, dx] + xResult
         yResult = [ny, ymin, ymax, dy] + yResult
-        print(xResult[:8])
         return xResult, yResult
         
     
@@ -103,7 +102,7 @@ class ProcessaMalha:
         content = content + str(dx) + " " + str(dy) + "\n"
         try:
             with open(path, "w") as dataFile:
-                content += ProcessaMalha.converte_pointArray_to_string(
+                content += Mesh.converte_pointArray_to_string(
                     mesh)
                 dataFile.write(content)
         except:
@@ -117,17 +116,13 @@ class ProcessaMalha:
     Para esse algoritmo funcionar ele precisa de uma lista ordenada de pontos. No caso, a própria lista de pontos que foi adquirida a partir da extração de contorno
     """
 
-    def calcula_area(mesh):
+    def get_area(x,y):
         area = 0
         i = 0
         j = 0
-        for index in range(0, (len(mesh)) - 1):
-            auxI = mesh[index]
-            auxJ = mesh[index + 1]
-            area += auxI[1] * auxJ[0] - auxI[0] * auxJ[1]
-        auxI = mesh[len(mesh) - 1]
-        auxJ = mesh[0]
-        area += auxI[1] * auxJ[0] - auxI[0] * auxJ[1]
+        for index in range(0, (len(x)) - 1):
+            area += y[index] * x[index + 1] - x[index] * y[index + 1]
+        area += y[index - 1] * x[index] - x[index - 1] * y[index]
         area = area / 2
         return area
     
