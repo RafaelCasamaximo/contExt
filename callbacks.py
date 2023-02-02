@@ -451,7 +451,7 @@ class Callbacks:
         pass
 
     def mooreNeighborhood(self, sender=None, app_data=None):
-
+        
         pass
 
     def exportSettings(self, sender=None, app_data=None):
@@ -526,8 +526,8 @@ class Callbacks:
         dx = self.xarray[3]
         dy = self.yarray[3]
 
-        dpg.set_value("nx", 'nx:' + str(nx))
-        dpg.set_value("ny", 'ny:' + str(ny))
+        dpg.set_value("nx", 'nx:' + str(int(nx)))
+        dpg.set_value("ny", 'ny:' + str(int(ny)))
         dpg.configure_item("dx", default_value = dx)
         dpg.configure_item("dy", default_value = dy)
         dpg.configure_item("xi", default_value = xmin)

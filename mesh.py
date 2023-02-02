@@ -80,12 +80,11 @@ class Mesh:
     Essa função é utilizada para converter o array das coordenadas em uma string para ser impressa no arquivo de texto. Retorna a string.
     """
 
-    def converte_pointArray_to_string(array):
+    def converte_pointArray_to_string(x,y):
         content = ''
         i = 0
-        while i < len(array):
-            element = array[i]
-            content = content + str(element[0]) + " " + str(element[1]) + "\n"
+        while i < len(x):
+            content = content + str(x[i]) + " " + str(y[i]) + "\n"
             i += 1
         return content
 
@@ -94,7 +93,7 @@ class Mesh:
     Função responsável por exportar as coordenadas dos nós da malha em um arquivo path
     """
 
-    def exporta_coords_malha(path, mesh, nx, ny, xmin, ymin, xmax, ymax, dx, dy):
+    def exporta_coords_malha(path, x, y, nx, ny, xmin, ymin, xmax, ymax, dx, dy):
         content = ''
         content = content + str(nx) + " " + str(ny) + "\n"
         content = content + str(xmin) + " " + str(ymin) + "\n"
@@ -102,8 +101,7 @@ class Mesh:
         content = content + str(dx) + " " + str(dy) + "\n"
         try:
             with open(path, "w") as dataFile:
-                content += Mesh.converte_pointArray_to_string(
-                    mesh)
+                content += Mesh.converte_pointArray_to_string(x,y)
                 dataFile.write(content)
         except:
             print('Path does not exist for mesh export')

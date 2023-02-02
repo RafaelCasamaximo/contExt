@@ -196,19 +196,15 @@ class Interface:
                 dpg.add_text('OpenCV2 Find Contour')
                 dpg.add_text('Approximation Mode')
                 dpg.add_listbox(items=['None', 'Simple', 'TC89_L1', 'TC89_KCOS'])
-                dpg.add_text('Interval without approximation')
-                dpg.add_input_int()
                 dpg.add_button(label='Apply Method')
 
                 dpg.add_separator()
                 dpg.add_text('Moore Neighborhood')
                 dpg.add_text('Initial Pixel')
-                dpg.add_input_int(label='X')
-                dpg.add_input_int(label='Y')
+                dpg.add_input_int(label='X', min_value=0, min_clamped=True)
+                dpg.add_input_int(label='Y', min_value=0, min_clamped=True)
                 dpg.add_text('Search Direction')
                 dpg.add_listbox(items=['Up', 'Right', 'Down', 'Left'])
-                dpg.add_text('Interval')
-                dpg.add_input_int()
                 dpg.add_button(label='Apply Method')
                 dpg.add_separator()
 
@@ -258,10 +254,10 @@ class Interface:
                 dpg.add_text('Node Size')
                 with dpg.group(horizontal=True):
                     dpg.add_text('dx')
-                    dpg.add_input_float(tag='dx')
+                    dpg.add_input_float(tag='dx', default_value=1, min_value=1, min_clamped=True)
                 with dpg.group(horizontal=True):
                     dpg.add_text('dy')
-                    dpg.add_input_float(tag='dy')
+                    dpg.add_input_float(tag='dy', default_value=1, min_value=1, min_clamped=True)
 
                 dpg.add_text('Original Nodes Number:')
                 dpg.add_text('nx: --', tag='original_nx')
