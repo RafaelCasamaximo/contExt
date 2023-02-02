@@ -67,9 +67,6 @@ class Interface:
         with dpg.tab(label='Mesh Generation'):
             self.showMeshGeneration()
             pass
-        with dpg.tab(label='Sparse Mesh Generation'):
-            self.showSparseMeshGeneration()
-            pass
         pass
 
     def showProcessing(self):
@@ -274,6 +271,8 @@ class Interface:
 
                 dpg.add_text('Contour ordering')
                 dpg.add_button(tag='contour_ordering', enabled=False, label='Anticlockwise', callback=self.callbacks.toggleOrdering)
+                with dpg.tooltip("contour_ordering"):
+                        dpg.add_text("Click to change contour ordering. If the ordering is incorrect the mesh generation may have some errors")
 
                 dpg.add_separator()
 
@@ -289,25 +288,65 @@ class Interface:
                 dpg.add_text('dy: --', tag='original_dy')
                 dpg.add_text('Node Size')
                 with dpg.group(horizontal=True):
-                    dpg.add_text('dx')
+                    dpg.add_text('dx:')
                     dpg.add_input_float(tag='dx', default_value=1, min_value=1, min_clamped=True)
                 with dpg.group(horizontal=True):
-                    dpg.add_text('dy')
+                    dpg.add_text('dy:')
                     dpg.add_input_float(tag='dy', default_value=1, min_value=1, min_clamped=True)
 
                 dpg.add_text('Original Mesh Start:')
                 dpg.add_text('x: --', tag='original_xi')
                 dpg.add_text('y: --', tag='original_yi')
-                dpg.add_text('Node Start')
+                dpg.add_text('Mesh Start')
                 with dpg.group(horizontal=True):
-                    dpg.add_text('xi')
+                    dpg.add_text('x:')
                     dpg.add_input_float(tag='xi')
                 with dpg.group(horizontal=True):
-                    dpg.add_text('yi')
+                    dpg.add_text('y:')
                     dpg.add_input_float(tag='yi')
                 dpg.add_button(label='Apply Changes', callback= self.callbacks.updateMesh)
                 dpg.add_separator()
-                pass
+                
+                dpg.add_text('Sparse and adataptive mesh')
+                dpg.add_button(label='Add mesh zoom region', tag="sparseButton", callback=lambda: dpg.configure_item("sparsePopup", show=True))
+
+                with dpg.window(label='Add mesh zoom region', modal=True, show=False, tag="sparsePopup", no_title_bar=True, min_size=[400,300]):
+                    dpg.add_text('Type of mesh zoom')
+                    dpg.add_button(tag='meshZoomType', enabled=True, label='Sparse', callback=self.callbacks.toggleZoom)
+                    with dpg.tooltip("meshZoomType"):
+                        dpg.add_text("Click to change the mesh zoom type.", tag="meshZoomTypeTooltip")
+                    
+                    dpg.add_separator()
+                    dpg.add_text('Zoom region name')
+                    dpg.add_input_text(tag="zoomRegionName", default_value="Zoom region 1")
+
+                    dpg.add_separator()
+                    dpg.add_text('Zoom node size')
+                    dpg.add_listbox(tag='dxListbox', items=['Divide by 2', 'Divide by 4', 'Divide by 8', 'Divide by 16'])
+                    
+                    dpg.add_separator()
+                    dpg.add_text('Zoom bottom')
+                    with dpg.group(horizontal=True):
+                        dpg.add_text('Bottom x:')
+                        dpg.add_input_float(tag='xi_zoom')
+                    with dpg.group(horizontal=True):
+                        dpg.add_text('Bottom y:')
+                        dpg.add_input_float(tag='yi_zoom')
+
+                    dpg.add_separator()
+                    dpg.add_text('Zoom top')
+                    with dpg.group(horizontal=True):
+                        dpg.add_text('Top x:')
+                        dpg.add_input_float(tag='xf_zoom')
+                    with dpg.group(horizontal=True):
+                        dpg.add_text('top y:')
+                        dpg.add_input_float(tag='yf_zoom')
+                    
+                    dpg.add_separator()
+                    with dpg.group(horizontal=True):
+                        dpg.add_button(label="Add zoom", width=75, callback=self.callbacks.addZoomRegion)
+                        dpg.add_button(label="Cancel", width=75, callback=lambda: dpg.configure_item("sparsePopup", show=False))
+
             with dpg.child_window(tag='MeshGenerationParent'):
                 with dpg.plot(tag="meshPlotParent", label="Mesh Plot", height=650, width=750):
                     dpg.add_plot_legend()
@@ -317,11 +356,4 @@ class Interface:
                 dpg.add_text('Original Area: --', tag='original_area')
                 dpg.add_text('Current Area: --', tag='current_area')
                 dpg.add_text('Difference: --', tag='difference')   
-                pass
-
-    def showSparseMeshGeneration(self):
-        with dpg.group(horizontal=True):
-            with dpg.child_window(width=300):
-                pass
-            with dpg.child_window(tag='SparseMeshGenerationParent'):
                 pass
