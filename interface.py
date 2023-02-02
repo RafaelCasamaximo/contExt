@@ -275,6 +275,15 @@ class Interface:
                 dpg.add_text('Contour ordering')
                 dpg.add_button(tag='contour_ordering', enabled=False, label='Anticlockwise', callback=self.callbacks.toggleOrdering)
 
+                dpg.add_separator()
+
+                dpg.add_text('Original Nodes Number:')
+                dpg.add_text('nx: --', tag='original_nx')
+                dpg.add_text('ny: --', tag='original_ny')
+                dpg.add_text('Nodes Number:')
+                dpg.add_text('nx: --', tag='nx')
+                dpg.add_text('ny: --', tag='ny')
+
                 dpg.add_text('Original Node Size:')
                 dpg.add_text('dx: --', tag='original_dx')
                 dpg.add_text('dy: --', tag='original_dy')
@@ -285,13 +294,6 @@ class Interface:
                 with dpg.group(horizontal=True):
                     dpg.add_text('dy')
                     dpg.add_input_float(tag='dy', default_value=1, min_value=1, min_clamped=True)
-
-                dpg.add_text('Original Nodes Number:')
-                dpg.add_text('nx: --', tag='original_nx')
-                dpg.add_text('ny: --', tag='original_ny')
-                dpg.add_text('Nodes Number:')
-                dpg.add_text('nx: --', tag='nx')
-                dpg.add_text('ny: --', tag='ny')
 
                 dpg.add_text('Original Mesh Start:')
                 dpg.add_text('x: --', tag='original_xi')
