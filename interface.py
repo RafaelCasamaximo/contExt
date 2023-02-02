@@ -2,12 +2,24 @@ from subprocess import call
 import dearpygui.dearpygui as dpg
 from math import *
 
+"""
+    A classe Interface é responsável por gerar os elementos visuais do programa.
+    O uso da biblioteca DearPyGUI faz com que seja possível executar o programa em windows ou linux
+    e ainda utilizar dos benefícios da acerelação de hardware.        
+"""
 class Interface:
+
+    """
+        Define os parâmetros e inicia a função Show.
+    """
     def __init__(self, callbacks) -> None:
         self.callbacks = callbacks
         self.show()
         pass
 
+    """
+        Cria o contexto e a janela do DPG e invoca a função showTabBar para a renderização de cada uma das tabs e seus conteúdos.
+    """
     def show(self):
         dpg.create_context()
         dpg.create_viewport(title='ContExt - Image Processing Engine for Differential Calculus', width=900, height=600, min_height=600, min_width=900)
@@ -22,11 +34,22 @@ class Interface:
         dpg.destroy_context()
         pass
 
+    """
+        Responsável pela invocação das tabs individuais.
+    """
     def showTabBar(self):
         with dpg.tab_bar():
             self.showTabs()
         pass
 
+    """
+        Cria as diferentes tabs do programa e chama o método show<Tab> para popular cada uma das abas.
+        Processing: Importação e Cropping da imagem.
+        Filtering: Ajustes em níveis de cor, brilho, contraste e blurring na imagem.
+        Thresholding: Ajustes na binarização da imagem. Para que a binarização ocorra a imagem é automaticamente convertida para tons de cinza.
+        Contour Extraction: Extrai o contorno dos objetos presentes na imagem binarizada. Permite a exportação do arquivo .txt com os dados do contorno.
+        Mesh Generation: Gera a malha e possibilita as configurações necessária para método matemáticos com os pontos resultantes da aba anterior. Permite a importação de novos pontos.
+    """
     def showTabs(self):
         dpg.add_texture_registry(show=False, tag='textureRegistry')
         with dpg.tab(label='Processing'):
@@ -195,8 +218,12 @@ class Interface:
 
                 dpg.add_text('OpenCV2 Find Contour')
                 dpg.add_text('Approximation Mode')
-                dpg.add_listbox(items=['None', 'Simple', 'TC89_L1', 'TC89_KCOS'])
-                dpg.add_button(label='Apply Method')
+                dpg.add_listbox(tag='approximationModeListbox', items=['None', 'Simple', 'TC89_L1', 'TC89_KCOS'])
+                dpg.add_text('')
+                dpg.add_text('Contour Thickness')
+                dpg.add_text('(Only for the drawing)')
+                dpg.add_slider_int(tag='contourThicknessSlider', default_value=1, min_value=1, max_value=100)
+                dpg.add_button(label='Apply Method', callback=lambda sender, app_data: self.callbacks.extractContour(sender, app_data))
 
                 dpg.add_separator()
                 dpg.add_text('Moore Neighborhood')
