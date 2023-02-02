@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 import enum
 from mesh import Mesh
+import random
 
 class Tabs(enum.Enum):
     __order__ = 'Processing Filtering Thresholding ContourExtraction'
@@ -129,7 +130,7 @@ class Callbacks:
             {
                 'method': self.findContour,
                 'name': self.findContour.__name__,
-                'status': False,
+                'status': True,
                 'output': None,
                 'tab': 'ContourExtraction'
             },
@@ -442,13 +443,86 @@ class Callbacks:
         threshInv = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
 
 
-        self.blocks[Blocks.globalThresholding.value]['output'] = threshInv
-        self.updateTexture(self.blocks[Blocks.globalThresholding.value]['tab'], threshInv)
+        self.blocks[Blocks.otsuBinarization.value]['output'] = threshInv
+        self.updateTexture(self.blocks[Blocks.otsuBinarization.value]['tab'], threshInv)
         pass
 
     def findContour(self, sender=None, app_data=None):
-
+        image = self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'].copy()
+        self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
         pass
+
+    def extractContour(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'].copy()
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+
+        approximationMode = None
+        value = dpg.get_value('approximationModeListbox')
+        if value == 'None':
+            approximationMode = cv2.CHAIN_APPROX_NONE
+        elif value == 'Simple':
+            approximationMode = cv2.CHAIN_APPROX_SIMPLE
+        elif value == 'TC89_L1':
+            approximationMode = cv2.CHAIN_APPROX_TC89_L1
+        elif value == 'TC89_KCOS':
+            approximationMode = cv2.CHAIN_APPROX_TC89_KCOS
+
+        thicknessValue = dpg.get_value('contourThicknessSlider')
+
+        contours, hierarchy = cv2.findContours(image, cv2.RETR_LIST, approximationMode)
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+
+        contourTableEntry = []
+
+        for idx, contour in enumerate(contours):
+            contourColor = (random.randint(0,255),random.randint(0,255),random.randint(0,255), 255)
+            contourColorBGR = (contourColor[2], contourColor[1], contourColor[0])
+            contourTableEntry.append(
+                {
+                    'id': idx,
+                    'pointsNo': len(contour),
+                    'color': contourColorBGR,
+                    'data': contour,
+                }
+            )
+            cv2.drawContours(image, contour, -1, contourColor, thicknessValue)
+
+        contourTableEntry = reversed(sorted(contourTableEntry, key=lambda d: d['pointsNo']) )
+
+        try:
+            dpg.delete_item('ContourExtractionTable')
+        except:
+            pass
+
+        with dpg.table(tag='ContourExtractionTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
+            resizable=True, no_host_extendX=False, hideable=True,
+            borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True,
+            borders_outerH=True, parent='ContourExtractionParent'):
+
+            dpg.add_table_column(label="Id", width_fixed=True)
+            dpg.add_table_column(label="Size", width_fixed=True)
+            dpg.add_table_column(label="Color", width_fixed=True)
+            dpg.add_table_column(label="Visible", width_fixed=True)
+            dpg.add_table_column(label="Data", width_fixed=True)
+
+            for contourEntry in contourTableEntry:
+                with dpg.table_row():
+                    for j in range(5):
+                        if j == 0:
+                            dpg.add_text(contourEntry['id'])
+                        if j == 1:
+                            dpg.add_text(contourEntry['pointsNo'])
+                        if j == 2:
+                            dpg.add_color_button(default_value=contourEntry['color'])
+                        if j == 3:
+                            dpg.add_checkbox()
+                        if j == 4:
+                            dpg.add_button(label='Copy')
+                            dpg.add_text(contourEntry['data'])
+        
+        self.blocks[Blocks.findContour.value]['output'] = image
+        self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
 
     def mooreNeighborhood(self, sender=None, app_data=None):
 
