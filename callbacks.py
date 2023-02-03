@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 import enum
 from mesh import Mesh
+from sparseMesh import SparseMesh
 import random
 
 class Tabs(enum.Enum):
@@ -40,7 +41,6 @@ class Callbacks:
         self.txtFileName = None
         self.toggleOrderingFlag = True
         self.toggleZoomFlag = True
-        self.zoomRegionNumber = 0
         self.sparseMeshHandler = None
         self.originalX = []
         self.originalY = []
@@ -536,8 +536,38 @@ class Callbacks:
     def exportSettings(self, sender=None, app_data=None):
 
         pass
+
         
-    def plotMesh(self, sender=None, app_data=None):
+    def importContour(self, sender = None, app_data = None):
+        self.txtFilePath = app_data['file_path_name']
+        self.txtFileName = app_data['file_name']
+        dpg.configure_item('contour_ordering', enabled=True)
+        dpg.configure_item('sparseButton', enabled=True)
+
+        dpg.set_value('contour_file_name_text', 'File Name: ' + self.txtFileName)
+        dpg.set_value('contour_file_path_text', 'File Path: ' + self.txtFilePath)
+        self.originalX = []
+        self.originalY = []
+        f = open(self.txtFilePath,'r')
+        for line in f.readlines():
+            aux = line.split()
+            if(len(aux) != 2):
+                print("File doesn't contain a valid contour")
+                dpg.configure_item("txtFileErrorPopup", show=True)
+                return
+            try:
+                self.originalX.append(float(aux[0]))
+                self.originalY.append(float(aux[1]))
+            except:
+                print("File doesn't contain a valid contour")
+                dpg.configure_item("txtFileErrorPopup", show=True)
+                return
+        f.close()
+        self.currentX = self.originalX
+        self.currentY = self.originalY
+        self.originalX = self.originalX[4:]
+        self.originalY = self.originalY[4:]
+
         nx = self.currentX[0]
         ny = self.currentY[0]
         xmin = self.currentX[1]
@@ -549,10 +579,10 @@ class Callbacks:
         dpg.set_value("original_yi", 'y:' + str(ymin))
         dpg.set_value("original_dx", 'dx:' + str(dx))
         dpg.set_value("original_dy", 'dy:' + str(dy))
-        dpg.set_value("original_nx", 'nx:' + str(nx))
-        dpg.set_value("original_ny", 'ny:' + str(ny))
-        dpg.set_value("nx", 'nx:' + str(nx))
-        dpg.set_value("ny", 'ny:' + str(ny))
+        dpg.set_value("original_nx", 'nx:' + str(int(nx)))
+        dpg.set_value("original_ny", 'ny:' + str(int(ny)))
+        dpg.set_value("nx", 'nx:' + str(int(nx)))
+        dpg.set_value("ny", 'ny:' + str(int(ny)))
         dpg.configure_item("dx", default_value = dx)
         dpg.configure_item("dy", default_value = dy)
         dpg.configure_item("xi", default_value = xmin)
@@ -563,28 +593,7 @@ class Callbacks:
         dpg.set_value("original_area", "Original Area: " + str(Mesh.get_area(self.currentX, self.currentY)))
         dpg.add_line_series(self.currentX, self.currentY, label="Original Mesh", tag="originalMeshPlot", parent='y_axis')
         dpg.fit_axis_data("x_axis")
-        dpg.fit_axis_data("y_axis")
-
-    def importContour(self, sender = None, app_data = None):
-        self.txtFilePath = app_data['file_path_name']
-        self.txtFileName = app_data['file_name']
-        dpg.configure_item('contour_ordering', enabled=True)
-
-        dpg.set_value('contour_file_name_text', 'File Name: ' + self.txtFileName)
-        dpg.set_value('contour_file_path_text', 'File Path: ' + self.txtFilePath)
-        self.originalX = []
-        self.originalY = []
-        f = open(self.txtFilePath,'r')
-        for line in f.readlines():
-            aux = line.split()
-            self.originalX.append(float(aux[0]))
-            self.originalY.append(float(aux[1]))
-        f.close()
-        self.currentX = self.originalX
-        self.currentY = self.originalY
-        self.originalX = self.originalX[4:]
-        self.originalY = self.originalY[4:]
-        self.plotMesh()
+        dpg.fit_axis_data("y_axis")     
 
     def toggleOrdering(self, sender = None, app_data = None):
         self.toggleOrderingFlag = not self.toggleOrderingFlag
@@ -607,10 +616,41 @@ class Callbacks:
         pass
 
     def addZoomRegion(self, sender = None, app_data = None):
-        self.zoomRegionNumber += 1
+        listBoxValue = dpg.get_value("dxListbox")
+        n = int(listBoxValue[11:])
+        name = dpg.get_value("zoomRegionName")
+        dx = dpg.get_value("dx")
+        dy = dpg.get_value("dy")
+        xmin = dpg.get_value("xi_zoom")
+        ymin = dpg.get_value("yi_zoom")
+        xmax = dpg.get_value("xf_zoom")
+        ymax = dpg.get_value("yf_zoom")
+        
+        if self.sparseMeshHandler == None:
+            self.sparseMeshHandler = SparseMesh()
+            self.sparseMeshHandler.addRange(dpg.get_value("xi"), dpg.get_value("yi"), max(self.originalX), max(self.originalY), dx, dy)
+        if not self.sparseMeshHandler.addRange(xmin, ymin, xmax, ymax, n, n):
+            dpg.add_text("Invalid range due to overlap", parent="sparsePopup")
+            return
+
+        nZoom = len(self.sparseMeshHandler.ranges) - 1
+
+        dpg.add_separator(tag="separatorZoomStart" + str(nZoom), parent="meshGeneration")
+        dpg.add_text(name, tag="zoomTxt" + str(nZoom), parent="meshGeneration")
+        dpg.add_text("Node Size: " + listBoxValue, tag="listBoxZoom" + str(nZoom), parent="meshGeneration")
+        dpg.add_text("Bottom x: " + str(xmin), tag="xminZoom" + str(nZoom), parent="meshGeneration")
+        dpg.add_text("Bottom y: " + str(xmin), tag="yminZoom" + str(nZoom), parent="meshGeneration")
+        dpg.add_text("Top x: " + str(xmin), tag="xmaxZoom" + str(nZoom), parent="meshGeneration")
+        dpg.add_text("Top x: " + str(xmin), tag="ymaxZoom" + str(nZoom), parent="meshGeneration")
+        dpg.add_button(tag="removeZoom" + str(nZoom), label="Remove zoom region", parent="meshGeneration", callback=self.removeZoomRegion(nZoom))
+
         dpg.configure_item("sparsePopup", show=False)
+        dpg.configure_item("meshZoomType", enabled=False)
         dpg.set_value("meshZoomTypeTooltip", "You cannot add diferent types of zoom on the same mesh.")
-        dpg.configure_item("zoomRegionName", default_value="Zoom region " + str(self.zoomRegionNumber + 1))
+        self.updateMesh()
+        dpg.configure_item("zoomRegionName", default_value="Zoom region " + str(nZoom + 1))
+
+    def removeZoomRegion(self, nRegion, sender=None, app_data=None):
         pass
 
     def updateMesh(self, sender=None, app_data=None):
@@ -618,13 +658,46 @@ class Callbacks:
         dy = dpg.get_value("dy")
         xmin = dpg.get_value("xi")
         ymin = dpg.get_value("yi")
-        self.currentX, self.currentY = Mesh.getMesh(self.originalX, self.originalY, xmin, ymin, dx, dy)
-        nx = self.currentX[0]
-        ny = self.currentY[0]
-        xmin = self.currentX[1]
-        ymin = self.currentY[1]
-        dx = self.currentX[3]
-        dy = self.currentY[3]
+
+        if self.sparseMeshHandler == None:
+            self.currentX, self.currentY = Mesh.getMesh(self.originalX, self.originalY, xmin, ymin, dx, dy)
+            nx = self.currentX[0]
+            ny = self.currentY[0]
+            xmin = self.currentX[1]
+            ymin = self.currentY[1]
+            dx = self.currentX[3]
+            dy = self.currentY[3]
+
+            self.currentX = self.currentX[4:]
+            self.currentY = self.currentY[4:]
+        else:
+            self.sparseMeshHandler.updateRanges(dx, dy, xmin, ymin)
+            
+            if self.toggleZoomFlag == True:
+                self.currentX, self.currentY = self.sparseMeshHandler.get_sparse_mesh(self.originalX, self.originalY)
+                nx = self.sparseMeshHandler.ranges[0]["nx"]
+                ny = self.sparseMeshHandler.ranges[0]["nx"]
+                dpg.configure_item("nodeNumber", show=True)
+            else:
+                self.currentX, self.currentY = self.sparseMeshHandler.get_adaptative_mesh(self.originalX, self.originalY)
+                nx = len(self.sparseMeshHandler.dx)
+                ny = len(self.sparseMeshHandler.dy)
+            
+            for i in range(1,len(self.sparseMeshHandler.ranges)):
+                r = self.sparseMeshHandler.ranges[i]
+                dpg.set_value("xminZoom" + str(i), "Bottom x: " + str(r['xi']))
+                dpg.set_value("yminZoom" + str(i), "Bottom y: " + str(r['yi']))
+                dpg.set_value("xmaxZoom" + str(i), "Top x: " + str(r['xf']))
+                dpg.set_value("ymaxZoom" + str(i), "Top y: " + str(r['yf']))
+                dpg.delete_item("plotRec" +  str(i))
+                dpg.add_line_series([r['xi'],r['xi'],r['xf'],r['xf'],r['xi']], [r['yi'],r['yf'],r['yf'],r['yi'],r['yi']], tag="plotRec" +  str(i), label=dpg.get_value("zoomRegionName"), parent="y_axis")
+
+            aux = self.sparseMeshHandler.ranges[0]
+            xmin = aux["xi"]
+            ymin = aux["yi"]
+            dx = aux["dx"]
+            dy = aux["dy"]
+
 
         dpg.set_value("nx", 'nx:' + str(int(nx)))
         dpg.set_value("ny", 'ny:' + str(int(ny)))
@@ -633,18 +706,21 @@ class Callbacks:
         dpg.configure_item("xi", default_value = xmin)
         dpg.configure_item("yi", default_value = ymin)
 
-        self.currentX = self.currentX[4:]
-        self.currentY = self.currentY[4:]
-
         area = Mesh.get_area(self.currentX, self.currentY)
         dpg.set_value("current_area", "Currente Area: " + str(area))
         aux = dpg.get_value("original_area")
         originalArea = float(aux[15:])
         dif = abs(originalArea - area)
         dpg.set_value("difference", "Difference: " + str(dif) + " ({:.2f}%)".format(100*dif/originalArea))
-
+        
         dpg.delete_item("meshPlot")
         dpg.add_line_series(self.currentX, self.currentY, label="Currente Mesh", tag="meshPlot", parent='y_axis')
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")
+        pass
+
+    def resetMesh(self, sender=None, app_data=None):
+        pass
+
+    def exportMesh(self, sender=None, app_data=None):
         pass

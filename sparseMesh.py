@@ -2,7 +2,7 @@
 from mesh import Mesh
 
 
-class ProcessaMalhaEsparsa:
+class SparseMesh:
 
     """
     Constructor da classe ProcessaMalha
@@ -24,37 +24,82 @@ class ProcessaMalhaEsparsa:
     Adiciona informações da região da malha
     """
 
-    def addRange(self, xmin, ymin, xmax, ymax, nx, ny):
-        flag = True
-        if len(self.ranges) == 0:
-            dx = (xmax - xmin)/(nx - 1)
-            dy = (ymax - ymin)/(ny - 1)
-        else:
+    def addRange(self, xmin, ymin, xmax, ymax, dxAux, dyAux):
+        if len(self.ranges) > 0:
             r = self.ranges[0]
             xmin = (xmin - r["xi"]) // r["dx"] * r["dx"] + r["xi"]
             ymin = (ymin - r["yi"]) // r["dy"] * r["dy"] + r["yi"]
             xmax = (xmax - r["xi"]) // r["dx"] * r["dx"] + r["xi"]
             ymax = (ymax - r["yi"]) // r["dy"] * r["dy"] + r["yi"]
             for i in self.ranges[1:]:
-                if i["xmin"] <= xmin <= i ["xmax"] or i["xmin"] <= xmax <= i["xmax"] or i["ymin"] <= ymin <= i["ymax"] or i["ymin"] <= ymax <= i["ymax"]:
+                if i["xi"] <= xmin <= i["xf"] or i["xi"] <= xmax <= i["xf"] or i["yi"] <= ymin <= i["yf"] or i["yi"] <= ymax <= i["yf"]:
                     print("Invalid range due to overlap")
-                    flag = False
-            dx = r["dx"]/(2**nx)
-            dy = r["dy"]/(2**ny)
-            nx = round((xmax - xmin)/dx) + 1
-            ny = round((ymax - ymin)/dy) + 1
-        if flag:
-            aux = {
-                "nx" : nx,
-                "ny" : ny,
-                "xi" : xmin,
-                "yi" : ymin,
-                "xf" : xmax,
-                "yf" : ymax,
-                "dx" : dx,
-                "dy" : dy
-            }
-            self.ranges.append(aux)
+                    return False
+            dxAux = r["dx"]/(dxAux)
+            dyAux = r["dy"]/(dyAux)
+        nx = round((xmax - xmin)/dxAux) + 1
+        ny = round((ymax - ymin)/dyAux) + 1
+        if (xmax - xmin)/dxAux != (xmax - xmin)//dxAux:
+            xmax = xmin + nx * dxAux
+            nx += 1
+        if (ymax - ymin)/dyAux != (ymax - ymin)//dyAux:
+            ymax = ymin + ny * dyAux
+            ny += 1
+        aux = {
+            "nx" : nx,
+            "ny" : ny,
+            "xi" : xmin,
+            "yi" : ymin,
+            "xf" : xmax,
+            "yf" : ymax,
+            "dx" : dxAux,
+            "dy" : dyAux
+        }
+        self.ranges.append(aux)
+        return True
+
+
+    def updateRanges(self, dxAux, dyAux, xmin, ymin):
+        originaldx = self.ranges[0]["dx"]
+        originaldy = self.ranges[0]["dy"]
+        for i in range(len(self.ranges)):
+            
+            r = self.ranges[i]
+
+            if i == 0:
+                r["dx"] = dxAux
+                r["dy"] = dyAux
+                r["xi"] = xmin
+                r["yi"] = ymin
+            else:
+                nx = originaldx//r["dx"]
+                r["dx"] = dxAux//nx
+                ny = originaldy//r["dy"]
+                r["dy"] = dyAux//ny 
+                if xmin > r["xi"]:
+                    r["xi"] = xmin
+                if ymin > r["yi"]:
+                    r["yi"] = ymin
+
+            xmin = r["xi"]
+            ymin = r["yi"]
+            xmax = r["xf"]
+            ymax = r["yf"]
+
+            nx = round((xmax - xmin)/dxAux) + 1
+            ny = round((ymax - ymin)/dyAux) + 1
+            if (xmax - xmin)/dxAux != (xmax - xmin)//dxAux:
+                r["xf"] = xmin + nx * dxAux
+                nx += 1
+            if (ymax - ymin)/dyAux != (ymax - ymin)//dyAux:
+                r["yf"] = ymin + ny * dyAux
+                ny += 1
+            r["nx"] = nx
+            r["nx"] = ny
+
+            self.ranges[i] = r
+
+            
 
     """
     Obtem os intervalos da malha
@@ -113,7 +158,6 @@ class ProcessaMalhaEsparsa:
         if ypoint == self.dy[-1]:
             return self.dy[-1]
         print("A figura é maior que os limites da malha")
-        print(ypoint)
         quit(1)
 
     
@@ -191,7 +235,8 @@ class ProcessaMalhaEsparsa:
                 flag = 1
                 break
         if flag:
-            return[auxX, auxY] 
+            return[auxX, auxY]
+        print([auxX, auxY]) 
         print("A figura é maior que os limites da malha")
         quit(1)
 

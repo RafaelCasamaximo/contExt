@@ -254,7 +254,7 @@ class Interface:
 
     def showMeshGeneration(self):
         with dpg.group(horizontal=True):
-            with dpg.child_window(width=300):
+            with dpg.child_window(width=300, tag="meshGeneration"):
                 
                 with dpg.file_dialog(directory_selector=False, show=False, min_size=[400,300], tag='txt_file_dialog_id', id="txt_file_dialog_id", callback=self.callbacks.importContour):
                     dpg.add_file_extension("", color=(150, 255, 150, 255))
@@ -267,16 +267,29 @@ class Interface:
 
                 dpg.add_text('File Name:', tag='contour_file_name_text')
                 dpg.add_text('File Path:', tag='contour_file_path_text')
-                dpg.add_separator()
+                
+                with dpg.window(label='Error', modal=True, show=False, tag="txtFileErrorPopup"):
+                    dpg.add_text("File doesn't contain a valid contour")
+                    dpg.add_button(label="Ok", callback=lambda: dpg.configure_item("txtFileErrorPopup", show=False))
 
-                dpg.add_text('Contour ordering')
+                dpg.add_button(label ='Reset mesh', tag='resetMesh', callback=self.callbacks.resetMesh)
+                with dpg.tooltip("resetMesh"):
+                    dpg.add_text("Click to remove current mesh.")
+                
+                dpg.add_button(tag='exportMesh', enabled=False, label='Export mesh', callback=self.callbacks.exportMesh)
+                with dpg.tooltip("exportMesh"):
+                    dpg.add_text("Click to save mesh data in text files.")
+
+                dpg.add_text('Contour ordering: ')
                 dpg.add_button(tag='contour_ordering', enabled=False, label='Anticlockwise', callback=self.callbacks.toggleOrdering)
                 with dpg.tooltip("contour_ordering"):
-                        dpg.add_text("Click to change contour ordering. If the ordering is incorrect the mesh generation may have some errors")
+                    dpg.add_text("Click to change contour ordering. If the ordering is incorrect the mesh generation may have some errors")
 
                 dpg.add_separator()
 
-                dpg.add_text('Original Nodes Number:')
+                dpg.add_text('Original Nodes Number:', tag="nodeNumber")
+                with dpg.tooltip("nodeNumber", tag="nodeNumberTooltip", show=False):
+                        dpg.add_text("Doesn't account submesh nodes number.")
                 dpg.add_text('nx: --', tag='original_nx')
                 dpg.add_text('ny: --', tag='original_ny')
                 dpg.add_text('Nodes Number:')
@@ -308,9 +321,9 @@ class Interface:
                 dpg.add_separator()
                 
                 dpg.add_text('Sparse and adataptive mesh')
-                dpg.add_button(label='Add mesh zoom region', tag="sparseButton", callback=lambda: dpg.configure_item("sparsePopup", show=True))
+                dpg.add_button(label='Add mesh zoom region', enabled=False, tag="sparseButton", callback=lambda: dpg.configure_item("sparsePopup", show=True))
 
-                with dpg.window(label='Add mesh zoom region', modal=True, show=False, tag="sparsePopup", no_title_bar=True, min_size=[400,300]):
+                with dpg.window(label='Add mesh zoom region', modal=True, show=False, tag="sparsePopup", min_size=[400,420]):
                     dpg.add_text('Type of mesh zoom')
                     dpg.add_button(tag='meshZoomType', enabled=True, label='Sparse', callback=self.callbacks.toggleZoom)
                     with dpg.tooltip("meshZoomType"):
@@ -322,7 +335,7 @@ class Interface:
 
                     dpg.add_separator()
                     dpg.add_text('Zoom node size')
-                    dpg.add_listbox(tag='dxListbox', items=['Divide by 2', 'Divide by 4', 'Divide by 8', 'Divide by 16'])
+                    dpg.add_listbox(tag='dxListbox', items=['Divided by 2', 'Divided by 4', 'Divided by 8', 'Divided by 16'])
                     
                     dpg.add_separator()
                     dpg.add_text('Zoom bottom')
@@ -348,7 +361,7 @@ class Interface:
                         dpg.add_button(label="Cancel", width=75, callback=lambda: dpg.configure_item("sparsePopup", show=False))
 
             with dpg.child_window(tag='MeshGenerationParent'):
-                with dpg.plot(tag="meshPlotParent", label="Mesh Plot", height=650, width=750):
+                with dpg.plot(tag="meshPlotParent", label="Mesh Plot", height=650, width=650):
                     dpg.add_plot_legend()
                     dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="x_axis")
                     dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="y_axis")
