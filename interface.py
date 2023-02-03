@@ -111,18 +111,24 @@ class Interface:
                 dpg.add_text('Height:', tag='currentHeight')
                 dpg.add_text('New Resolution')
                 with dpg.group(horizontal=True):
-                    dpg.add_text('Start X')
-                    dpg.add_input_int(tag='startX')
-                with dpg.group(horizontal=True):
-                    dpg.add_text('Start Y')
+                    dpg.add_text('Start Width')
                     dpg.add_input_int(tag='startY')
                 with dpg.group(horizontal=True):
-                    dpg.add_text('End X')
-                    dpg.add_input_int(tag='endX')
+                    dpg.add_text('Start Height')
+                    dpg.add_input_int(tag='startX')
                 with dpg.group(horizontal=True):
-                    dpg.add_text('End Y')
+                    dpg.add_text('End Width')
                     dpg.add_input_int(tag='endY')
+                with dpg.group(horizontal=True):
+                    dpg.add_text('End Height')
+                    dpg.add_input_int(tag='endX')
+
                 dpg.add_button(label='Apply Changes', callback=lambda: self.callbacks.executeQuery('crop'))
+
+                with dpg.window(label="ERROR! Crop not possible!", modal=True, show=False, tag="incorrectCrop", no_title_bar=False):
+                    dpg.add_text("ERROR: The start values must be smaller than the end values.")
+                    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("incorrectCrop", show=False))
+
                 dpg.add_separator()
 
                 pass
@@ -182,7 +188,7 @@ class Interface:
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('globalThresholding', sender, app_data))
+                    dpg.add_checkbox(tag='globalThresholdingCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('globalThresholding', sender, app_data))
                     dpg.add_text('Global Thresholding')
                 with dpg.group(horizontal=True):
                     dpg.add_checkbox(tag='invertGlobalThresholding', callback=lambda: self.callbacks.executeQuery('globalThresholding'))
@@ -192,17 +198,17 @@ class Interface:
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('adaptativeMeanThresholding', sender, app_data))
+                    dpg.add_checkbox(tag='adaptativeThresholdingCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('adaptativeMeanThresholding', sender, app_data))
                     dpg.add_text('Adaptative Mean Thresholding')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('adaptativeGaussianThresholding', sender, app_data))
+                    dpg.add_checkbox(tag='adaptativeGaussianThresholdingCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('adaptativeGaussianThresholding', sender, app_data))
                     dpg.add_text('Adaptative Gaussian Thresholding')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('otsuBinarization', sender, app_data))
+                    dpg.add_checkbox(tag='otsuBinarization', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('otsuBinarization', sender, app_data))
                     dpg.add_text('Otsu\'s Binarization')
                 dpg.add_text('(Works better after Gaussian Blur)')
                 dpg.add_separator()
@@ -224,17 +230,10 @@ class Interface:
                 dpg.add_text('(Only for the drawing)')
                 dpg.add_slider_int(tag='contourThicknessSlider', default_value=1, min_value=1, max_value=100)
                 dpg.add_button(label='Apply Method', callback=lambda sender, app_data: self.callbacks.extractContour(sender, app_data))
-
+                with dpg.window(label="ERROR! The image must be in a binary color scheme!", modal=True, show=False, tag="nonBinary", no_title_bar=False):
+                    dpg.add_text("ERROR: You must select a binarization filter on the Thresholding Tab.")
+                    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("nonBinary", show=False))
                 dpg.add_separator()
-                dpg.add_text('Moore Neighborhood')
-                dpg.add_text('Initial Pixel')
-                dpg.add_input_int(label='X', min_value=0, min_clamped=True)
-                dpg.add_input_int(label='Y', min_value=0, min_clamped=True)
-                dpg.add_text('Search Direction')
-                dpg.add_listbox(items=['Up', 'Right', 'Down', 'Left'])
-                dpg.add_button(label='Apply Method')
-                dpg.add_separator()
-
 
                 dpg.add_text('Export Settings')
                 dpg.add_text('Max Width Mapping')

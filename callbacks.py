@@ -14,7 +14,7 @@ class Tabs(enum.Enum):
     ContourExtraction = 3
 
 class Blocks(enum.Enum):
-    __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur medianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour mooreNeighborhood exportSettings'
+    __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur medianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour exportSettings'
     importImage = 0
     crop = 1
     histogramEqualization = 2
@@ -28,8 +28,7 @@ class Blocks(enum.Enum):
     adaptativeGaussianThresholding = 10
     otsuBinarization = 11
     findContour = 12
-    mooreNeighborhood = 13
-    exportSettings = 14
+    exportSettings = 13
 
 class Callbacks:
     def __init__(self) -> None:
@@ -41,6 +40,7 @@ class Callbacks:
         self.toggleOrderingFlag = True
         self.xarray = []
         self.yarray = []
+        self.contourTableEntry = []
 
         self.blocks = [
             {
@@ -131,13 +131,6 @@ class Callbacks:
                 'method': self.findContour,
                 'name': self.findContour.__name__,
                 'status': True,
-                'output': None,
-                'tab': 'ContourExtraction'
-            },
-            {
-                'method': self.mooreNeighborhood,
-                'name': self.mooreNeighborhood.__name__,
-                'status': False,
                 'output': None,
                 'tab': 'ContourExtraction'
             },
@@ -287,6 +280,9 @@ class Callbacks:
         dpg.set_value('originalHeight', 'Height: ' + str(shape[0]) + 'px')
         dpg.set_value('currentWidth', 'Width: ' + str(shape[1]) + 'px')
         dpg.set_value('currentHeight', 'Height: ' + str(shape[0]) + 'px')
+
+        dpg.set_value('endX', shape[0])
+        dpg.set_value('endY', shape[1])
         pass
 
 
@@ -297,10 +293,10 @@ class Callbacks:
 
         dpg.set_value('currentWidth', 'Width: ' + str(shape[1]) + 'px')
         dpg.set_value('currentHeight', 'Height: ' + str(shape[0]) + 'px')
+        dpg.set_value('endX', shape[0])
+        dpg.set_value('endY', shape[1])
 
         self.createAllTextures(self.blocks[Blocks.importImage.value]['output'])
-
-        # TODO: Fazer um método para resetar todas as checkbox e valores depois.
 
         pass
 
@@ -309,12 +305,20 @@ class Callbacks:
         endX = dpg.get_value('endX')
         startY = dpg.get_value('startY')
         endY = dpg.get_value('endY')
+
+        if startX >= endX or startY >= endY:
+            dpg.configure_item('incorrectCrop', show=True)
+            return
+
         self.blocks[Blocks.crop.value]['output'] = self.blocks[Blocks.importImage.value]['output'][startX:endX, startY:endY]
 
         shape = self.blocks[Blocks.crop.value]['output'].shape
 
         dpg.set_value('currentWidth', 'Width: ' + str(shape[1]) + 'px')
         dpg.set_value('currentHeight', 'Height: ' + str(shape[0]) + 'px')
+
+        dpg.set_value('endX', shape[0])
+        dpg.set_value('endY', shape[1])
 
         self.createAllTextures(self.blocks[Blocks.crop.value]['output'])
         pass
@@ -453,6 +457,16 @@ class Callbacks:
         pass
 
     def extractContour(self, sender=None, app_data=None):
+
+        globalThresholdSelectedFlag = dpg.get_value('globalThresholdingCheckbox')
+        adaptativeThresholdSelectedFlag = dpg.get_value('adaptativeThresholdingCheckbox')
+        adaptativeGaussianThresholdSelectedFlag = dpg.get_value('adaptativeGaussianThresholdingCheckbox')
+        otsuBinarizationFlag = dpg.get_value('otsuBinarization')
+
+        if globalThresholdSelectedFlag == False and adaptativeThresholdSelectedFlag == False and adaptativeGaussianThresholdSelectedFlag == False and otsuBinarizationFlag == False:
+            dpg.configure_item('nonBinary', show=True)
+            return
+
         image = self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'].copy()
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -473,12 +487,12 @@ class Callbacks:
         contours, hierarchy = cv2.findContours(image, cv2.RETR_LIST, approximationMode)
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
 
-        contourTableEntry = []
+        self.contourTableEntry = []
 
         for idx, contour in enumerate(contours):
             contourColor = (random.randint(0,255),random.randint(0,255),random.randint(0,255), 255)
             contourColorBGR = (contourColor[2], contourColor[1], contourColor[0])
-            contourTableEntry.append(
+            self.contourTableEntry.append(
                 {
                     'id': idx,
                     'pointsNo': len(contour),
@@ -488,13 +502,17 @@ class Callbacks:
             )
             cv2.drawContours(image, contour, -1, contourColor, thicknessValue)
 
-        contourTableEntry = reversed(sorted(contourTableEntry, key=lambda d: d['pointsNo']) )
+        self.contourTableEntry = list(sorted(self.contourTableEntry, key=lambda x: x['pointsNo'], reverse=True))
 
         try:
             dpg.delete_item('ContourExtractionTable')
+            dpg.delete_item('showAllContoursButton')
+            dpg.delete_item('hideAllContoursButton')
         except:
             pass
 
+        dpg.add_button(tag='showAllContoursButton', label='Show All Contours', parent='ContourExtractionParent', callback=lambda sender, app_data: self.showAllContours())
+        dpg.add_button(tag='hideAllContoursButton', label='Hide All Contours', parent='ContourExtractionParent', callback=lambda sender, app_data: self.hideAllContours())
         with dpg.table(tag='ContourExtractionTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
             resizable=True, no_host_extendX=False, hideable=True,
             borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True,
@@ -504,9 +522,10 @@ class Callbacks:
             dpg.add_table_column(label="Size", width_fixed=True)
             dpg.add_table_column(label="Color", width_fixed=True)
             dpg.add_table_column(label="Visible", width_fixed=True)
-            dpg.add_table_column(label="Data", width_fixed=True)
+            dpg.add_table_column(label="Export to Mesh Generation", width_fixed=True)
 
-            for contourEntry in contourTableEntry:
+
+            for contourEntry in self.contourTableEntry:
                 with dpg.table_row():
                     for j in range(5):
                         if j == 0:
@@ -516,17 +535,36 @@ class Callbacks:
                         if j == 2:
                             dpg.add_color_button(default_value=contourEntry['color'])
                         if j == 3:
-                            dpg.add_checkbox()
+                            dpg.add_checkbox(tag='checkboxContourId' + str(contourEntry['id']), callback= lambda sender, app_data: self.redrawContours(), default_value=True)
                         if j == 4:
-                            dpg.add_button(label='Copy')
-                            dpg.add_text(contourEntry['data'])
+                            dpg.add_button(label='Export')
         
         self.blocks[Blocks.findContour.value]['output'] = image
         self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
 
-    def mooreNeighborhood(self, sender=None, app_data=None):
-        
-        pass
+    def redrawContours(self):
+        image = self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'].copy()
+
+        thicknessValue = dpg.get_value('contourThicknessSlider')
+
+        for entry in self.contourTableEntry:
+            drawContour = dpg.get_value('checkboxContourId' + str(entry['id']))
+            if drawContour:
+                cv2.drawContours(image, entry['data'], -1, entry['color'], thicknessValue)
+
+        self.blocks[Blocks.findContour.value]['output'] = image
+        self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
+
+    def hideAllContours(self):
+        for entry in self.contourTableEntry:
+            dpg.set_value('checkboxContourId' + str(entry['id']), False)
+        self.redrawContours()
+
+
+    def showAllContours(self):
+        for entry in self.contourTableEntry:
+            dpg.set_value('checkboxContourId' + str(entry['id']), True)
+        self.redrawContours()
 
     def exportSettings(self, sender=None, app_data=None):
 
