@@ -38,8 +38,13 @@ class Callbacks:
         self.txtFilePath = None
         self.txtFileName = None
         self.toggleOrderingFlag = True
-        self.xarray = []
-        self.yarray = []
+        self.toggleZoomFlag = True
+        self.zoomRegionNumber = 0
+        self.sparseMeshHandler = None
+        self.originalX = []
+        self.originalY = []
+        self.currentX = []
+        self.currentY = []
         self.contourTableEntry = []
 
         self.blocks = [
@@ -571,12 +576,12 @@ class Callbacks:
         pass
         
     def plotMesh(self, sender=None, app_data=None):
-        nx = self.xarray[0]
-        ny = self.yarray[0]
-        xmin = self.xarray[1]
-        ymin = self.yarray[1]
-        dx = self.xarray[3]
-        dy = self.yarray[3]
+        nx = self.currentX[0]
+        ny = self.currentY[0]
+        xmin = self.currentX[1]
+        ymin = self.currentY[1]
+        dx = self.currentX[3]
+        dy = self.currentY[3]
 
         dpg.set_value("original_xi", 'x:' + str(xmin))
         dpg.set_value("original_yi", 'y:' + str(ymin))
@@ -591,10 +596,10 @@ class Callbacks:
         dpg.configure_item("xi", default_value = xmin)
         dpg.configure_item("yi", default_value = ymin)
 
-        self.xarray = self.xarray[4:]
-        self.yarray = self.yarray[4:]
-        dpg.set_value("original_area", "Original Area: " + str(Mesh.get_area(self.xarray, self.yarray)))
-        dpg.add_line_series(self.xarray, self.yarray, label="Original Mesh", tag="originalMeshPlot", parent='y_axis')
+        self.currentX = self.currentX[4:]
+        self.currentY = self.currentY[4:]
+        dpg.set_value("original_area", "Original Area: " + str(Mesh.get_area(self.currentX, self.currentY)))
+        dpg.add_line_series(self.currentX, self.currentY, label="Original Mesh", tag="originalMeshPlot", parent='y_axis')
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")
 
@@ -605,24 +610,45 @@ class Callbacks:
 
         dpg.set_value('contour_file_name_text', 'File Name: ' + self.txtFileName)
         dpg.set_value('contour_file_path_text', 'File Path: ' + self.txtFilePath)
-        self.xarray = []
-        self.yarray = []
+        self.originalX = []
+        self.originalY = []
         f = open(self.txtFilePath,'r')
         for line in f.readlines():
             aux = line.split()
-            self.xarray.append(float(aux[0]))
-            self.yarray.append(float(aux[1]))
+            self.originalX.append(float(aux[0]))
+            self.originalY.append(float(aux[1]))
         f.close()
+        self.currentX = self.originalX
+        self.currentY = self.originalY
+        self.originalX = self.originalX[4:]
+        self.originalY = self.originalY[4:]
         self.plotMesh()
 
     def toggleOrdering(self, sender = None, app_data = None):
         self.toggleOrderingFlag = not self.toggleOrderingFlag
-        self.xarray = self.xarray[::-1]
-        self.yarray = self.yarray[::-1]
+        self.originalX = self.originalX[::-1]
+        self.originalY = self.originalY[::-1]
+        self.currentX = self.currentX[::-1]
+        self.currentY = self.currentY[::-1]
         if self.toggleOrderingFlag:
-            dpg.configure_item('contour_ordering', label="Amticlockwise")
+            dpg.configure_item('contour_ordering', label="Anticlockwise")
         else:
             dpg.configure_item('contour_ordering', label="Clockwise")
+        pass
+
+    def toggleZoom(self, sender = None, app_data = None):
+        self.toggleZoomFlag = not self.toggleZoomFlag
+        if self.toggleZoomFlag:
+            dpg.configure_item('meshZoomType', label="Sparse")
+        else:
+            dpg.configure_item('meshZoomType', label="Adaptative")
+        pass
+
+    def addZoomRegion(self, sender = None, app_data = None):
+        self.zoomRegionNumber += 1
+        dpg.configure_item("sparsePopup", show=False)
+        dpg.set_value("meshZoomTypeTooltip", "You cannot add diferent types of zoom on the same mesh.")
+        dpg.configure_item("zoomRegionName", default_value="Zoom region " + str(self.zoomRegionNumber + 1))
         pass
 
     def updateMesh(self, sender=None, app_data=None):
@@ -630,13 +656,13 @@ class Callbacks:
         dy = dpg.get_value("dy")
         xmin = dpg.get_value("xi")
         ymin = dpg.get_value("yi")
-        self.xarray, self.yarray = Mesh.getMesh(self.xarray, self.yarray, xmin, ymin, dx, dy)
-        nx = self.xarray[0]
-        ny = self.yarray[0]
-        xmin = self.xarray[1]
-        ymin = self.yarray[1]
-        dx = self.xarray[3]
-        dy = self.yarray[3]
+        self.currentX, self.currentY = Mesh.getMesh(self.originalX, self.originalY, xmin, ymin, dx, dy)
+        nx = self.currentX[0]
+        ny = self.currentY[0]
+        xmin = self.currentX[1]
+        ymin = self.currentY[1]
+        dx = self.currentX[3]
+        dy = self.currentY[3]
 
         dpg.set_value("nx", 'nx:' + str(int(nx)))
         dpg.set_value("ny", 'ny:' + str(int(ny)))
@@ -645,10 +671,10 @@ class Callbacks:
         dpg.configure_item("xi", default_value = xmin)
         dpg.configure_item("yi", default_value = ymin)
 
-        self.xarray = self.xarray[4:]
-        self.yarray = self.yarray[4:]
+        self.currentX = self.currentX[4:]
+        self.currentY = self.currentY[4:]
 
-        area = Mesh.get_area(self.xarray, self.yarray)
+        area = Mesh.get_area(self.currentX, self.currentY)
         dpg.set_value("current_area", "Currente Area: " + str(area))
         aux = dpg.get_value("original_area")
         originalArea = float(aux[15:])
@@ -656,7 +682,7 @@ class Callbacks:
         dpg.set_value("difference", "Difference: " + str(dif) + " ({:.2f}%)".format(100*dif/originalArea))
 
         dpg.delete_item("meshPlot")
-        dpg.add_line_series(self.xarray, self.yarray, label="Currente Mesh", tag="meshPlot", parent='y_axis')
+        dpg.add_line_series(self.currentX, self.currentY, label="Currente Mesh", tag="meshPlot", parent='y_axis')
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")
         pass

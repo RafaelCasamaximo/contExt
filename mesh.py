@@ -93,7 +93,7 @@ class Mesh:
     Função responsável por exportar as coordenadas dos nós da malha em um arquivo path
     """
 
-    def exporta_coords_malha(path, x, y, nx, ny, xmin, ymin, xmax, ymax, dx, dy):
+    def export_coords_mesh(path, x, y, nx, ny, xmin, ymin, xmax, ymax, dx, dy):
         content = ''
         content = content + str(nx) + " " + str(ny) + "\n"
         content = content + str(xmin) + " " + str(ymin) + "\n"
@@ -123,6 +123,26 @@ class Mesh:
         area += y[index - 1] * x[index] - x[index - 1] * y[index]
         area = area / 2
         return area
-    
 
+    def converte_matlab(y, yResolution):
+        yarray = []
+        for i in range(len(y)):
+            yarray[i] =  yResolution - yarray[i]
+        return yarray
+
+    def altera_escala(x, y, xResolution, yResolution, width, height, startXOffset, startYOffset):
+        widthCoef = width / xResolution
+        heightCoef = height / yResolution
+        
+        for i in range(len(y)):
+            if width != -1:
+                x[i] = x[i] * widthCoef
+            if startXOffset != -1:
+                x[i] = x[i] + startXOffset
+            if height != -1:
+                y[i] = y[i] * heightCoef
+            if startYOffset != -1:
+                y[i] = y[i] + startYOffset
+
+        return x, y
     
