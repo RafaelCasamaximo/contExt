@@ -65,11 +65,11 @@ class Mesh:
         aux = max(xResult)
         if aux != xmax:
             xmax = aux
-        nx = int((xmax - xmin)/dx) + 1
+        nx = round((xmax - xmin)/dx) + 1
         aux = max(yResult)
         if aux != ymax:
             ymax = aux
-        ny = int((ymax - ymin)/dy) + 1
+        ny = round((ymax - ymin)/dy) + 1
         xResult = [nx, xmin, xmax, dx] + xResult
         yResult = [ny, ymin, ymax, dy] + yResult
         return xResult, yResult
