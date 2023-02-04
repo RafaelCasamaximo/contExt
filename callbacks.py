@@ -592,11 +592,18 @@ class Callbacks:
             dpg.delete_item('ContourExtractionTable')
             dpg.delete_item('showAllContoursButton')
             dpg.delete_item('hideAllContoursButton')
+            dpg.delete_item('separator1')
+            dpg.delete_item('exportAllContours')
+            dpg.delete_item('exportSelectedContours')
+            dpg.delete_item('separator2')
         except:
             pass
 
         dpg.add_button(tag='showAllContoursButton', label='Show All Contours', parent='ContourExtractionParent', callback=lambda sender, app_data: self.showAllContours())
         dpg.add_button(tag='hideAllContoursButton', label='Hide All Contours', parent='ContourExtractionParent', callback=lambda sender, app_data: self.hideAllContours())
+        dpg.add_separator(tag='separator1', parent='ContourExtractionParent')
+        dpg.add_button(tag='exportSelectedContours', label='Export Selected Contours as Files', parent='ContourExtractionParent', callback=lambda sender, app_data: dpg.configure_item('exportSelectedContourWindow', show=True))
+        dpg.add_separator(tag='separator2', parent='ContourExtractionParent')
         with dpg.table(tag='ContourExtractionTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
             resizable=True, no_host_extendX=False, hideable=True,
             borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True,
@@ -621,7 +628,7 @@ class Callbacks:
                         if j == 3:
                             dpg.add_checkbox(tag='checkboxContourId' + str(contourEntry['id']), callback= lambda sender, app_data: self.redrawContours(), default_value=True)
                         if j == 4:
-                            dpg.add_button(label='Export')
+                            dpg.add_button(label='Export to Mesh Generation')
         
         self.blocks[Blocks.findContour.value]['output'] = image
         self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
