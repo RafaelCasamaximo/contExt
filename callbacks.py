@@ -6,6 +6,7 @@ import enum
 from mesh import Mesh
 from sparseMesh import SparseMesh
 import random
+import os.path
 
 class Tabs(enum.Enum):
     __order__ = 'Processing Filtering Thresholding ContourExtraction'
@@ -46,6 +47,7 @@ class Callbacks:
         self.currentX = []
         self.currentY = []
         self.contourTableEntry = []
+        self.exportFilePath = None
 
         self.blocks = [
             {
@@ -211,7 +213,13 @@ class Callbacks:
     def openFile(self, sender = None, app_data = None):
         self.filePath = app_data['file_path_name']
         self.fileName = app_data['file_name']
+
+        if os.path.isfile(self.filePath) is False:
+            dpg.configure_item('noPath', show=True)
+            return
+
         self.executeQuery('importImage')
+        self.enableAllTags()
         pass
 
     # TODO: Create Texture
@@ -268,6 +276,54 @@ class Callbacks:
                 entry['status'] = dpg.get_value(sender)
         pass
 
+    def disableAllTags(self):
+        checkboxes = [
+            'cropCheckbox',
+            'histogramCheckbox',
+            'brightnessAndContrastCheckbox',
+            'averageBlurCheckbox',
+            'gaussianBlurCheckbox',
+            'medianBlurCheckbox',
+            'excludeBlueChannel',
+            'excludeGreenChannel',
+            'excludeRedChannel',
+            'globalThresholdingCheckbox',
+            'invertGlobalThresholding',
+            'adaptativeThresholdingCheckbox',
+            'adaptativeGaussianThresholdingCheckbox',
+            'otsuBinarization',
+            'matlabModeCheckbox',
+            'extractContourButton',
+            'exportContourButton'
+        ]
+        for checkbox in checkboxes:
+            dpg.configure_item(checkbox, enabled=False)
+        pass
+
+    def enableAllTags(self):
+        checkboxes = [
+            'cropCheckbox',
+            'histogramCheckbox',
+            'brightnessAndContrastCheckbox',
+            'averageBlurCheckbox',
+            'gaussianBlurCheckbox',
+            'medianBlurCheckbox',
+            'excludeBlueChannel',
+            'excludeGreenChannel',
+            'excludeRedChannel',
+            'globalThresholdingCheckbox',
+            'invertGlobalThresholding',
+            'adaptativeThresholdingCheckbox',
+            'adaptativeGaussianThresholdingCheckbox',
+            'otsuBinarization',
+            'matlabModeCheckbox',
+            'extractContourButton',
+            'exportContourButton'
+        ]
+        for checkbox in checkboxes:
+            dpg.configure_item(checkbox, enabled=True)
+        pass
+
     def importImage(self, sender = None, app_data = None):
         # Cria imagem na aba
         dpg.hide_item('import_image')
@@ -293,7 +349,7 @@ class Callbacks:
 
     def resetCrop(self, sender = None, app_data = None):
 
-        if self.blocks[Blocks.importImage.value]['output'] == None:
+        if self.blocks[Blocks.importImage.value]['output'] is None:
             dpg.configure_item('noImage', show=True)
             dpg.set_value('cropCheckbox', False)
             self.blocks[Blocks.crop.value]['status'] = False
@@ -324,7 +380,7 @@ class Callbacks:
             self.blocks[Blocks.crop.value]['status'] = False
             return
 
-        if self.blocks[Blocks.importImage.value]['output'] == None:
+        if self.blocks[Blocks.importImage.value]['output'] is None:
             dpg.configure_item('noImage', show=True)
             dpg.set_value('cropCheckbox', False)
             self.blocks[Blocks.crop.value]['status'] = False
@@ -396,7 +452,7 @@ class Callbacks:
 
     def grayscale(self, sender=None, app_data=None):
 
-        if self.blocks[self.getLastActiveBeforeMethod('grayscale')]['output'] == None:
+        if self.blocks[self.getLastActiveBeforeMethod('grayscale')]['output'] is None:
             return
 
         image = self.blocks[self.getLastActiveBeforeMethod('grayscale')]['output'].copy()
@@ -477,7 +533,7 @@ class Callbacks:
 
     def findContour(self, sender=None, app_data=None):
 
-        if self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'] == None:
+        if self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'] is None:
             return
 
         image = self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'].copy()
@@ -578,7 +634,7 @@ class Callbacks:
         for entry in self.contourTableEntry:
             drawContour = dpg.get_value('checkboxContourId' + str(entry['id']))
             if drawContour:
-                cv2.drawContours(image, entry['data'], -1, entry['color'], thicknessValue)
+                cv2.drawContours(image, entry['data'], -1, (entry['color'][2], entry['color'][1], entry['color'][0]), thicknessValue)
 
         self.blocks[Blocks.findContour.value]['output'] = image
         self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
@@ -593,6 +649,25 @@ class Callbacks:
         for entry in self.contourTableEntry:
             dpg.set_value('checkboxContourId' + str(entry['id']), True)
         self.redrawContours()
+
+    def selectFolder(self, sender=None, app_data=None):
+
+        self.exportFilePath = app_data['file_path_name']
+
+        contourId = int(dpg.get_value('inputContourId'))
+        fileName = dpg.get_value('inputContourNameText') + '.txt'
+        filePath = os.path.join(self.exportFilePath, fileName)
+
+        dpg.set_value('contourIdExportText', 'Contour ID: ' + str(contourId))
+        dpg.set_value('exportFileName', 'File Name: ' + fileName)
+        dpg.set_value('exportPathName', 'Complete Path Name' + filePath)
+
+        pass
+
+    def openDirectorySelector(self, sender=None, app_data=None):
+        if dpg.get_value('inputContourId') != '' and dpg.get_value('inputContourNameText') != '':
+            dpg.configure_item('directorySelectorFileDialog', show=True)
+
 
     def exportSettings(self, sender=None, app_data=None):
 
