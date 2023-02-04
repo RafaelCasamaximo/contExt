@@ -72,7 +72,7 @@ class Callbacks:
             {
                 'method': self.brightnessAndContrast,
                 'name': self.brightnessAndContrast.__name__,
-                'status': True,
+                'status': False,
                 'output': None,
                 'tab': 'Filtering'
             },
@@ -292,6 +292,13 @@ class Callbacks:
 
 
     def resetCrop(self, sender = None, app_data = None):
+
+        if self.blocks[Blocks.importImage.value]['output'] == None:
+            dpg.configure_item('noImage', show=True)
+            dpg.set_value('cropCheckbox', False)
+            self.blocks[Blocks.crop.value]['status'] = False
+            return
+
         self.blocks[Blocks.crop.value]['output'] = self.blocks[Blocks.importImage.value]['output']
 
         shape = self.blocks[Blocks.crop.value]['output'].shape
@@ -313,6 +320,14 @@ class Callbacks:
 
         if startX >= endX or startY >= endY:
             dpg.configure_item('incorrectCrop', show=True)
+            dpg.set_value('cropCheckbox', False)
+            self.blocks[Blocks.crop.value]['status'] = False
+            return
+
+        if self.blocks[Blocks.importImage.value]['output'] == None:
+            dpg.configure_item('noImage', show=True)
+            dpg.set_value('cropCheckbox', False)
+            self.blocks[Blocks.crop.value]['status'] = False
             return
 
         self.blocks[Blocks.crop.value]['output'] = self.blocks[Blocks.importImage.value]['output'][startX:endX, startY:endY]
@@ -380,6 +395,10 @@ class Callbacks:
         pass
 
     def grayscale(self, sender=None, app_data=None):
+
+        if self.blocks[self.getLastActiveBeforeMethod('grayscale')]['output'] == None:
+            return
+
         image = self.blocks[self.getLastActiveBeforeMethod('grayscale')]['output'].copy()
 
 
@@ -457,6 +476,10 @@ class Callbacks:
         pass
 
     def findContour(self, sender=None, app_data=None):
+
+        if self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'] == None:
+            return
+
         image = self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'].copy()
         self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
         pass

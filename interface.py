@@ -97,7 +97,7 @@ class Interface:
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleEffect('crop', sender, app_data))
+                    dpg.add_checkbox(tag='cropCheckbox', callback=lambda sender, app_data: self.callbacks.toggleEffect('crop', sender, app_data))
                     dpg.add_text('Cropping')
                     dpg.add_button(label='Reset', callback=lambda: self.callbacks.resetCrop())
                 dpg.add_text('Original Resolution:')
@@ -126,6 +126,9 @@ class Interface:
                     dpg.add_text("ERROR: The start values must be smaller than the end values.")
                     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("incorrectCrop", show=False))
 
+                with dpg.window(label="ERROR! There is no image!", modal=True, show=False, tag="noImage", no_title_bar=False):
+                    dpg.add_text("ERROR: Import a image to crop it.")
+                    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("noImage", show=False))
                 dpg.add_separator()
 
                 pass
