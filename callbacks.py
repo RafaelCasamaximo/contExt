@@ -734,7 +734,7 @@ class Callbacks:
         while i < len(flattenContour):
             convertedArray.append([flattenContour[i], flattenContour[i+1]])
             i += 2
-
+        convertedArray.append([flattenContour[0], flattenContour[1]])
         self.pointArrayToFile(os.path.join(self.exportSelectPath, self.exportSelectFileName + '-' + str(id)) + '.txt', convertedArray)
         dpg.configure_item('exportSelectedContourWindow', show=False)
         pass
@@ -768,6 +768,9 @@ class Callbacks:
             xArray.append(flattenContour[i])
             yArray.append(flattenContour[i+1])
             i += 2
+        convertedArray.append([flattenContour[0], flattenContour[1]])
+        xArray.append(flattenContour[0])
+        yArray.append(flattenContour[1])
 
         # TODO: colocar métodos de redimensionar e converter pra matlab aqui
 
@@ -775,8 +778,7 @@ class Callbacks:
         dpg.configure_item('exportContourWindow', show=False)
         pass
 
-        
-
+    
     def pointArrayToFile(self, filePath, array):
         fp = open(filePath, 'w')
         fp.write(self.pointArrayToString(array))

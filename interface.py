@@ -94,7 +94,7 @@ class Interface:
                 dpg.add_text('Select a image to use.')
                 dpg.add_button(tag='import_image', label='Import Image', callback=lambda: dpg.show_item("file_dialog_id"))
                 with dpg.tooltip("import_image"):
-                    dpg.add_text("Não é possível importar mais de uma imagem! Feche o programa e abra-o novamente para importar outra imagem.")
+                    dpg.add_text("It is not possible to import more than one image! Close the program and open it again to import another image.")
                 dpg.add_text('File Name:', tag='file_name_text')
                 dpg.add_text('File Path:', tag='file_path_text')
                 dpg.add_separator()
@@ -403,7 +403,7 @@ class Interface:
                         dpg.add_button(label="Cancel", width=75, callback=lambda: dpg.configure_item("sparsePopup", show=False))
 
             with dpg.child_window(tag='MeshGenerationParent'):
-                with dpg.plot(tag="meshPlotParent", label="Mesh Plot", height=650, width=650):
+                with dpg.plot(tag="meshPlotParent", label="Mesh Plot", height=550, width=550):
                     dpg.add_plot_legend()
                     dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="x_axis")
                     dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="y_axis")
@@ -415,6 +415,10 @@ class Interface:
 
 
     def applyTheme(self):
+
+        dpg.set_viewport_small_icon("icons/Icon.ico")
+        dpg.set_viewport_large_icon("icons/Icon.ico")
+
         with dpg.theme() as global_theme:
             with dpg.theme_component(0):
                 # Main Styles
@@ -445,7 +449,6 @@ class Interface:
         dpg.bind_theme(global_theme)
 
         with dpg.font_registry():
-            # first argument ids the path to the .ttf or .otf file
             default_font = dpg.add_font('fonts/Inter-Regular.otf', 16)
 
         dpg.bind_font(default_font)
