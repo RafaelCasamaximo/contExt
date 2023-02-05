@@ -23,7 +23,9 @@ class Interface:
     def show(self):
         dpg.create_context()
         dpg.create_viewport(title='ContExt - Image Processing Engine for Differential Calculus', width=900, height=600, min_height=600, min_width=900)
+
         with dpg.window(tag="Main"):
+            self.applyTheme()
             self.showTabBar()
             pass
         
@@ -410,3 +412,40 @@ class Interface:
                 dpg.add_text('Current Area: --', tag='current_area')
                 dpg.add_text('Difference: --', tag='difference')   
                 pass
+
+
+    def applyTheme(self):
+        with dpg.theme() as global_theme:
+            with dpg.theme_component(0):
+                # Main Styles
+                dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 8, 8)
+                dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 20, 4)
+                dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 4, 2)
+                dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 4)
+                dpg.add_theme_style(dpg.mvStyleVar_ItemInnerSpacing, 4, 4)
+                dpg.add_theme_style(dpg.mvStyleVar_IndentSpacing, 20)
+                dpg.add_theme_style(dpg.mvStyleVar_ScrollbarSize, 14)
+                dpg.add_theme_style(dpg.mvStyleVar_GrabMinSize, 20)
+
+                # Border Styles
+                dpg.add_theme_style(dpg.mvStyleVar_WindowBorderSize, 1)
+                dpg.add_theme_style(dpg.mvStyleVar_WindowBorderSize, 1)
+                dpg.add_theme_style(dpg.mvStyleVar_PopupBorderSize, 1)
+                dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
+
+                # Rounding Style
+                dpg.add_theme_style(dpg.mvStyleVar_WindowRounding, 12)
+                dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 12)
+                dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 4)
+                dpg.add_theme_style(dpg.mvStyleVar_PopupRounding, 12)
+                dpg.add_theme_style(dpg.mvStyleVar_ScrollbarRounding, 9)
+                dpg.add_theme_style(dpg.mvStyleVar_GrabRounding, 12)
+                dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 12)
+
+        dpg.bind_theme(global_theme)
+
+        with dpg.font_registry():
+            # first argument ids the path to the .ttf or .otf file
+            default_font = dpg.add_font('fonts/Inter-Regular.otf', 16)
+
+        dpg.bind_font(default_font)
