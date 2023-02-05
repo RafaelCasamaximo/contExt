@@ -245,15 +245,15 @@ class Interface:
                 dpg.add_text("Insert the contour ID")
                 dpg.add_input_int(tag='inputContourId')
                 dpg.add_text('Max Width Mapping')
-                dpg.add_input_double()
+                dpg.add_input_double(tag='maxWidthMapping')
                 dpg.add_text('Max Height Mapping')
-                dpg.add_input_double()
+                dpg.add_input_double(tag='maxHeightMapping')
                 dpg.add_text('Width Offset')
-                dpg.add_input_double()
+                dpg.add_input_double(tag='widthOffset')
                 dpg.add_text('Height Offset')
-                dpg.add_input_double()
+                dpg.add_input_double(tag='heightOffset')
                 dpg.add_checkbox(label='Matlab mode', tag='matlabModeCheckbox')
-                dpg.add_button(tag='exportContourButton', label='Export Contour', callback=lambda: dpg.configure_item('exportContourWindow', show=True))
+                dpg.add_button(tag='exportContourButton', label='Export Contour', callback=self.callbacks.exportButtonCall)
                 dpg.add_separator()
 
                 with dpg.window(label="Save File", modal=False, show=False, tag="exportContourWindow", no_title_bar=False, min_size=[600,0]):
@@ -268,7 +268,7 @@ class Interface:
                     dpg.add_text('File Name: ', tag='exportFileName')
                     dpg.add_text('Complete Path Name: ', tag='exportPathName')
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label='Save')
+                        dpg.add_button(label='Save', callback=lambda: self.callbacks.exportContourToFile())
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportContourWindow', show=False))
 
                 with dpg.window(label="Save Files", modal=False, show=False, tag="exportSelectedContourWindow", no_title_bar=False, min_size=[600,0]):

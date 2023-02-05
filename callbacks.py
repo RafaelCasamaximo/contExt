@@ -48,6 +48,7 @@ class Callbacks:
         self.currentY = []
         self.contourTableEntry = []
         self.exportFilePath = None
+        self.exportFileName = None
 
         self.blocks = [
             {
@@ -662,11 +663,11 @@ class Callbacks:
         self.exportFilePath = app_data['file_path_name']
 
         contourId = int(dpg.get_value('inputContourId'))
-        fileName = dpg.get_value('inputContourNameText') + '.txt'
-        filePath = os.path.join(self.exportFilePath, fileName)
+        self.exportFileName = dpg.get_value('inputContourNameText') + '.txt'
+        filePath = os.path.join(self.exportFilePath, self.exportFileName)
 
         dpg.set_value('contourIdExportText', 'Contour ID: ' + str(contourId))
-        dpg.set_value('exportFileName', 'File Name: ' + fileName)
+        dpg.set_value('exportFileName', 'File Name: ' + self.exportFileName)
         dpg.set_value('exportPathName', 'Complete Path Name' + filePath)
 
         pass
@@ -676,11 +677,69 @@ class Callbacks:
             dpg.configure_item('directorySelectorFileDialog', show=True)
 
 
-    def exportSettings(self, sender=None, app_data=None):
+    def exportButtonCall(self, sender=None, app_data=None):
+        dpg.set_value('inputContourNameText', '')
+        dpg.set_value('contourIdExportText', 'Contour ID: ')
+        dpg.set_value('exportFileName', 'File Name: ')
+        dpg.set_value('exportPathName', 'Complete Path Name: ')
+        self.exportFileName = None
+        self.exportFilePath = None
+        dpg.configure_item('exportContourWindow', show=True)
+        pass
 
+    def exportSettings(self, sender=None, app_data=None):
+        
+        pass
+
+    def exportContourToFile(self, sender=None, app_data=None):
+
+        if self.exportFilePath is None:
+            return
+
+        # Pega os dados dos campos
+        maxWidthMapping = dpg.get_value('maxWidthMapping')
+        maxHeightMapping = dpg.get_value('maxHeightMapping')
+        widthOffset = dpg.get_value('widthOffset')
+        heightOffset = dpg.get_value('heightOffset')
+        matlabMode = dpg.get_value('matlabModeCheckbox')
+        contourId = dpg.get_value('inputContourId')
+
+        flattenContour = None
+
+        for contour in self.contourTableEntry:
+            if contour['id'] == contourId:
+                flattenContour = contour['data'].flatten()
+
+
+        xArray = []
+        yArray = []
+        convertedArray = []
+        i = 0
+        while i < len(flattenContour):
+            convertedArray.append([flattenContour[i], flattenContour[i+1]])
+            xArray.append(flattenContour[i])
+            yArray.append(flattenContour[i+1])
+            i += 2
+
+        # TODO: colocar métodos de redimensionar e converter pra matlab aqui
+
+        self.pointArrayToFile(os.path.join(self.exportFilePath, self.exportFileName), convertedArray)
+        dpg.configure_item('exportContourWindow', show=False)
         pass
 
         
+
+    def pointArrayToFile(self, filePath, array):
+        fp = open(filePath, 'w')
+        fp.write(self.pointArrayToString(array))
+        fp.close()
+
+    def pointArrayToString(self, array):
+        content = ''
+        for point in array:
+            content += str(point[0]) + ' ' + str(point[1]) + '\n'
+        return content
+
     def importContour(self, sender = None, app_data = None):
         self.txtFilePath = app_data['file_path_name']
         self.txtFileName = app_data['file_name']
