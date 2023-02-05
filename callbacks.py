@@ -49,6 +49,8 @@ class Callbacks:
         self.contourTableEntry = []
         self.exportFilePath = None
         self.exportFileName = None
+        self.exportSelectPath = None
+        self.exportSelectFileName = None
 
         self.blocks = [
             {
@@ -223,7 +225,6 @@ class Callbacks:
         self.enableAllTags()
         pass
 
-    # TODO: Create Texture
     def createTexture(self, textureTag, textureImage):
         self.deleteTexture(textureTag)
         height = textureImage.shape[0]
@@ -233,7 +234,6 @@ class Callbacks:
         dpg.add_image(textureTag, parent=textureTag + 'Parent', tag=textureTag + 'Image')
         pass
 
-    # TODO: Delete Texture
     def deleteTexture(self, textureTag):
         try:
             dpg.delete_item(textureTag)
@@ -242,7 +242,6 @@ class Callbacks:
             pass
         pass
 
-    # TODO: Update Texture
     def updateTexture(self, textureTag, textureImage):
         textureData = self.textureToData(textureImage)
         dpg.set_value(textureTag, textureData)
@@ -252,7 +251,6 @@ class Callbacks:
         for tab in Tabs:
             self.createTexture(tab.name, textureImage)
 
-    # TODO: Delete all textures
     def deleteAllTextures(self):
         for tab in Tabs:
             self.deleteTexture(tab.name)
@@ -263,7 +261,6 @@ class Callbacks:
             self.updateTexture(tab.name, textureImage)
         pass
 
-    # TODO: Convert texture to data
     def textureToData(self, texture):
         auxImg = cv2.cvtColor(texture, cv2.COLOR_RGB2BGRA)
         auxImg = np.asfarray(auxImg, dtype='f')
@@ -603,7 +600,7 @@ class Callbacks:
         dpg.add_button(tag='showAllContoursButton', label='Show All Contours', parent='ContourExtractionParent', callback=lambda sender, app_data: self.showAllContours())
         dpg.add_button(tag='hideAllContoursButton', label='Hide All Contours', parent='ContourExtractionParent', callback=lambda sender, app_data: self.hideAllContours())
         dpg.add_separator(tag='separator1', parent='ContourExtractionParent')
-        dpg.add_button(tag='exportSelectedContours', label='Export Selected Contours as Files', parent='ContourExtractionParent', callback=lambda sender, app_data: dpg.configure_item('exportSelectedContourWindow', show=True))
+        dpg.add_button(tag='exportSelectedContours', label='Export Selected Contours as Files', parent='ContourExtractionParent', callback=self.exportSelectedButtonCall)
         dpg.add_separator(tag='separator2', parent='ContourExtractionParent')
         with dpg.table(tag='ContourExtractionTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
             resizable=True, no_host_extendX=False, hideable=True,
@@ -668,7 +665,7 @@ class Callbacks:
 
         dpg.set_value('contourIdExportText', 'Contour ID: ' + str(contourId))
         dpg.set_value('exportFileName', 'File Name: ' + self.exportFileName)
-        dpg.set_value('exportPathName', 'Complete Path Name' + filePath)
+        dpg.set_value('exportPathName', 'Complete Path Name: ' + filePath)
 
         pass
 
@@ -676,6 +673,20 @@ class Callbacks:
         if dpg.get_value('inputContourId') != '' and dpg.get_value('inputContourNameText') != '':
             dpg.configure_item('directorySelectorFileDialog', show=True)
 
+
+    def openExportSelectedDirectorySelector(self, sender=None, app_data=None):
+        if dpg.get_value('inputSelectedContourNameText') != '':
+            dpg.configure_item('directoryFolderExportSelected', show=True)
+        
+
+    def selectExportAllFolder(self, sender=None, app_data=None):
+        self.exportSelectPath = app_data['file_path_name']
+        self.exportSelectFileName = dpg.get_value('inputSelectedContourNameText')
+        filesPath = os.path.join(self.exportSelectPath, self.exportSelectFileName + '-<id>.txt')
+
+        dpg.set_value('exportSelectedFileName', 'File Name: ' + self.exportSelectFileName + '-<id>.txt')
+        dpg.set_value('exportSelectedPathName', 'Complete Path Name: ' + filesPath)
+        pass
 
     def exportButtonCall(self, sender=None, app_data=None):
         dpg.set_value('inputContourNameText', '')
@@ -687,8 +698,45 @@ class Callbacks:
         dpg.configure_item('exportContourWindow', show=True)
         pass
 
+    def exportSelectedButtonCall(self, sender=None, app_data=None):
+        dpg.set_value('inputSelectedContourNameText', '')
+        dpg.set_value('exportSelectedFileName', 'File Default Name: ')
+        dpg.set_value('exportSelectedPathName', 'Complete Path Name: ')
+
+        self.exportSelectPath = None
+        self.exportSelectFileName = None
+
+        dpg.configure_item('exportSelectedContourWindow', show=True)
+
+        pass
+
     def exportSettings(self, sender=None, app_data=None):
         
+        pass
+
+    def exportSelectedContourToFile(self, sender=None, app_data=None):
+
+        selectedContours = []
+        for entry in self.contourTableEntry:
+            if dpg.get_value('checkboxContourId' + str(entry['id'])) == True:
+                selectedContours.append(entry)
+
+        for selectedContour in selectedContours:
+            self.exportIndividualContourToFile(selectedContour['id'], selectedContour['data'])
+
+        pass
+
+    def exportIndividualContourToFile(self, id, array):
+        flattenContour = array.flatten()
+
+        convertedArray = []
+        i = 0
+        while i < len(flattenContour):
+            convertedArray.append([flattenContour[i], flattenContour[i+1]])
+            i += 2
+
+        self.pointArrayToFile(os.path.join(self.exportSelectPath, self.exportSelectFileName + '-' + str(id)) + '.txt', convertedArray)
+        dpg.configure_item('exportSelectedContourWindow', show=False)
         pass
 
     def exportContourToFile(self, sender=None, app_data=None):

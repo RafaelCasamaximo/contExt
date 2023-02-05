@@ -276,13 +276,13 @@ class Interface:
                     dpg.add_input_text(tag='inputSelectedContourNameText')
                     dpg.add_separator()
                     dpg.add_text("You MUST enter a prefix to the File Name to select a directory")
-                    dpg.add_button(label='Select the directory', callback= self.callbacks.openDirectorySelector)
-                    dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='directoryFolderExportSelected', id="directoryFolderExportSelected", callback=self.callbacks.selectFolder)
+                    dpg.add_button(label='Select the directory', callback= self.callbacks.openExportSelectedDirectorySelector)
+                    dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='directoryFolderExportSelected', id="directoryFolderExportSelected", callback=self.callbacks.selectExportAllFolder)
                     dpg.add_separator()
                     dpg.add_text('File Default Name: ', tag='exportSelectedFileName')
                     dpg.add_text('Complete Path Name: ', tag='exportSelectedPathName')
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label='Save')
+                        dpg.add_button(label='Save', callback=self.callbacks.exportSelectedContourToFile)
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportSelectedContourWindow', show=False))
 
                 dpg.add_separator()
