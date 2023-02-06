@@ -1,6 +1,9 @@
-*.png
-*.jpg
-*.jpeg
-*.txt
-*.dat
+./*.png
+./*.jpg
+./*.jpeg
+./*.txt
+./*.dat
 textureTest.py
+__pycache__
+release
+outputs
