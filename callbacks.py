@@ -6,6 +6,7 @@ import enum
 from mesh import Mesh
 from sparseMesh import SparseMesh
 import random
+import os.path
 
 class Tabs(enum.Enum):
     __order__ = 'Processing Filtering Thresholding ContourExtraction'
@@ -47,6 +48,10 @@ class Callbacks:
         self.currentX = []
         self.currentY = []
         self.contourTableEntry = []
+        self.exportFilePath = None
+        self.exportFileName = None
+        self.exportSelectPath = None
+        self.exportSelectFileName = None
 
         self.blocks = [
             {
@@ -73,7 +78,7 @@ class Callbacks:
             {
                 'method': self.brightnessAndContrast,
                 'name': self.brightnessAndContrast.__name__,
-                'status': True,
+                'status': False,
                 'output': None,
                 'tab': 'Filtering'
             },
@@ -212,10 +217,15 @@ class Callbacks:
     def openFile(self, sender = None, app_data = None):
         self.filePath = app_data['file_path_name']
         self.fileName = app_data['file_name']
+
+        if os.path.isfile(self.filePath) is False:
+            dpg.configure_item('noPath', show=True)
+            return
+
         self.executeQuery('importImage')
+        self.enableAllTags()
         pass
 
-    # TODO: Create Texture
     def createTexture(self, textureTag, textureImage):
         self.deleteTexture(textureTag)
         height = textureImage.shape[0]
@@ -225,7 +235,6 @@ class Callbacks:
         dpg.add_image(textureTag, parent=textureTag + 'Parent', tag=textureTag + 'Image')
         pass
 
-    # TODO: Delete Texture
     def deleteTexture(self, textureTag):
         try:
             dpg.delete_item(textureTag)
@@ -234,7 +243,6 @@ class Callbacks:
             pass
         pass
 
-    # TODO: Update Texture
     def updateTexture(self, textureTag, textureImage):
         textureData = self.textureToData(textureImage)
         dpg.set_value(textureTag, textureData)
@@ -244,7 +252,6 @@ class Callbacks:
         for tab in Tabs:
             self.createTexture(tab.name, textureImage)
 
-    # TODO: Delete all textures
     def deleteAllTextures(self):
         for tab in Tabs:
             self.deleteTexture(tab.name)
@@ -255,7 +262,6 @@ class Callbacks:
             self.updateTexture(tab.name, textureImage)
         pass
 
-    # TODO: Convert texture to data
     def textureToData(self, texture):
         auxImg = cv2.cvtColor(texture, cv2.COLOR_RGB2BGRA)
         auxImg = np.asfarray(auxImg, dtype='f')
@@ -267,6 +273,54 @@ class Callbacks:
         for entry in self.blocks:
             if entry['name'] == methodName:
                 entry['status'] = dpg.get_value(sender)
+        pass
+
+    def disableAllTags(self):
+        checkboxes = [
+            'cropCheckbox',
+            'histogramCheckbox',
+            'brightnessAndContrastCheckbox',
+            'averageBlurCheckbox',
+            'gaussianBlurCheckbox',
+            'medianBlurCheckbox',
+            'excludeBlueChannel',
+            'excludeGreenChannel',
+            'excludeRedChannel',
+            'globalThresholdingCheckbox',
+            'invertGlobalThresholding',
+            'adaptativeThresholdingCheckbox',
+            'adaptativeGaussianThresholdingCheckbox',
+            'otsuBinarization',
+            'matlabModeCheckbox',
+            'extractContourButton',
+            'exportContourButton'
+        ]
+        for checkbox in checkboxes:
+            dpg.configure_item(checkbox, enabled=False)
+        pass
+
+    def enableAllTags(self):
+        checkboxes = [
+            'cropCheckbox',
+            'histogramCheckbox',
+            'brightnessAndContrastCheckbox',
+            'averageBlurCheckbox',
+            'gaussianBlurCheckbox',
+            'medianBlurCheckbox',
+            'excludeBlueChannel',
+            'excludeGreenChannel',
+            'excludeRedChannel',
+            'globalThresholdingCheckbox',
+            'invertGlobalThresholding',
+            'adaptativeThresholdingCheckbox',
+            'adaptativeGaussianThresholdingCheckbox',
+            'otsuBinarization',
+            'matlabModeCheckbox',
+            'extractContourButton',
+            'exportContourButton'
+        ]
+        for checkbox in checkboxes:
+            dpg.configure_item(checkbox, enabled=True)
         pass
 
     def importImage(self, sender = None, app_data = None):
@@ -293,6 +347,13 @@ class Callbacks:
 
 
     def resetCrop(self, sender = None, app_data = None):
+
+        if self.blocks[Blocks.importImage.value]['output'] is None:
+            dpg.configure_item('noImage', show=True)
+            dpg.set_value('cropCheckbox', False)
+            self.blocks[Blocks.crop.value]['status'] = False
+            return
+
         self.blocks[Blocks.crop.value]['output'] = self.blocks[Blocks.importImage.value]['output']
 
         shape = self.blocks[Blocks.crop.value]['output'].shape
@@ -314,6 +375,14 @@ class Callbacks:
 
         if startX >= endX or startY >= endY:
             dpg.configure_item('incorrectCrop', show=True)
+            dpg.set_value('cropCheckbox', False)
+            self.blocks[Blocks.crop.value]['status'] = False
+            return
+
+        if self.blocks[Blocks.importImage.value]['output'] is None:
+            dpg.configure_item('noImage', show=True)
+            dpg.set_value('cropCheckbox', False)
+            self.blocks[Blocks.crop.value]['status'] = False
             return
 
         self.blocks[Blocks.crop.value]['output'] = self.blocks[Blocks.importImage.value]['output'][startX:endX, startY:endY]
@@ -381,6 +450,10 @@ class Callbacks:
         pass
 
     def grayscale(self, sender=None, app_data=None):
+
+        if self.blocks[self.getLastActiveBeforeMethod('grayscale')]['output'] is None:
+            return
+
         image = self.blocks[self.getLastActiveBeforeMethod('grayscale')]['output'].copy()
 
 
@@ -458,6 +531,10 @@ class Callbacks:
         pass
 
     def findContour(self, sender=None, app_data=None):
+
+        if self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'] is None:
+            return
+
         image = self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'].copy()
         self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
         pass
@@ -514,11 +591,18 @@ class Callbacks:
             dpg.delete_item('ContourExtractionTable')
             dpg.delete_item('showAllContoursButton')
             dpg.delete_item('hideAllContoursButton')
+            dpg.delete_item('separator1')
+            dpg.delete_item('exportAllContours')
+            dpg.delete_item('exportSelectedContours')
+            dpg.delete_item('separator2')
         except:
             pass
 
         dpg.add_button(tag='showAllContoursButton', label='Show All Contours', parent='ContourExtractionParent', callback=lambda sender, app_data: self.showAllContours())
         dpg.add_button(tag='hideAllContoursButton', label='Hide All Contours', parent='ContourExtractionParent', callback=lambda sender, app_data: self.hideAllContours())
+        dpg.add_separator(tag='separator1', parent='ContourExtractionParent')
+        dpg.add_button(tag='exportSelectedContours', label='Export Selected Contours as Files', parent='ContourExtractionParent', callback=self.exportSelectedButtonCall)
+        dpg.add_separator(tag='separator2', parent='ContourExtractionParent')
         with dpg.table(tag='ContourExtractionTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
             resizable=True, no_host_extendX=False, hideable=True,
             borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True,
@@ -543,7 +627,7 @@ class Callbacks:
                         if j == 3:
                             dpg.add_checkbox(tag='checkboxContourId' + str(contourEntry['id']), callback= lambda sender, app_data: self.redrawContours(), default_value=True)
                         if j == 4:
-                            dpg.add_button(label='Export')
+                            dpg.add_button(label='Export to Mesh Generation')
         
         self.blocks[Blocks.findContour.value]['output'] = image
         self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
@@ -556,7 +640,7 @@ class Callbacks:
         for entry in self.contourTableEntry:
             drawContour = dpg.get_value('checkboxContourId' + str(entry['id']))
             if drawContour:
-                cv2.drawContours(image, entry['data'], -1, entry['color'], thicknessValue)
+                cv2.drawContours(image, entry['data'], -1, (entry['color'][2], entry['color'][1], entry['color'][0]), thicknessValue)
 
         self.blocks[Blocks.findContour.value]['output'] = image
         self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
@@ -572,11 +656,142 @@ class Callbacks:
             dpg.set_value('checkboxContourId' + str(entry['id']), True)
         self.redrawContours()
 
-    def exportSettings(self, sender=None, app_data=None):
+    def selectFolder(self, sender=None, app_data=None):
+
+        self.exportFilePath = app_data['file_path_name']
+
+        contourId = int(dpg.get_value('inputContourId'))
+        self.exportFileName = dpg.get_value('inputContourNameText') + '.txt'
+        filePath = os.path.join(self.exportFilePath, self.exportFileName)
+
+        dpg.set_value('contourIdExportText', 'Contour ID: ' + str(contourId))
+        dpg.set_value('exportFileName', 'File Name: ' + self.exportFileName)
+        dpg.set_value('exportPathName', 'Complete Path Name: ' + filePath)
 
         pass
+
+    def openDirectorySelector(self, sender=None, app_data=None):
+        if dpg.get_value('inputContourId') != '' and dpg.get_value('inputContourNameText') != '':
+            dpg.configure_item('directorySelectorFileDialog', show=True)
+
+
+    def openExportSelectedDirectorySelector(self, sender=None, app_data=None):
+        if dpg.get_value('inputSelectedContourNameText') != '':
+            dpg.configure_item('directoryFolderExportSelected', show=True)
+        
+
+    def selectExportAllFolder(self, sender=None, app_data=None):
+        self.exportSelectPath = app_data['file_path_name']
+        self.exportSelectFileName = dpg.get_value('inputSelectedContourNameText')
+        filesPath = os.path.join(self.exportSelectPath, self.exportSelectFileName + '-<id>.txt')
+
+        dpg.set_value('exportSelectedFileName', 'File Name: ' + self.exportSelectFileName + '-<id>.txt')
+        dpg.set_value('exportSelectedPathName', 'Complete Path Name: ' + filesPath)
+        pass
+
+    def exportButtonCall(self, sender=None, app_data=None):
+        dpg.set_value('inputContourNameText', '')
+        dpg.set_value('contourIdExportText', 'Contour ID: ')
+        dpg.set_value('exportFileName', 'File Name: ')
+        dpg.set_value('exportPathName', 'Complete Path Name: ')
+        self.exportFileName = None
+        self.exportFilePath = None
+        dpg.configure_item('exportContourWindow', show=True)
+        pass
+
+    def exportSelectedButtonCall(self, sender=None, app_data=None):
+        dpg.set_value('inputSelectedContourNameText', '')
+        dpg.set_value('exportSelectedFileName', 'File Default Name: ')
+        dpg.set_value('exportSelectedPathName', 'Complete Path Name: ')
+
+        self.exportSelectPath = None
+        self.exportSelectFileName = None
+
+        dpg.configure_item('exportSelectedContourWindow', show=True)
+
+        pass
+
+    def exportSettings(self, sender=None, app_data=None):
+        
+        pass
+
+    def exportSelectedContourToFile(self, sender=None, app_data=None):
+
+        selectedContours = []
+        for entry in self.contourTableEntry:
+            if dpg.get_value('checkboxContourId' + str(entry['id'])) == True:
+                selectedContours.append(entry)
+
+        for selectedContour in selectedContours:
+            self.exportIndividualContourToFile(selectedContour['id'], selectedContour['data'])
+
+        pass
+
+    def exportIndividualContourToFile(self, id, array):
+        flattenContour = array.flatten()
+
+        convertedArray = []
+        i = 0
+        while i < len(flattenContour):
+            convertedArray.append([flattenContour[i], flattenContour[i+1]])
+            i += 2
+        convertedArray.append([flattenContour[0], flattenContour[1]])
+        self.pointArrayToFile(os.path.join(self.exportSelectPath, self.exportSelectFileName + '-' + str(id)) + '.txt', convertedArray)
+        dpg.configure_item('exportSelectedContourWindow', show=False)
+        pass
+
+    def exportContourToFile(self, sender=None, app_data=None):
+
+        if self.exportFilePath is None:
+            return
+
+        # Pega os dados dos campos
+        maxWidthMapping = dpg.get_value('maxWidthMapping')
+        maxHeightMapping = dpg.get_value('maxHeightMapping')
+        widthOffset = dpg.get_value('widthOffset')
+        heightOffset = dpg.get_value('heightOffset')
+        matlabMode = dpg.get_value('matlabModeCheckbox')
+        contourId = dpg.get_value('inputContourId')
+
+        flattenContour = None
+
+        for contour in self.contourTableEntry:
+            if contour['id'] == contourId:
+                flattenContour = contour['data'].flatten()
+
+
+        xArray = []
+        yArray = []
+        convertedArray = []
+        i = 0
+        while i < len(flattenContour):
+            convertedArray.append([flattenContour[i], flattenContour[i+1]])
+            xArray.append(flattenContour[i])
+            yArray.append(flattenContour[i+1])
+            i += 2
+        convertedArray.append([flattenContour[0], flattenContour[1]])
+        xArray.append(flattenContour[0])
+        yArray.append(flattenContour[1])
+
+        # TODO: colocar métodos de redimensionar e converter pra matlab aqui
+
+        self.pointArrayToFile(os.path.join(self.exportFilePath, self.exportFileName), convertedArray)
+        dpg.configure_item('exportContourWindow', show=False)
+        pass
+
     
-    def openContourFile(self, sender = None, app_data = None):
+    def pointArrayToFile(self, filePath, array):
+        fp = open(filePath, 'w')
+        fp.write(self.pointArrayToString(array))
+        fp.close()
+
+    def pointArrayToString(self, array):
+        content = ''
+        for point in array:
+            content += str(point[0]) + ' ' + str(point[1]) + '\n'
+        return content
+
+    def importContour(self, sender = None, app_data = None):
         self.txtFilePath = app_data['file_path_name']
         self.txtFileName = app_data['file_name']
         dpg.configure_item('contour_ordering', enabled=True)

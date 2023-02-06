@@ -23,7 +23,9 @@ class Interface:
     def show(self):
         dpg.create_context()
         dpg.create_viewport(title='ContExt - Image Processing Engine for Differential Calculus', width=900, height=600, min_height=600, min_width=900)
+
         with dpg.window(tag="Main"):
+            self.applyTheme()
             self.showTabBar()
             pass
         
@@ -67,6 +69,7 @@ class Interface:
         with dpg.tab(label='Mesh Generation'):
             self.showMeshGeneration()
             pass
+        self.callbacks.disableAllTags()
         pass
 
     def showProcessing(self):
@@ -91,13 +94,13 @@ class Interface:
                 dpg.add_text('Select a image to use.')
                 dpg.add_button(tag='import_image', label='Import Image', callback=lambda: dpg.show_item("file_dialog_id"))
                 with dpg.tooltip("import_image"):
-                    dpg.add_text("Não é possível importar mais de uma imagem! Feche o programa e abra-o novamente para importar outra imagem.")
+                    dpg.add_text("It is not possible to import more than one image! Close the program and open it again to import another image.")
                 dpg.add_text('File Name:', tag='file_name_text')
                 dpg.add_text('File Path:', tag='file_path_text')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleEffect('crop', sender, app_data))
+                    dpg.add_checkbox(tag='cropCheckbox', callback=lambda sender, app_data: self.callbacks.toggleEffect('crop', sender, app_data))
                     dpg.add_text('Cropping')
                     dpg.add_button(label='Reset', callback=lambda: self.callbacks.resetCrop())
                 dpg.add_text('Original Resolution:')
@@ -126,6 +129,14 @@ class Interface:
                     dpg.add_text("ERROR: The start values must be smaller than the end values.")
                     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("incorrectCrop", show=False))
 
+                with dpg.window(label="ERROR! There is no image!", modal=True, show=False, tag="noImage", no_title_bar=False):
+                    dpg.add_text("ERROR: You must import an image.")
+                    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("noImage", show=False))
+                dpg.add_separator()
+
+                with dpg.window(label="ERROR! Select an image!", modal=True, show=False, tag="noPath", no_title_bar=False):
+                    dpg.add_text("ERROR: This is not a valid path.")
+                    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("noPath", show=False))
                 dpg.add_separator()
 
                 pass
@@ -136,12 +147,12 @@ class Interface:
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('histogramEqualization', sender, app_data));
+                    dpg.add_checkbox(tag='histogramCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('histogramEqualization', sender, app_data));
                     dpg.add_text('Histogram Equalization')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('brightnessAndContrast', sender, app_data))
+                    dpg.add_checkbox(tag='brightnessAndContrastCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('brightnessAndContrast', sender, app_data))
                     dpg.add_text('Brightness and Contrast')
                 dpg.add_text('Brightness')
                 dpg.add_slider_int(default_value=0, min_value=-100, max_value=100, tag='brightnessSlider', callback=lambda: self.callbacks.executeQuery('brightnessAndContrast'))
@@ -150,21 +161,21 @@ class Interface:
                 dpg.add_separator()
                 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('averageBlur', sender, app_data))
+                    dpg.add_checkbox(tag='averageBlurCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('averageBlur', sender, app_data))
                     dpg.add_text('Average Blur')
                 dpg.add_text('Intensity')
                 dpg.add_slider_int(tag='averageBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('averageBlur'))
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('gaussianBlur', sender, app_data))
+                    dpg.add_checkbox(tag='gaussianBlurCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('gaussianBlur', sender, app_data))
                     dpg.add_text('Gaussian Blur')
                 dpg.add_text('Intensity')
                 dpg.add_slider_int(tag='gaussianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('gaussianBlur'))
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('medianBlur', sender, app_data))
+                    dpg.add_checkbox(tag='medianBlurCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('medianBlur', sender, app_data))
                     dpg.add_text('Median Blur')
                 dpg.add_text('Intensity')
                 dpg.add_slider_int(tag='medianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('medianBlur'))
@@ -225,31 +236,63 @@ class Interface:
                 dpg.add_text('')
                 dpg.add_text('Contour Thickness')
                 dpg.add_text('(Only for the drawing)')
-                dpg.add_slider_int(tag='contourThicknessSlider', default_value=1, min_value=1, max_value=100)
-                dpg.add_button(label='Apply Method', callback=lambda sender, app_data: self.callbacks.extractContour(sender, app_data))
+                dpg.add_slider_int(tag='contourThicknessSlider', default_value=3, min_value=1, max_value=100)
+                dpg.add_button(tag='extractContourButton', label='Apply Method', callback=lambda sender, app_data: self.callbacks.extractContour(sender, app_data))
                 with dpg.window(label="ERROR! The image must be in a binary color scheme!", modal=True, show=False, tag="nonBinary", no_title_bar=False):
                     dpg.add_text("ERROR: You must select a binarization filter on the Thresholding Tab.")
                     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("nonBinary", show=False))
                 dpg.add_separator()
 
                 dpg.add_text('Export Settings')
+                dpg.add_text("Insert the contour ID")
+                dpg.add_input_int(tag='inputContourId')
                 dpg.add_text('Max Width Mapping')
-                dpg.add_input_double()
+                dpg.add_input_double(tag='maxWidthMapping')
                 dpg.add_text('Max Height Mapping')
-                dpg.add_input_double()
-                dpg.add_text('X Offset')
-                dpg.add_input_double()
-                dpg.add_text('Y Offset')
-                dpg.add_input_double()
-                dpg.add_checkbox(label='Matlab mode')
-                dpg.add_checkbox(label='Metadata')
-                dpg.add_button(label='Export Contour')
+                dpg.add_input_double(tag='maxHeightMapping')
+                dpg.add_text('Width Offset')
+                dpg.add_input_double(tag='widthOffset')
+                dpg.add_text('Height Offset')
+                dpg.add_input_double(tag='heightOffset')
+                dpg.add_checkbox(label='Matlab mode', tag='matlabModeCheckbox')
+                dpg.add_button(tag='exportContourButton', label='Export Contour', callback=self.callbacks.exportButtonCall)
                 dpg.add_separator()
 
+                with dpg.window(label="Save File", modal=False, show=False, tag="exportContourWindow", no_title_bar=False, min_size=[600,0]):
+                    dpg.add_text("Name your file")
+                    dpg.add_input_text(tag='inputContourNameText')
+                    dpg.add_separator()
+                    dpg.add_text("You MUST enter a File Name to select a directory")
+                    dpg.add_button(label='Select the directory', callback= self.callbacks.openDirectorySelector)
+                    dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='directorySelectorFileDialog', id="directorySelectorFileDialog", callback=self.callbacks.selectFolder)
+                    dpg.add_separator()
+                    dpg.add_text('Contour ID: ', tag='contourIdExportText')
+                    dpg.add_text('File Name: ', tag='exportFileName')
+                    dpg.add_text('Complete Path Name: ', tag='exportPathName')
+                    with dpg.group(horizontal=True):
+                        dpg.add_button(label='Save', callback=lambda: self.callbacks.exportContourToFile())
+                        dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportContourWindow', show=False))
+
+                with dpg.window(label="Save Files", modal=False, show=False, tag="exportSelectedContourWindow", no_title_bar=False, min_size=[600,0]):
+                    dpg.add_text("Name the prefix of your file")
+                    dpg.add_input_text(tag='inputSelectedContourNameText')
+                    dpg.add_separator()
+                    dpg.add_text("You MUST enter a prefix to the File Name to select a directory")
+                    dpg.add_button(label='Select the directory', callback= self.callbacks.openExportSelectedDirectorySelector)
+                    dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='directoryFolderExportSelected', id="directoryFolderExportSelected", callback=self.callbacks.selectExportAllFolder)
+                    dpg.add_separator()
+                    dpg.add_text('File Default Name: ', tag='exportSelectedFileName')
+                    dpg.add_text('Complete Path Name: ', tag='exportSelectedPathName')
+                    with dpg.group(horizontal=True):
+                        dpg.add_button(label='Save', callback=self.callbacks.exportSelectedContourToFile)
+                        dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportSelectedContourWindow', show=False))
+
+                dpg.add_separator()
 
                 pass
             with dpg.child_window(tag='ContourExtractionParent'):
                 pass
+
 
     def showMeshGeneration(self):
         with dpg.group(horizontal=True):
@@ -382,3 +425,43 @@ class Interface:
                     dpg.add_text('Contour Nodes Number: --', tag='contour_nodes_number')
                     dpg.add_text('Internal Nodes Number: --', tag='current_nodes_number', show=False)   
                 pass
+
+
+    def applyTheme(self):
+
+        dpg.set_viewport_small_icon("icons/Icon.ico")
+        dpg.set_viewport_large_icon("icons/Icon.ico")
+
+        with dpg.theme() as global_theme:
+            with dpg.theme_component(0):
+                # Main Styles
+                dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 8, 8)
+                dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 20, 4)
+                dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 4, 2)
+                dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 4)
+                dpg.add_theme_style(dpg.mvStyleVar_ItemInnerSpacing, 4, 4)
+                dpg.add_theme_style(dpg.mvStyleVar_IndentSpacing, 20)
+                dpg.add_theme_style(dpg.mvStyleVar_ScrollbarSize, 14)
+                dpg.add_theme_style(dpg.mvStyleVar_GrabMinSize, 20)
+
+                # Border Styles
+                dpg.add_theme_style(dpg.mvStyleVar_WindowBorderSize, 1)
+                dpg.add_theme_style(dpg.mvStyleVar_WindowBorderSize, 1)
+                dpg.add_theme_style(dpg.mvStyleVar_PopupBorderSize, 1)
+                dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
+
+                # Rounding Style
+                dpg.add_theme_style(dpg.mvStyleVar_WindowRounding, 12)
+                dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 12)
+                dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 4)
+                dpg.add_theme_style(dpg.mvStyleVar_PopupRounding, 12)
+                dpg.add_theme_style(dpg.mvStyleVar_ScrollbarRounding, 9)
+                dpg.add_theme_style(dpg.mvStyleVar_GrabRounding, 12)
+                dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 12)
+
+        dpg.bind_theme(global_theme)
+
+        with dpg.font_registry():
+            default_font = dpg.add_font('fonts/Inter-Regular.otf', 16)
+
+        dpg.bind_font(default_font)
