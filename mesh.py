@@ -145,4 +145,11 @@ class Mesh:
                 y[i] = y[i] + startYOffset
 
         return x, y
+
+
+    def isOnContour(xarray, yarray, x, y,):
+        for i in range(len(xarray)):
+            if xarray[i] == x and yarray[i] == y:
+                return True
+        return False
     
