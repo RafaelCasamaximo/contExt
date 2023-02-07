@@ -16,7 +16,7 @@ class Tabs(enum.Enum):
     ContourExtraction = 3
 
 class Blocks(enum.Enum):
-    __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur medianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour exportSettings'
+    __order__ = 'importImage crop histogramEqualization brightnessAndContrast averageBlur gaussianBlur medianBlur grayscale globalThresholding adaptativeMeanThresholding adaptativeGaussianThresholding otsuBinarization findContour'
     importImage = 0
     crop = 1
     histogramEqualization = 2
@@ -30,7 +30,6 @@ class Blocks(enum.Enum):
     adaptativeGaussianThresholding = 10
     otsuBinarization = 11
     findContour = 12
-    exportSettings = 13
 
 class Callbacks:
     def __init__(self) -> None:
@@ -142,13 +141,6 @@ class Callbacks:
                 'method': self.findContour,
                 'name': self.findContour.__name__,
                 'status': True,
-                'output': None,
-                'tab': 'ContourExtraction'
-            },
-            {
-                'method': self.exportSettings,
-                'name': self.exportSettings.__name__,
-                'status': False,
                 'output': None,
                 'tab': 'ContourExtraction'
             },
@@ -627,10 +619,13 @@ class Callbacks:
                         if j == 3:
                             dpg.add_checkbox(tag='checkboxContourId' + str(contourEntry['id']), callback= lambda sender, app_data: self.redrawContours(), default_value=True)
                         if j == 4:
-                            dpg.add_button(label='Export to Mesh Generation')
+                            dpg.add_button(label='Export to Mesh Generation', tag="exportMeshGeneration" + str(contourEntry['id']), callback=self.exportToMeshGeneration)
         
         self.blocks[Blocks.findContour.value]['output'] = image
         self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
+
+    def exportToMeshGeneration(self, sender, app_data=None):
+        pass
 
     def redrawContours(self):
         image = self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'].copy()
@@ -711,10 +706,6 @@ class Callbacks:
 
         pass
 
-    def exportSettings(self, sender=None, app_data=None):
-        
-        pass
-
     def exportSelectedContourToFile(self, sender=None, app_data=None):
 
         selectedContours = []
@@ -724,7 +715,9 @@ class Callbacks:
 
         for selectedContour in selectedContours:
             self.exportIndividualContourToFile(selectedContour['id'], selectedContour['data'])
-
+        self.exportFilePath = None
+        self.exportFileName = None
+        dpg.configure_item('exportSelectedContourWindow', show=False)
         pass
 
     def exportIndividualContourToFile(self, id, array):
@@ -737,7 +730,6 @@ class Callbacks:
             i += 2
         convertedArray.append([flattenContour[0], flattenContour[1]])
         self.pointArrayToFile(os.path.join(self.exportSelectPath, self.exportSelectFileName + '-' + str(id)) + '.txt', convertedArray)
-        dpg.configure_item('exportSelectedContourWindow', show=False)
         pass
 
     def exportContourToFile(self, sender=None, app_data=None):
@@ -777,6 +769,8 @@ class Callbacks:
 
         self.pointArrayToFile(os.path.join(self.exportFilePath, self.exportFileName), convertedArray)
         dpg.configure_item('exportContourWindow', show=False)
+        self.exportFilePath = None
+        self.exportFileName = None
         pass
 
     
@@ -850,6 +844,11 @@ class Callbacks:
         dpg.configure_item("dy", default_value = dy, min_value = dy)
         dpg.configure_item("xi", default_value = xmin)
         dpg.configure_item("yi", default_value = ymin)
+        dpg.configure_item("xi_zoom", default_value = xmin, min_value = xmin)
+        dpg.configure_item("yi_zoom", default_value = ymin, min_value = ymin)
+        dpg.configure_item("xf_zoom", default_value = xmin + dx, min_value = xmin + dx)
+        dpg.configure_item("yf_zoom", default_value = ymin + dy, min_value = ymin + dy)
+        dpg.configure_item("exportMesh", enabled=True)
 
         self.currentX = self.currentX[4:]
         self.currentY = self.currentY[4:]
@@ -1041,8 +1040,8 @@ class Callbacks:
             dy = dpg.get_value("dy")
         xmin = dpg.get_value("xi")
         ymin = dpg.get_value("yi")
-        nx = int(dpg.get_value("nx")[3:])
-        ny = int(dpg.get_value("ny")[3:])
+        nx = int(dpg.get_value("nx")[4:])
+        ny = int(dpg.get_value("ny")[4:])
 
 
         for i in range(ny):
@@ -1131,7 +1130,7 @@ class Callbacks:
                             flag = True
                     dpg.add_line_series(xGrid, yGrid, tag="meshGridPlotY" + str(z) + str(i), parent='y_axis')
                     dpg.bind_item_theme("meshGridPlotY" + str(z) + str(i), "grid_plot_theme")
-                    
+
                 for j in range(r["nx"]):
                     flag = True
                     xGrid = []
@@ -1207,6 +1206,44 @@ class Callbacks:
         self.sparseMeshHandler = None
         self.updateMesh()
 
+    def openMeshDirectorySelector(self, sender=None, app_data=None):
+        if dpg.get_value('inputMeshNameText') != '':
+            dpg.configure_item('meshDirectorySelectorFileDialog', show=True)
+
+    def selectMeshFileFolder(self, sender=None, app_data=None):
+
+        self.exportFilePath = app_data['file_path_name']
+
+        self.exportFileName = dpg.get_value('inputMeshNameText') + '.txt'
+        filePath = os.path.join(self.exportFilePath, self.exportFileName)
+
+        dpg.set_value('exportMeshFileName', 'File Name: ' + self.exportFileName)
+        dpg.set_value('exportMeshPathName', 'Complete Path Name: ' + filePath)
+
+        pass
 
     def exportMesh(self, sender=None, app_data=None):
-        pass
+        filePath = os.path.join(self.exportFilePath, self.exportFileName)
+        if self.sparseMeshHandler != None:
+            if self.toggleZoomFlag:
+                self.sparseMeshHandler.export_coords_mesh(filePath, self.currentX, self.currentY)
+                filePathDx = filePath[:-4] + "_dx.txt"
+                filePathDy = filePath[:-4] + "_dy.txt"
+                self.sparseMeshHandler.export_node_size_mesh(filePathDx, filePathDy)
+            else:
+                self.sparseMeshHandler.export_coords_mesh(filePath, self.currentX, self.currentY)
+                filePathRanges = filePath[:-4] + "_ranges.txt"
+                self.sparseMeshHandler.export_ranges(filePathRanges)
+        else:
+            nx = int(dpg.get_value("nx")[4:])
+            ny = int(dpg.get_value("ny")[4:])
+            xmin = min(self.currentX)
+            ymin = min(self.currentY)
+            xmax = max(self.currentX)
+            ymax = max(self.currentY)
+            dx = (xmax - xmin)/(nx - 1)
+            dy = (ymax - ymin)/(ny - 1)
+            Mesh.export_coords_mesh(filePath, self.currentX, self.currentY, nx, ny, xmin, ymin, xmax, ymax, dx, dy)
+            self.exportFilePath = None
+            self.exportFileName = None
+            dpg.configure_item("exportMeshFile", show=False)

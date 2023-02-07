@@ -366,7 +366,7 @@ class Interface:
                         dpg.add_text("Click to remove all zoom regions.")
 
                 dpg.add_separator()
-                dpg.add_button(tag='exportMesh', enabled=False, label='Export mesh', callback=self.callbacks.exportMesh)
+                dpg.add_button(tag='exportMesh', enabled=False, label='Export mesh', callback=lambda: dpg.configure_item("exportMeshFile", show=True))
                 with dpg.tooltip("exportMesh"):
                     dpg.add_text("Click to save mesh data in text files.")
                 
@@ -406,6 +406,20 @@ class Interface:
                     with dpg.group(horizontal=True):
                         dpg.add_button(label="Add zoom", width=100, callback=self.callbacks.addZoomRegion)
                         dpg.add_button(label="Cancel", width=100, callback=lambda: dpg.configure_item("sparsePopup", show=False))
+
+                with dpg.window(label="Save File", modal=False, show=False, tag="exportMeshFile", no_title_bar=False, min_size=[600,0]):
+                    dpg.add_text("Name your file")
+                    dpg.add_input_text(tag='inputMeshNameText')
+                    dpg.add_separator()
+                    dpg.add_text("You MUST enter a File Name to select a directory")
+                    dpg.add_button(label='Select the directory', callback= self.callbacks.openMeshDirectorySelector)
+                    dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='meshDirectorySelectorFileDialog', id="meshDirectorySelectorFileDialog", callback=self.callbacks.selectMeshFileFolder)
+                    dpg.add_separator()
+                    dpg.add_text('File Name: ', tag='exportMeshFileName')
+                    dpg.add_text('Complete Path Name: ', tag='exportMeshPathName')
+                    with dpg.group(horizontal=True):
+                        dpg.add_button(label='Save', callback=lambda: self.callbacks.exportMesh())
+                        dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportMeshWindow', show=False))
 
             with dpg.child_window(tag='MeshGenerationParent'):
                 with dpg.theme(tag="grid_plot_theme"):
