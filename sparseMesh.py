@@ -27,16 +27,23 @@ class SparseMesh:
     def addRange(self, xmin, ymin, xmax, ymax, dxAux, dyAux):
         if len(self.ranges) > 0:
             r = self.ranges[0]
-            xmin = (xmin - r["xi"]) // r["dx"] * r["dx"] + r["xi"]
-            ymin = (ymin - r["yi"]) // r["dy"] * r["dy"] + r["yi"]
+            if xmin > r["xi"]:
+                xmin = (xmin - r["xi"]) // r["dx"] * r["dx"] + r["xi"]
+            elif xmin < r["xi"]:
+                xmin = r["xi"]
+            if ymin > r["yi"]:
+                ymin = (ymin - r["yi"]) // r["dy"] * r["dy"] + r["yi"]
+            elif ymin < r["yi"]:
+                ymin = r["yi"]
             xmax = (xmax - r["xi"]) // r["dx"] * r["dx"] + r["xi"]
             ymax = (ymax - r["yi"]) // r["dy"] * r["dy"] + r["yi"]
             for i in self.ranges[1:]:
                 if i["xi"] <= xmin <= i["xf"] or i["xi"] <= xmax <= i["xf"] or i["yi"] <= ymin <= i["yf"] or i["yi"] <= ymax <= i["yf"]:
                     print("Invalid range due to overlap")
                     return False
-            dxAux = r["dx"]/(dxAux)
-            dyAux = r["dy"]/(dyAux)
+            dxAux = r["dx"]/dxAux
+            dyAux = r["dy"]/dyAux
+
         nx = round((xmax - xmin)/dxAux) + 1
         ny = round((ymax - ymin)/dyAux) + 1
         if (xmax - xmin)/dxAux != (xmax - xmin)//dxAux:
@@ -55,6 +62,7 @@ class SparseMesh:
             "dx" : dxAux,
             "dy" : dyAux
         }
+
         self.ranges.append(aux)
         return True
 
@@ -73,29 +81,33 @@ class SparseMesh:
                 r["yi"] = ymin
             else:
                 nx = originaldx//r["dx"]
-                r["dx"] = dxAux//nx
+                r["dx"] = dxAux/nx
                 ny = originaldy//r["dy"]
-                r["dy"] = dyAux//ny 
+                r["dy"] = dyAux/ny 
                 if xmin > r["xi"]:
                     r["xi"] = xmin
+                elif xmin < r["xi"]:
+                    r["xi"] = (r["xi"] - xmin) // dxAux * dxAux + xmin
                 if ymin > r["yi"]:
                     r["yi"] = ymin
+                elif ymin < r["yi"]:
+                    r["yi"] = (r["yi"] - ymin) // dyAux * dyAux + ymin
 
-            xmin = r["xi"]
-            ymin = r["yi"]
+            xminAux = r["xi"]
+            yminAux = r["yi"]
             xmax = r["xf"]
             ymax = r["yf"]
 
-            nx = round((xmax - xmin)/dxAux) + 1
-            ny = round((ymax - ymin)/dyAux) + 1
-            if (xmax - xmin)/dxAux != (xmax - xmin)//dxAux:
-                r["xf"] = xmin + nx * dxAux
+            nx = round((xmax - xminAux)/r["dx"]) + 1
+            ny = round((ymax - yminAux)/r["dy"]) + 1
+            if (xmax - xminAux)/r["dx"] != (xmax - xminAux)//r["dx"]:
+                r["xf"] = xminAux + nx * r["dx"]
                 nx += 1
-            if (ymax - ymin)/dyAux != (ymax - ymin)//dyAux:
-                r["yf"] = ymin + ny * dyAux
+            if (ymax - yminAux)/r["dy"] != (ymax - yminAux)//r["dy"]:
+                r["yf"] = yminAux + ny * r["dy"]
                 ny += 1
             r["nx"] = nx
-            r["nx"] = ny
+            r["ny"] = ny
 
             self.ranges[i] = r
 

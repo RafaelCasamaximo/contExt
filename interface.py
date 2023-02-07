@@ -314,10 +314,6 @@ class Interface:
                     dpg.add_text("File doesn't contain a valid contour")
                     dpg.add_button(label="Ok", callback=lambda: dpg.configure_item("txtFileErrorPopup", show=False))
 
-                dpg.add_button(label ='Reset mesh', tag='resetMesh', callback=self.callbacks.resetMesh)
-                with dpg.tooltip("resetMesh"):
-                    dpg.add_text("Click to remove current mesh.")
-
                 dpg.add_button(label ='Plot Mesh Grid', tag='plotGrid', callback=self.callbacks.toggleGrid, enabled=False)
                 with dpg.tooltip("plotGrid"):
                     dpg.add_text("Click to draw mesh grid and count the number of internal node. Might take a while.")
@@ -365,6 +361,9 @@ class Interface:
                 with dpg.group(tag="sparseGroup"):
                     dpg.add_text('Sparse and adataptive mesh')
                     dpg.add_button(label='Add mesh zoom region', enabled=False, tag="sparseButton", callback=lambda: dpg.configure_item("sparsePopup", show=True))
+                    dpg.add_button(label ='Reset mesh', tag='resetMesh', callback=self.callbacks.resetMesh, show=False)
+                    with dpg.tooltip("resetMesh"):
+                        dpg.add_text("Click to remove all zoom regions.")
 
                 dpg.add_separator()
                 dpg.add_button(tag='exportMesh', enabled=False, label='Export mesh', callback=self.callbacks.exportMesh)
@@ -405,8 +404,8 @@ class Interface:
                     
                     dpg.add_separator()
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label="Add zoom", width=75, callback=self.callbacks.addZoomRegion)
-                        dpg.add_button(label="Cancel", width=75, callback=lambda: dpg.configure_item("sparsePopup", show=False))
+                        dpg.add_button(label="Add zoom", width=100, callback=self.callbacks.addZoomRegion)
+                        dpg.add_button(label="Cancel", width=100, callback=lambda: dpg.configure_item("sparsePopup", show=False))
 
             with dpg.child_window(tag='MeshGenerationParent'):
                 with dpg.theme(tag="grid_plot_theme"):

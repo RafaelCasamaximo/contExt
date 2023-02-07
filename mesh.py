@@ -1,3 +1,5 @@
+from shapely.geometry import Point, Polygon
+
 class Mesh:
 
 
@@ -147,9 +149,17 @@ class Mesh:
         return x, y
 
 
-    def isOnContour(xarray, yarray, x, y,):
+    def isOnContour(xarray, yarray, x, y, meshTypeFlag):
+        if meshTypeFlag == 1:
+            point = Point((x,y))
+            polygon = Polygon(list(zip(xarray,yarray)))
+            return polygon.intersects(point)
         for i in range(len(xarray)):
             if xarray[i] == x and yarray[i] == y:
                 return True
         return False
-    
+
+    def insidePolygon(xarray, yarray, x, y):
+        point = Point((x,y))
+        polygon = Polygon(list(zip(xarray,yarray)))
+        return polygon.contains(point) or polygon.intersects(point)

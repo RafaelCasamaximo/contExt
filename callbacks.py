@@ -791,7 +791,7 @@ class Callbacks:
             content += str(point[0]) + ' ' + str(point[1]) + '\n'
         return content
 
-    def importContour(self, sender = None, app_data = None):
+    def openContourFile(self, sender = None, app_data = None):
         self.txtFilePath = app_data['file_path_name']
         self.txtFileName = app_data['file_name']
         dpg.configure_item('contour_ordering', enabled=True)
@@ -800,6 +800,7 @@ class Callbacks:
         
         dpg.set_value('contour_file_name_text', 'File Name: ' + self.txtFileName)
         dpg.set_value('contour_file_path_text', 'File Path: ' + self.txtFilePath)
+
         self.originalX = []
         self.originalY = []
         f = open(self.txtFilePath,'r')
@@ -820,6 +821,11 @@ class Callbacks:
         self.importContour()
         
     def importContour(self, sender = None, app_data = None):
+        if self.toggleGridFlag:
+            self.removeGrid()
+        dpg.delete_item("meshPlot")
+        dpg.delete_item("originalMeshPlot")
+
         self.currentX = self.originalX
         self.currentY = self.originalY
         self.originalX = self.originalX[4:]
@@ -832,16 +838,16 @@ class Callbacks:
         dx = self.currentX[3]
         dy = self.currentY[3]
 
-        dpg.set_value("original_xi", 'x:' + str(xmin))
-        dpg.set_value("original_yi", 'y:' + str(ymin))
-        dpg.set_value("original_dx", 'dx:' + str(dx))
-        dpg.set_value("original_dy", 'dy:' + str(dy))
-        dpg.set_value("original_nx", 'nx:' + str(int(nx)))
-        dpg.set_value("original_ny", 'ny:' + str(int(ny)))
-        dpg.set_value("nx", 'nx:' + str(int(nx)))
-        dpg.set_value("ny", 'ny:' + str(int(ny)))
-        dpg.configure_item("dx", default_value = dx)
-        dpg.configure_item("dy", default_value = dy)
+        dpg.set_value("original_xi", 'x: ' + str(xmin))
+        dpg.set_value("original_yi", 'y: ' + str(ymin))
+        dpg.set_value("original_dx", 'dx: ' + str(dx))
+        dpg.set_value("original_dy", 'dy: ' + str(dy))
+        dpg.set_value("original_nx", 'nx: ' + str(int(nx)))
+        dpg.set_value("original_ny", 'ny: ' + str(int(ny)))
+        dpg.set_value("nx", 'nx: ' + str(int(nx)))
+        dpg.set_value("ny", 'ny: ' + str(int(ny)))
+        dpg.configure_item("dx", default_value = dx, min_value = dx)
+        dpg.configure_item("dy", default_value = dy, min_value = dy)
         dpg.configure_item("xi", default_value = xmin)
         dpg.configure_item("yi", default_value = ymin)
 
@@ -882,7 +888,7 @@ class Callbacks:
         ymin = dpg.get_value("yi_zoom")
         xmax = dpg.get_value("xf_zoom")
         ymax = dpg.get_value("yf_zoom")
-        
+
         if self.sparseMeshHandler == None:
             self.sparseMeshHandler = SparseMesh()
             self.sparseMeshHandler.addRange(dpg.get_value("xi"), dpg.get_value("yi"), max(self.originalX), max(self.originalY), dx, dy)
@@ -891,7 +897,6 @@ class Callbacks:
             return
 
         nZoom = len(self.sparseMeshHandler.ranges) - 1
-
         dpg.add_separator(tag="separatorZoomStart" + str(nZoom), parent="sparseGroup")
         dpg.add_text(name, tag="zoomTxt" + str(nZoom), parent="sparseGroup")
         dpg.add_text("Node Size: " + listBoxValue, tag="listBoxZoom" + str(nZoom), parent="sparseGroup")
@@ -899,22 +904,53 @@ class Callbacks:
         dpg.add_text("Bottom y: " + str(xmin), tag="yminZoom" + str(nZoom), parent="sparseGroup")
         dpg.add_text("Top x: " + str(xmin), tag="xmaxZoom" + str(nZoom), parent="sparseGroup")
         dpg.add_text("Top x: " + str(xmin), tag="ymaxZoom" + str(nZoom), parent="sparseGroup")
-        dpg.add_button(tag="removeZoom" + str(nZoom), label="Remove zoom region", parent="sparseGroup", callback=self.removeZoomRegion(nZoom))
+        dpg.add_button(tag="removeZoom" + str(nZoom), label="Remove zoom region", parent="sparseGroup", callback=self.removeZoomRegion)
 
+        if nZoom == 2:
+            dpg.configure_item("resetMesh", show=True)
         dpg.configure_item("sparsePopup", show=False)
         dpg.configure_item("meshZoomType", enabled=False)
         dpg.set_value("meshZoomTypeTooltip", "You cannot add diferent types of zoom on the same mesh.")
         self.updateMesh()
         dpg.configure_item("zoomRegionName", default_value="Zoom region " + str(nZoom + 1))
 
-    def removeZoomRegion(self, nRegion, sender=None, app_data=None):
-        pass
+
+    def removeZoomRegion(self, sender, app_data=None):
+        nZoom = len(self.sparseMeshHandler.ranges)
+        nRegion = int(sender[10:])
+        self.removeGrid()
+        aux = self.sparseMeshHandler.ranges.pop(nRegion)
+
+        if nZoom < 4:
+            dpg.configure_item("resetMesh", show=False)
+        if nZoom == 2:
+            self.sparseMeshHandler = None
+            dpg.configure_item("meshZoomType", enabled=True)
+            dpg.set_value("meshZoomTypeTooltip", "Click to change the mesh zoom type.")
+        else:
+            for i in range(nRegion, nZoom):
+                name = dpg.get_value("zoomTxt" + str(i + 1))
+                nodeSize = dpg.get_value("listBoxZoom" + str(i + 1))
+                dpg.set_value("zoomTxt" + str(i), name)
+                dpg.set_value("listBoxZoom" + str(i), nodeSize)
+            pass
+        dpg.delete_item("separatorZoomStart" + str(nZoom - 1))
+        dpg.delete_item("zoomTxt" + str(nZoom - 1))
+        dpg.delete_item("listBoxZoom" + str(nZoom - 1))
+        dpg.delete_item("xminZoom" + str(nZoom - 1))
+        dpg.delete_item("yminZoom" + str(nZoom - 1))
+        dpg.delete_item("xmaxZoom" + str(nZoom - 1))
+        dpg.delete_item("ymaxZoom" + str(nZoom - 1))
+        dpg.delete_item("removeZoom" + str(nZoom - 1))
+        dpg.delete_item("plotRec" +  str(nZoom - 1))
+        self.updateMesh()
 
     def updateMesh(self, sender=None, app_data=None):
         dx = dpg.get_value("dx")
         dy = dpg.get_value("dy")
         xmin = dpg.get_value("xi")
         ymin = dpg.get_value("yi")
+        self.removeGrid()
 
         if self.sparseMeshHandler == None:
             self.currentX, self.currentY = Mesh.getMesh(self.originalX, self.originalY, xmin, ymin, dx, dy)
@@ -927,27 +963,34 @@ class Callbacks:
 
             self.currentX = self.currentX[4:]
             self.currentY = self.currentY[4:]
+            dpg.set_value("nx", 'nx: ' + str(int(nx)))
+            dpg.set_value("ny", 'ny: ' + str(int(ny)))
+            self.plotGrid()
         else:
             self.sparseMeshHandler.updateRanges(dx, dy, xmin, ymin)
-            
+
             if self.toggleZoomFlag == True:
                 self.currentX, self.currentY = self.sparseMeshHandler.get_sparse_mesh(self.originalX, self.originalY)
                 nx = self.sparseMeshHandler.ranges[0]["nx"]
-                ny = self.sparseMeshHandler.ranges[0]["nx"]
+                ny = self.sparseMeshHandler.ranges[0]["ny"]
                 dpg.configure_item("nodeNumber", show=True)
             else:
                 self.currentX, self.currentY = self.sparseMeshHandler.get_adaptative_mesh(self.originalX, self.originalY)
                 nx = len(self.sparseMeshHandler.dx)
                 ny = len(self.sparseMeshHandler.dy)
             
+            dpg.set_value("nx", 'nx: ' + str(int(nx)))
+            dpg.set_value("ny", 'ny: ' + str(int(ny)))
+            self.plotGrid()
             for i in range(1,len(self.sparseMeshHandler.ranges)):
+                dpg.delete_item("plotRec" +  str(i))
                 r = self.sparseMeshHandler.ranges[i]
                 dpg.set_value("xminZoom" + str(i), "Bottom x: " + str(r['xi']))
                 dpg.set_value("yminZoom" + str(i), "Bottom y: " + str(r['yi']))
                 dpg.set_value("xmaxZoom" + str(i), "Top x: " + str(r['xf']))
                 dpg.set_value("ymaxZoom" + str(i), "Top y: " + str(r['yf']))
                 dpg.delete_item("plotRec" +  str(i))
-                dpg.add_line_series([r['xi'],r['xi'],r['xf'],r['xf'],r['xi']], [r['yi'],r['yf'],r['yf'],r['yi'],r['yi']], tag="plotRec" +  str(i), label=dpg.get_value("zoomRegionName"), parent="y_axis")
+                dpg.add_line_series([r['xi'],r['xi'],r['xf'],r['xf'],r['xi']], [r['yi'],r['yf'],r['yf'],r['yi'],r['yi']], tag="plotRec" +  str(i), label=dpg.get_value("zoomTxt" + str(i)), parent="y_axis")
 
             aux = self.sparseMeshHandler.ranges[0]
             xmin = aux["xi"]
@@ -955,9 +998,6 @@ class Callbacks:
             dx = aux["dx"]
             dy = aux["dy"]
 
-
-        dpg.set_value("nx", 'nx:' + str(int(nx)))
-        dpg.set_value("ny", 'ny:' + str(int(ny)))
         dpg.configure_item("dx", default_value = dx)
         dpg.configure_item("dy", default_value = dy)
         dpg.configure_item("xi", default_value = xmin)
@@ -971,100 +1011,157 @@ class Callbacks:
         dpg.set_value("difference", "Difference: " + str(dif) + " ({:.2f}%)".format(100*dif/originalArea))
         dpg.set_value("contour_nodes_number", "Contour Nodes Number: " + str(len(self.currentX)))
 
+        dpg.delete_item("meshPlot")
+        dpg.add_line_series(self.currentX, self.currentY, label="Current Mesh", tag="meshPlot", parent='y_axis')
+        dpg.fit_axis_data("x_axis")
+        dpg.fit_axis_data("y_axis")
+
+    def plotGrid(self, sender=None, app_data=None):
         if self.toggleGridFlag:
-            dpg.delete_item("meshGridPlot")
             dpg.configure_item("current_nodes_number", show=True)
             nInternalNodes = self.drawGrid()
             dpg.set_value("current_nodes_number","Internal Nodes Number: " + str(nInternalNodes))
         else:
             dpg.configure_item("current_nodes_number", show=False)
 
-        dpg.delete_item("meshPlot")
-        dpg.add_line_series(self.currentX, self.currentY, label="Currente Mesh", tag="meshPlot", parent='y_axis')
-        dpg.fit_axis_data("x_axis")
-        dpg.fit_axis_data("y_axis")
-
     def drawGrid(self, sender=None, app_data=None):
-        nInternalNodes = 0        
-        if self.sparseMeshHandler == None:
-            n = 1
-            dx = [dpg.get_value("dx")]
-            dy = [dpg.get_value("dy")]
-            xmin = [dpg.get_value("xi")]
-            ymin = [dpg.get_value("yi")]
-            nx = [int(dpg.get_value("nx")[3:])]
-            ny = [int(dpg.get_value("ny")[3:])]
+        nInternalNodes = 0       
+        meshTypeFlag = 0
+        if self.sparseMeshHandler != None:
+            if self.toggleZoomFlag:
+                meshTypeFlag = 1
+            else:
+                meshTypeFlag = 2
+
+        if meshTypeFlag == 2:
+            dx = self.sparseMeshHandler.dx
+            dy = self.sparseMeshHandler.dy
         else:
-            aux = self.sparseMeshHandler.ranges
-            n = len(aux)
-            dx = []
-            dy = []
-            xmin = []
-            ymin = []
-            nx = []
-            ny = []
-            for r in aux:
-                dx.append(r["dx"])
-                dy.append(r["dy"])
-                xmin.append(r["xi"])
-                ymin.append(r["yi"])
-                nx.append(r["nx"])
-                ny.append(r["ny"])
+            dx = dpg.get_value("dx")
+            dy = dpg.get_value("dy")
+        xmin = dpg.get_value("xi")
+        ymin = dpg.get_value("yi")
+        nx = int(dpg.get_value("nx")[3:])
+        ny = int(dpg.get_value("ny")[3:])
 
-        for z in range(n):
-            for i in range(ny[z]):
-                flag = False
-                inside = False
-                xGrid = []
-                yGrid = []
-                for j in range(nx[z]):
-                    auxX = xmin[z] + j * dx[z]
-                    auxY = ymin[z] + i * dy[z]
-                    if inside != Mesh.isOnContour(self.currentX, self.currentY, auxX, auxY):
-                        flag = True
-                        inside = not inside
-                    if inside:
-                        if flag:
-                            flag = False
-                            xGrid.append(auxX)
-                            yGrid.append(auxY)
-                            xGrid.append(auxX)
-                            yGrid.append(auxY)
-                        else:
-                            xGrid[-1] = auxX
-                            yGrid[-1] = auxY
-                    if inside:
-                        nInternalNodes += 1
-                dpg.add_line_series(xGrid, yGrid, tag="meshGridPlotY" + str(z) + str(i), parent='y_axis')
-                dpg.bind_item_theme("meshGridPlotY" + str(z) + str(i), "grid_plot_theme")
 
-        for j in range(nx[z]):
-                flag = False
-                inside = False
-                xGrid = []
-                yGrid = []
-                for i in range(ny[z]):
-                    auxX = xmin[z] + j * dx[z]
-                    auxY = ymin[z] + i * dy[z]
-                    if inside !=  Mesh.isOnContour(self.currentX, self.currentY, auxX, auxY):
-                        flag = True
-                        inside = not inside
-                    if inside:
-                        if flag:
-                            flag = False
-                            xGrid.append(auxX)
-                            yGrid.append(auxY)
-                            xGrid.append(auxX)
-                            yGrid.append(auxY)
+        for i in range(ny):
+            flag = False
+            inside = False
+            xGrid = []
+            yGrid = []
+            
+            for j in range(nx):
+                if meshTypeFlag == 2:
+                    auxX = dx[j]
+                    auxY = dy[i]
+                else:
+                    auxX = xmin + j * dx
+                    auxY = ymin + i * dy
+                    
+                if inside != Mesh.isOnContour(self.currentX, self.currentY, auxX, auxY, meshTypeFlag):
+                    flag = True
+                    inside = not inside
+                if inside:
+                    if flag:
+                        flag = False
+                        xGrid.append(auxX)
+                        yGrid.append(auxY)
+                        xGrid.append(auxX)
+                        yGrid.append(auxY)
+                    else:
+                        xGrid[-1] = auxX
+                        yGrid[-1] = auxY
+                if inside:
+                    nInternalNodes += 1
+            dpg.add_line_series(xGrid, yGrid, tag="meshGridPlotY0" + str(i), parent='y_axis')
+            dpg.bind_item_theme("meshGridPlotY0" + str(i), "grid_plot_theme")
+
+        for j in range(nx):
+            flag = False
+            inside = False
+            xGrid = []
+            yGrid = []
+            for i in range(ny):
+                if meshTypeFlag == 2:
+                    auxX = dx[j]
+                    auxY = dy[i]
+                else:
+                    auxX = xmin + j * dx
+                    auxY = ymin + i * dy
+
+                if inside !=  Mesh.isOnContour(self.currentX, self.currentY, auxX, auxY, meshTypeFlag):
+                    flag = True
+                    inside = not inside
+                if inside:
+                    if flag:
+                        flag = False
+                        xGrid.append(auxX)
+                        yGrid.append(auxY)
+                        xGrid.append(auxX)
+                        yGrid.append(auxY)
+                    else:
+                        xGrid[-1] = auxX
+                        yGrid[-1] = auxY
+            dpg.add_line_series(xGrid, yGrid, tag="meshGridPlotX0" + str(j), parent='y_axis')
+            dpg.bind_item_theme("meshGridPlotX0" + str(j), "grid_plot_theme")
+        if meshTypeFlag == 1:
+            nAux = 0
+            for z in range(1, len(self.sparseMeshHandler.ranges)):
+                r = self.sparseMeshHandler.ranges[z]
+                for i in range(r["ny"]):
+                    flag = True
+                    xGrid = []
+                    yGrid = []
+                    for j in range(r["nx"]):
+                        auxX = r["xi"] + j * r["dx"]
+                        auxY = r["yi"] + i * r["dy"]
+                        if Mesh.insidePolygon(self.currentX, self.currentY, auxX, auxY):
+                            if flag:
+                                flag = False
+                                xGrid.append(auxX)
+                                yGrid.append(auxY)
+                                xGrid.append(auxX)
+                                yGrid.append(auxY)
+                            else:
+                                xGrid[-1] = auxX
+                                yGrid[-1] = auxY
+                            nAux += 1
                         else:
-                            xGrid[-1] = auxX
-                            yGrid[-1] = auxY
-                dpg.add_line_series(xGrid, yGrid, tag="meshGridPlotX" + str(z) + str(j), parent='y_axis')
-                dpg.bind_item_theme("meshGridPlotX" + str(z) + str(j), "grid_plot_theme")
+                            flag = True
+                    dpg.add_line_series(xGrid, yGrid, tag="meshGridPlotY" + str(z) + str(i), parent='y_axis')
+                    dpg.bind_item_theme("meshGridPlotY" + str(z) + str(i), "grid_plot_theme")
+                    
+                for j in range(r["nx"]):
+                    flag = True
+                    xGrid = []
+                    yGrid = []
+                    for i in range(r["ny"]):
+                        auxX = r["xi"] + j * r["dx"]
+                        auxY = r["yi"] + i * r["dy"]
+                        if Mesh.insidePolygon(self.currentX, self.currentY, auxX, auxY):
+                            if flag:
+                                flag = False
+                                xGrid.append(auxX)
+                                yGrid.append(auxY)
+                                xGrid.append(auxX)
+                                yGrid.append(auxY)
+                            else:
+                                xGrid[-1] = auxX
+                                yGrid[-1] = auxY
+                        else:
+                            flag = True
+                        
+                    dpg.add_line_series(xGrid, yGrid, tag="meshGridPlotX" + str(z) + str(j), parent='y_axis')
+                    dpg.bind_item_theme("meshGridPlotX" + str(z) + str(j), "grid_plot_theme")
+                
+                
+                nAux -= (1 + (r["xf"] - r["xi"])//dx) * (1 + (r["yf"] - r["yi"])//dy)    
+            nInternalNodes += nAux
         return nInternalNodes
 
     def removeGrid(self, sender=None, app_data=None):
-        if self.sparseMeshHandler == None:
+        if self.sparseMeshHandler == None or not self.toggleZoomFlag:
             n = 1
             nx = [int(dpg.get_value("nx")[4:])]
             ny = [int(dpg.get_value("ny")[4:])]
@@ -1078,10 +1175,8 @@ class Callbacks:
                 ny.append(r["ny"])  
         for z in range(n):
             for i in range(ny[z]):
-                for j in range(nx[z]):
                     dpg.delete_item("meshGridPlotY" + str(z) + str(i))
             for j in range(nx[z]):
-                for i in range(ny[z]):
                     dpg.delete_item("meshGridPlotX" + str(z) + str(j))
 
 
@@ -1095,7 +1190,23 @@ class Callbacks:
             self.removeGrid()
 
     def resetMesh(self, sender=None, app_data=None):
-        pass
+        for i in range(1,len(self.sparseMeshHandler.ranges)):
+            dpg.delete_item("separatorZoomStart" + str(i))
+            dpg.delete_item("zoomTxt" + str(i))
+            dpg.delete_item("listBoxZoom" + str(i))
+            dpg.delete_item("xminZoom" + str(i))
+            dpg.delete_item("yminZoom" + str(i))
+            dpg.delete_item("xmaxZoom" + str(i))
+            dpg.delete_item("ymaxZoom" + str(i))
+            dpg.delete_item("removeZoom" + str(i))
+            dpg.delete_item("plotRec" +  str(i))
+
+        dpg.configure_item("meshZoomType", enabled=True)
+        dpg.set_value("meshZoomTypeTooltip", "Click to change the mesh zoom type.")
+        dpg.configure_item("resetMesh", show=False)
+        self.sparseMeshHandler = None
+        self.updateMesh()
+
 
     def exportMesh(self, sender=None, app_data=None):
         pass
