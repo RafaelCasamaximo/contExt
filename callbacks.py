@@ -52,6 +52,8 @@ class Callbacks:
         self.exportFileName = None
         self.exportSelectPath = None
         self.exportSelectFileName = None
+        self.exportImageFilePath = None
+        self.currentTab = None
 
         self.blocks = [
             {
@@ -315,6 +317,43 @@ class Callbacks:
         for checkbox in checkboxes:
             dpg.configure_item(checkbox, enabled=True)
         pass
+
+    def exportImage(self, sender = None, app_data = None, tab = None):
+
+        dpg.set_value('exportImageFileName', 'File Name: ')
+        dpg.set_value('exportImageFilePath', 'Complete Path Name: ')
+        dpg.set_value('imageNameExportAsFile', '')
+        self.exportImageFilePath = None
+        self.currentTab = tab
+        dpg.configure_item('exportImageAsFile', show=True)
+        pass
+
+    def exportImageDirectorySelector(self, sender = None, app_data = None):
+        imageName = dpg.get_value('imageNameExportAsFile')
+        if imageName == '':
+            return
+        dpg.configure_item('exportImageAsFile', show=True)
+        dpg.configure_item('exportImageDirectorySelector', show=True)
+        pass
+
+    def exportImageSelectDirectory(self, sender = None, app_data = None):
+        exportImageFileName = dpg.get_value('imageNameExportAsFile')
+        exportImageFilePath = app_data['file_path_name']
+        self.exportImageFilePath = os.path.join(exportImageFilePath, exportImageFileName + '.jpg')
+        dpg.set_value('exportImageFileName', 'File Name: ' + exportImageFileName + '.jpg')
+        dpg.set_value('exportImageFilePath', 'File Path: ' + self.exportImageFilePath)
+        pass
+
+    def exportImageAsFile(self, sender = None, app_data = None):
+        lastTabIndex = {
+            'Processing': Blocks.histogramEqualization.name,
+            'Filtering': Blocks.grayscale.name,
+            'Thresholding': Blocks.findContour.name,
+        }
+        path = self.exportImageFilePath
+        image = self.blocks[self.getLastActiveBeforeMethod(lastTabIndex[self.currentTab])]['output']
+        cv2.imwrite(path, image)
+        dpg.configure_item('exportImageAsFile', show=False)
 
     def importImage(self, sender = None, app_data = None):
         # Cria imagem na aba
@@ -843,6 +882,14 @@ class Callbacks:
         yarray = entry["contourY"][::-1]
         xRes = int(dpg.get_value("currentWidth")[6:-2])
         yRes = int(dpg.get_value("currentHeight")[7:-2])
+        #TODO: Bug 
+        # File "C:\Users\rafae\OneDrive\Documentos\DEV\Teste\contExt\callbacks.py", line 833, in exportIndividualContourToFile
+        #     self.exportContourToFile(auxId, os.path.join(self.exportFilePath, self.exportFileName))
+        # File "C:\Users\rafae\OneDrive\Documentos\DEV\Teste\contExt\callbacks.py", line 846, in exportContourToFile
+        #     w = int(dpg.get_value("currentMaxWidth")[9:])
+        #         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        # ValueError: invalid literal for int() with base 10: '1162.0'
+        # Acontece quando aplica o modo matlab e exporta para a Mesh Generation
         w = int(dpg.get_value("currentMaxWidth")[9:])
         h = int(dpg.get_value("currentMaxHeight")[9:])
         dx = w/xRes

@@ -27,6 +27,7 @@ class Interface:
         with dpg.window(tag="Main"):
             self.applyTheme()
             self.showTabBar()
+            self.createSaveImageDialog()
             pass
         
         dpg.setup_dearpygui()
@@ -141,6 +142,7 @@ class Interface:
 
                 pass
             with dpg.child_window(tag='ProcessingParent'):
+                dpg.add_button(label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Processing'))
                 pass
 
     def showFiltering(self):
@@ -184,6 +186,7 @@ class Interface:
 
                 pass
             with dpg.child_window(tag='FilteringParent'):
+                dpg.add_button(label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Filtering'))
                 pass
 
     def showThresholding(self):
@@ -225,6 +228,7 @@ class Interface:
 
                 pass
             with dpg.child_window(tag='ThresholdingParent'):
+                dpg.add_button(label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Thresholding'))
                 pass
 
     def showContourExtraction(self):
@@ -424,7 +428,6 @@ class Interface:
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportMeshWindow', show=False))
                 
                 dpg.add_separator()
-                dpg.add_separator()
 
             with dpg.child_window(tag='MeshGenerationParent'):
                 with dpg.theme(tag="grid_plot_theme"):
@@ -483,3 +486,18 @@ class Interface:
             default_font = dpg.add_font('fonts/Inter-Regular.otf', 16)
 
         dpg.bind_font(default_font)
+
+    def createSaveImageDialog(self):
+        with dpg.window(label="Export Image as File", modal=False, show=False, tag="exportImageAsFile", no_title_bar=False):
+            dpg.add_text("Name your file")
+            dpg.add_input_text(tag='imageNameExportAsFile')
+            dpg.add_separator()
+            dpg.add_text("You MUST enter a File Name to select a directory")
+            dpg.add_button(label='Select the directory', callback=self.callbacks.exportImageDirectorySelector)
+            dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='exportImageDirectorySelector', id="exportImageDirectorySelector", callback=lambda sender, app_data: self.callbacks.exportImageSelectDirectory(sender, app_data))
+            dpg.add_separator()
+            dpg.add_text('File Name: ', tag='exportImageFileName')
+            dpg.add_text('Complete Path Name: ', tag='exportImageFilePath')
+            with dpg.group(horizontal=True):
+                dpg.add_button(label='Save', callback=self.callbacks.exportImageAsFile)
+                dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportImageAsFile', show=False))
