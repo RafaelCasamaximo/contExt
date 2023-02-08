@@ -145,7 +145,7 @@ class Interface:
 
                 pass
             with dpg.child_window(tag='ProcessingParent'):
-                dpg.add_button(label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Processing'))
+                dpg.add_button(tag='exportImageAsFileProcessing', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Processing'))
                 pass
 
     def showFiltering(self):
@@ -189,7 +189,7 @@ class Interface:
 
                 pass
             with dpg.child_window(tag='FilteringParent'):
-                dpg.add_button(label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Filtering'))
+                dpg.add_button(tag='exportImageAsFileFiltering', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Filtering'))
                 pass
 
     def showThresholding(self):
@@ -231,7 +231,7 @@ class Interface:
 
                 pass
             with dpg.child_window(tag='ThresholdingParent'):
-                dpg.add_button(label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Thresholding'))
+                dpg.add_button(tag='exportImageAsFileThresholding', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Thresholding'))
                 pass
 
     def showContourExtraction(self):

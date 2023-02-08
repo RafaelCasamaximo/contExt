@@ -288,7 +288,10 @@ class Callbacks:
             'otsuBinarization',
             'matlabModeCheckbox',
             'extractContourButton',
-            'updtadeContourButton'
+            'updtadeContourButton',
+            'exportImageAsFileProcessing',
+            'exportImageAsFileFiltering',
+            'exportImageAsFileThresholding'
         ]
         for checkbox in checkboxes:
             dpg.configure_item(checkbox, enabled=False)
@@ -312,7 +315,10 @@ class Callbacks:
             'otsuBinarization',
             'matlabModeCheckbox',
             'extractContourButton',
-            'updtadeContourButton'
+            'updtadeContourButton',
+            'exportImageAsFileProcessing',
+            'exportImageAsFileFiltering',
+            'exportImageAsFileThresholding'
         ]
         for checkbox in checkboxes:
             dpg.configure_item(checkbox, enabled=True)
