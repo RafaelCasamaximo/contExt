@@ -351,6 +351,12 @@ class Callbacks:
         pass
 
     def exportImageAsFile(self, sender = None, app_data = None):
+        if self.exportImageFilePath is None:
+            dpg.configure_item("exportImageError", show=True)
+            return
+
+        dpg.configure_item("exportImageError", show=False)
+
         lastTabIndex = {
             'Processing': Blocks.histogramEqualization.name,
             'Filtering': Blocks.grayscale.name,
@@ -697,12 +703,12 @@ class Callbacks:
             if i["id"] == auxId:
                 entry = i
                 break
-        xarray = entry["contourX"][::-1]
-        yarray = entry["contourY"][::-1]
+        xarray = entry["contourX"]
+        yarray = entry["contourY"]
         xRes = int(dpg.get_value("currentWidth")[6:-2])
         yRes = int(dpg.get_value("currentHeight")[7:-2])
-        w = int(dpg.get_value("currentMaxWidth")[9:])
-        h = int(dpg.get_value("currentMaxHeight")[9:])
+        w = float(dpg.get_value("currentMaxWidth")[9:])
+        h = float(dpg.get_value("currentMaxHeight")[9:])
         dx = w/xRes
         dy = h/yRes
         xmin = min(xarray)
@@ -735,7 +741,7 @@ class Callbacks:
                 yarray = Mesh.convert_matlab(yarray, yRes - 1)
             xarray, yarray = Mesh.change_scale(xarray, yarray, xRes, yRes, w, h, xoffset, yoffset)
             self.contourTableEntry[i]["contourX"] = xarray
-            self.contourTableEntry[i]["contourX"] = yarray
+            self.contourTableEntry[i]["contourY"] = yarray
             xmin = min(xarray)
             ymin = min(yarray)
             xmax = max(xarray)
@@ -746,6 +752,7 @@ class Callbacks:
         dpg.set_value("currentHeightOffset", 'Current: ' + str(yoffset))
         dpg.set_value("currentMaxWidth", 'Current: ' + str(w))
         dpg.set_value("currentMaxHeight", 'Current: ' + str(h)) 
+        dpg.delete_item("resetContour")
         dpg.add_button(tag="resetContour", label="Reset Contour Properties", parent="changeContourParent", callback=self.resetContour)
 
     def resetContour(self, sender, app_data=None):
@@ -754,7 +761,7 @@ class Callbacks:
             xarray = [x[0][0] for x in entry["data"]]
             yarray = [x[0][1] for x in entry["data"]]
             self.contourTableEntry[i]["contourX"] = xarray
-            self.contourTableEntry[i]["contourX"] = yarray
+            self.contourTableEntry[i]["contourY"] = yarray
             xmin = min(xarray)
             ymin = min(yarray)
             xmax = max(xarray)
@@ -854,9 +861,10 @@ class Callbacks:
 
     def exportSelectedContourToFile(self, sender=None, app_data=None):
         if self.exportSelectPath is None:
-            dpg.add_text("Missing file name or directory.", parent="exportSelectedContourWindow")
+            dpg.configure_item("exportSelectedContourError", show=True)
             return
 
+        dpg.configure_item("exportSelectedContourError", show=False)
         selectedContours = []
         for entry in self.contourTableEntry:
             if dpg.get_value('checkboxContourId' + str(entry['id'])) == True:
@@ -871,9 +879,10 @@ class Callbacks:
 
     def exportIndividualContourToFile(self, sender=None, app_data=None):
         if self.exportFilePath is None:
-            dpg.add_text("Missing file name or directory.", parent="exportContourWindow")
+            dpg.configure_item("exportContourError", show=True)
             return
 
+        dpg.configure_item("exportContourError", show=False)
         auxId = int(dpg.get_value("contourIdExportText")[12:])
         self.exportContourToFile(auxId, os.path.join(self.exportFilePath, self.exportFileName))
         dpg.configure_item('exportContourWindow', show=False)
@@ -884,18 +893,10 @@ class Callbacks:
             if i["id"] == auxId:
                 entry = i
                 break
-        xarray = entry["contourX"][::-1]
-        yarray = entry["contourY"][::-1]
+        xarray = entry["contourX"]
+        yarray = entry["contourY"]
         xRes = int(dpg.get_value("currentWidth")[6:-2])
         yRes = int(dpg.get_value("currentHeight")[7:-2])
-        #TODO: Bug 
-        # File "C:\Users\rafae\OneDrive\Documentos\DEV\Teste\contExt\callbacks.py", line 833, in exportIndividualContourToFile
-        #     self.exportContourToFile(auxId, os.path.join(self.exportFilePath, self.exportFileName))
-        # File "C:\Users\rafae\OneDrive\Documentos\DEV\Teste\contExt\callbacks.py", line 846, in exportContourToFile
-        #     w = int(dpg.get_value("currentMaxWidth")[9:])
-        #         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        # ValueError: invalid literal for int() with base 10: '1162.0'
-        # Acontece quando aplica o modo matlab e exporta para a Mesh Generation
         w = int(dpg.get_value("currentMaxWidth")[9:])
         h = int(dpg.get_value("currentMaxHeight")[9:])
         dx = w/xRes
@@ -955,6 +956,8 @@ class Callbacks:
         ny = self.currentY[0]
         xmin = self.currentX[1]
         ymin = self.currentY[1]
+        xmax = self.currentX[2]
+        ymax = self.currentY[2]
         dx = self.currentX[3]
         dy = self.currentY[3]
 
@@ -972,8 +975,8 @@ class Callbacks:
         dpg.configure_item("yi", default_value = ymin)
         dpg.configure_item("xi_zoom", default_value = xmin, min_value = xmin)
         dpg.configure_item("yi_zoom", default_value = ymin, min_value = ymin)
-        dpg.configure_item("xf_zoom", default_value = xmin + dx, min_value = xmin + dx)
-        dpg.configure_item("yf_zoom", default_value = ymin + dy, min_value = ymin + dy)
+        dpg.configure_item("xf_zoom", default_value = xmin + dx, min_value = xmin + dx, max_value = xmax)
+        dpg.configure_item("yf_zoom", default_value = ymin + dy, min_value = ymin + dy, max_value = ymax)
         dpg.configure_item("exportMesh", enabled=True)
 
         self.currentX = self.currentX[4:]
@@ -1018,9 +1021,10 @@ class Callbacks:
             self.sparseMeshHandler = SparseMesh()
             self.sparseMeshHandler.addRange(dpg.get_value("xi"), dpg.get_value("yi"), max(self.originalX), max(self.originalY), dx, dy)
         if not self.sparseMeshHandler.addRange(xmin, ymin, xmax, ymax, n, n):
-            dpg.add_text("Invalid range due to overlap", parent="sparsePopup")
+            dpg.configure_item("addZoomError", show=True)
             return
 
+        dpg.configure_item("addZoomError", show=False)
         nZoom = len(self.sparseMeshHandler.ranges) - 1
         dpg.add_separator(tag="separatorZoomStart" + str(nZoom), parent="sparseGroup")
         dpg.add_text(name, tag="zoomTxt" + str(nZoom), parent="sparseGroup")
@@ -1368,6 +1372,11 @@ class Callbacks:
         pass
 
     def exportMesh(self, sender=None, app_data=None):
+        if self.exportFilePath is None:
+            dpg.configure_item("exportMeshError", show=True)
+            return
+
+        dpg.configure_item("exportMeshError", show=False)
         filePath = os.path.join(self.exportFilePath, self.exportFileName)
         if self.sparseMeshHandler != None:
             if self.toggleZoomFlag:

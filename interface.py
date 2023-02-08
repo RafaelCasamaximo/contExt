@@ -283,6 +283,7 @@ class Interface:
                     with dpg.group(horizontal=True):
                         dpg.add_button(label='Save', callback=lambda: self.callbacks.exportIndividualContourToFile())
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportContourWindow', show=False))
+                    dpg.add_text("Missing file name or directory.", tag="exportContourError", show=False)
 
                 with dpg.window(label="Save Files", modal=False, show=False, tag="exportSelectedContourWindow", no_title_bar=False, min_size=[600,255]):
                     dpg.add_text("Name the prefix of your file")
@@ -297,7 +298,8 @@ class Interface:
                     with dpg.group(horizontal=True):
                         dpg.add_button(label='Save', callback=self.callbacks.exportSelectedContourToFile)
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportSelectedContourWindow', show=False))
-
+                    dpg.add_text("Missing file name or directory.", tag="exportSelectedContourError", show=False)
+                    
                 pass
             with dpg.child_window(tag='ContourExtractionParent'):
                 pass
@@ -415,8 +417,9 @@ class Interface:
                     with dpg.group(horizontal=True):
                         dpg.add_button(label="Add Zoom", width=100, callback=self.callbacks.addZoomRegion)
                         dpg.add_button(label="Cancel", width=100, callback=lambda: dpg.configure_item("sparsePopup", show=False))
+                    dpg.add_text("Invalid range due to overlap", tag="addZoomError", show=False)
 
-                with dpg.window(label="Save File", modal=False, show=False, tag="exportMeshFile", no_title_bar=False, min_size=[600,0]):
+                with dpg.window(label="Save File", modal=False, show=False, tag="exportMeshFile", no_title_bar=False, min_size=[600,255]):
                     dpg.add_text("Name your file")
                     dpg.add_input_text(tag='inputMeshNameText')
                     dpg.add_separator()
@@ -429,7 +432,8 @@ class Interface:
                     with dpg.group(horizontal=True):
                         dpg.add_button(label='Save', callback=lambda: self.callbacks.exportMesh())
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportMeshWindow', show=False))
-                
+                    dpg.add_text("Missing file name or directory.", tag="exportMeshError", show=False)
+
                 dpg.add_separator()
 
             with dpg.child_window(tag='MeshGenerationParent'):
@@ -496,9 +500,6 @@ class Interface:
 
         if platform.system() == 'Windows':
             fontPath = self.get_correct_path(fontPath)
-        
-
-        print(fontPath)
 
         try:
             with dpg.font_registry():
@@ -518,7 +519,7 @@ class Interface:
         )
 
     def createSaveImageDialog(self):
-        with dpg.window(label="Export Image as File", modal=False, show=False, tag="exportImageAsFile", no_title_bar=False):
+        with dpg.window(label="Export Image as File", modal=False, show=False, tag="exportImageAsFile", no_title_bar=False, min_size=[600,255]):
             dpg.add_text("Name your file")
             dpg.add_input_text(tag='imageNameExportAsFile')
             dpg.add_separator()
@@ -531,3 +532,4 @@ class Interface:
             with dpg.group(horizontal=True):
                 dpg.add_button(label='Save', callback=self.callbacks.exportImageAsFile)
                 dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportImageAsFile', show=False))
+            dpg.add_text("Missing file name or directory.", tag="exportImageError", show=False)     
