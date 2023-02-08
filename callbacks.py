@@ -387,6 +387,9 @@ class Callbacks:
 
         dpg.set_value('endX', shape[0])
         dpg.set_value('endY', shape[1])
+        dpg.configure_item("exportImageAsFileProcessingGroup", show=True)
+        dpg.configure_item("exportImageAsFileFilteringGroup", show=True)
+        dpg.configure_item("exportImageAsFileThresholdingGroup", show=True)
         pass
 
 
@@ -660,7 +663,7 @@ class Callbacks:
             dpg.add_table_column(label="Size", width_fixed=True)
             dpg.add_table_column(label="Position", width_fixed=True)
             dpg.add_table_column(label="Export to Mesh Generation", width_fixed=True)
-            dpg.add_table_column(label="Export Individual Contour", width_fixed=True)
+            dpg.add_table_column(label="Export Contour", width_fixed=True)
 
 
             for contourEntry in self.contourTableEntry:

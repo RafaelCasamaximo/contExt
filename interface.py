@@ -129,6 +129,11 @@ class Interface:
 
                 dpg.add_button(label='Apply Changes', callback=lambda: self.callbacks.executeQuery('crop'))
 
+                with dpg.group(tag="exportImageAsFileProcessingGroup", show=False):
+                    dpg.add_separator()
+                    dpg.add_text("Save Image")
+                    dpg.add_button(tag='exportImageAsFileProcessing', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Processing'))
+
                 with dpg.window(label="ERROR! Crop not possible!", modal=True, show=False, tag="incorrectCrop", no_title_bar=False):
                     dpg.add_text("ERROR: The start values must be smaller than the end values.")
                     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("incorrectCrop", show=False))
@@ -144,8 +149,8 @@ class Interface:
                 dpg.add_separator()
 
                 pass
+
             with dpg.child_window(tag='ProcessingParent'):
-                dpg.add_button(tag='exportImageAsFileProcessing', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Processing'))
                 pass
 
     def showFiltering(self):
@@ -184,12 +189,17 @@ class Interface:
                     dpg.add_text('Median Blur')
                 dpg.add_text('Intensity')
                 dpg.add_slider_int(tag='medianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('medianBlur'))
+                
+                with dpg.group(tag="exportImageAsFileFilteringGroup", show=False):
+                    dpg.add_separator()
+                    dpg.add_text("Save Image")
+                    dpg.add_button(tag='exportImageAsFileFiltering', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Filtering'))
+                
                 dpg.add_separator()
                 dpg.add_separator()
 
                 pass
             with dpg.child_window(tag='FilteringParent'):
-                dpg.add_button(tag='exportImageAsFileFiltering', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Filtering'))
                 pass
 
     def showThresholding(self):
@@ -226,12 +236,17 @@ class Interface:
                     dpg.add_checkbox(tag='otsuBinarization', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('otsuBinarization', sender, app_data))
                     dpg.add_text('Otsu\'s Binarization')
                 dpg.add_text('(Works better after Gaussian Blur)')
+
+                with dpg.group(tag="exportImageAsFileThresholdingGroup", show=False):
+                    dpg.add_separator()
+                    dpg.add_text("Save Image")
+                    dpg.add_button(tag='exportImageAsFileThresholding', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Thresholding'))
+
                 dpg.add_separator()
                 dpg.add_separator()
 
                 pass
             with dpg.child_window(tag='ThresholdingParent'):
-                dpg.add_button(tag='exportImageAsFileThresholding', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Thresholding'))
                 pass
 
     def showContourExtraction(self):
@@ -325,17 +340,23 @@ class Interface:
                     dpg.add_text("File doesn't contain a valid contour")
                     dpg.add_button(label="Ok", callback=lambda: dpg.configure_item("txtFileErrorPopup", show=False))
 
-                dpg.add_button(label ='Plot Mesh Grid', tag='plotGrid', callback=self.callbacks.toggleGrid, enabled=False)
-                with dpg.tooltip("plotGrid"):
-                    dpg.add_text("Click to draw mesh grid and count the number of internal node. Might take a while.")
+                dpg.add_separator()
 
-                dpg.add_text('Contour Ordering: ')
+                dpg.add_text('Contour Ordering')
                 dpg.add_button(tag='contour_ordering', enabled=False, label='Anticlockwise', callback=self.callbacks.toggleOrdering)
                 with dpg.tooltip("contour_ordering"):
                     dpg.add_text("Click to change contour ordering. If the ordering is incorrect the mesh generation may have some errors")
 
                 dpg.add_separator()
 
+                dpg.add_text("Mesh Grid")
+                dpg.add_button(label ='Plot Mesh Grid', tag='plotGrid', callback=self.callbacks.toggleGrid, enabled=False)
+                with dpg.tooltip("plotGrid"):
+                    dpg.add_text("Click to draw mesh grid and count the number of internal node. Might take a while.")
+                
+                dpg.add_separator()
+
+                dpg.add_text('Mesh Generation Options')
                 dpg.add_text('Original Nodes Number:', tag="nodeNumber")
                 with dpg.tooltip("nodeNumber", tag="nodeNumberTooltip", show=False):
                         dpg.add_text("Doesn't account submesh nodes number.")
@@ -377,6 +398,8 @@ class Interface:
                         dpg.add_text("Click to remove all zoom regions.")
 
                 dpg.add_separator()
+                
+                dpg.add_text("Save Mesh")
                 dpg.add_button(tag='exportMesh', enabled=False, label='Export Mesh', callback=lambda: dpg.configure_item("exportMeshFile", show=True))
                 with dpg.tooltip("exportMesh"):
                     dpg.add_text("Click to save mesh data in text files.")
