@@ -1,6 +1,9 @@
 from subprocess import call
 import dearpygui.dearpygui as dpg
 from math import *
+import os
+import sys
+import platform
 
 """
     A classe Interface é responsável por gerar os elementos visuais do programa.
@@ -482,10 +485,37 @@ class Interface:
 
         dpg.bind_theme(global_theme)
 
-        with dpg.font_registry():
-            default_font = dpg.add_font('fonts/Inter-Regular.otf', 16)
+        fontPath = ''
+        fontPathWindows = 'fonts\Inter-Regular.otf'
+        fontPathLinux = 'fonts/Inter-Regular.otf'
 
-        dpg.bind_font(default_font)
+        if platform.system() == 'Windows':
+            fontPath = fontPathWindows
+        else:
+            fontPath = fontPathLinux
+
+        if platform.system() == 'Windows':
+            fontPath = self.get_correct_path(fontPath)
+        
+
+        print(fontPath)
+
+        try:
+            with dpg.font_registry():
+                default_font = dpg.add_font(fontPath, 16)
+
+            dpg.bind_font(default_font)
+        except:
+            pass
+
+    def get_correct_path(self, relative_path):
+        return os.path.join(
+            os.environ.get(
+                "_MEIPASS2",
+                os.path.abspath(".")
+            ),
+            relative_path
+        )
 
     def createSaveImageDialog(self):
         with dpg.window(label="Export Image as File", modal=False, show=False, tag="exportImageAsFile", no_title_bar=False):

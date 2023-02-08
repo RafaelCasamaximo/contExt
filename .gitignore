@@ -6,4 +6,6 @@
 textureTest.py
 __pycache__
 release
+release-windows_64x
+release-linux_64x
 outputs
