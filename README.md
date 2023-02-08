@@ -5,7 +5,7 @@
 </p>
 
 ## About the Project
-This program performs the treatment and extraction of contours from an image and the generation of sparse or adaptive meshes for the application of numerical methods, especially finite differences.
+This application performs treatment and contour extraction from an image, and the generation of sparse or adaptive meshes intended for the application of numerical methods, especially finite differences.
 
 ## Getting Started
 This software uses `Python` and libraries managed by `PIP`.
