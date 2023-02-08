@@ -3,6 +3,7 @@
   <a href="https://github.com/RafaelCasamaximo/contExt/issues/new/choose">Report a Bug</a> •
   <a href="https://github.com/RafaelCasamaximo/contExt/issues/new/choose">Request a Feature</a>
 </p>
+
 ## About the Project
 This program performs the treatment and extraction of contours from an image and the generation of sparse or adaptive meshes for the application of numerical methods, especially finite differences.
 
