@@ -126,38 +126,25 @@ class Mesh:
         area = area / 2
         return area
 
-    def converte_matlab(y, yResolution):
+    def convert_matlab(y, ymax):
         yarray = []
         for i in range(len(y)):
-            yarray[i] =  yResolution - yarray[i]
+            yarray.append(ymax - y[i])
         return yarray
 
-    def altera_escala(x, y, xResolution, yResolution, width, height, startXOffset, startYOffset):
-        widthCoef = width / xResolution
-        heightCoef = height / yResolution
+    def change_scale(x, y, xmax, ymax, width, height, startXOffset, startYOffset):
+        widthCoef = width / xmax
+        heightCoef = height / ymax
         
         for i in range(len(y)):
-            if width != -1:
+            if width > 0:
                 x[i] = x[i] * widthCoef
-            if startXOffset != -1:
-                x[i] = x[i] + startXOffset
-            if height != -1:
+            x[i] = x[i] + startXOffset
+            if height > 0:
                 y[i] = y[i] * heightCoef
-            if startYOffset != -1:
-                y[i] = y[i] + startYOffset
+            y[i] = y[i] + startYOffset
 
         return x, y
-
-
-    def isOnContour(xarray, yarray, x, y, meshTypeFlag):
-        if meshTypeFlag == 1:
-            point = Point((x,y))
-            polygon = Polygon(list(zip(xarray,yarray)))
-            return polygon.intersects(point)
-        for i in range(len(xarray)):
-            if xarray[i] == x and yarray[i] == y:
-                return True
-        return False
 
     def insidePolygon(xarray, yarray, x, y):
         point = Point((x,y))

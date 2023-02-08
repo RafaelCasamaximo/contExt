@@ -91,7 +91,7 @@ class Interface:
                     dpg.add_file_extension(".tiff", color=(0, 255, 255, 255))
                     dpg.add_file_extension(".tif", color=(0, 255, 255, 255))
 
-                dpg.add_text('Select a image to use.')
+                dpg.add_text('Select a Image to Use')
                 dpg.add_button(tag='import_image', label='Import Image', callback=lambda: dpg.show_item("file_dialog_id"))
                 with dpg.tooltip("import_image"):
                     dpg.add_text("It is not possible to import more than one image! Close the program and open it again to import another image.")
@@ -180,6 +180,7 @@ class Interface:
                 dpg.add_text('Intensity')
                 dpg.add_slider_int(tag='medianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('medianBlur'))
                 dpg.add_separator()
+                dpg.add_separator()
 
                 pass
             with dpg.child_window(tag='FilteringParent'):
@@ -220,7 +221,7 @@ class Interface:
                     dpg.add_text('Otsu\'s Binarization')
                 dpg.add_text('(Works better after Gaussian Blur)')
                 dpg.add_separator()
-
+                dpg.add_separator()
 
                 pass
             with dpg.child_window(tag='ThresholdingParent'):
@@ -229,7 +230,6 @@ class Interface:
     def showContourExtraction(self):
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
-
                 dpg.add_text('OpenCV2 Find Contour')
                 dpg.add_text('Approximation Mode')
                 dpg.add_listbox(tag='approximationModeListbox', items=['None', 'Simple', 'TC89_L1', 'TC89_KCOS'])
@@ -243,22 +243,26 @@ class Interface:
                     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("nonBinary", show=False))
                 dpg.add_separator()
 
-                dpg.add_text('Export Settings')
-                dpg.add_text("Insert the contour ID")
-                dpg.add_input_int(tag='inputContourId')
+                dpg.add_text('Contour Properties')
                 dpg.add_text('Max Width Mapping')
+                dpg.add_text('Current: --', tag="currentMaxWidth")
                 dpg.add_input_double(tag='maxWidthMapping')
                 dpg.add_text('Max Height Mapping')
+                dpg.add_text('Current: --', tag="currentMaxHeight")
                 dpg.add_input_double(tag='maxHeightMapping')
                 dpg.add_text('Width Offset')
+                dpg.add_text('Current: --', tag="currentWidthOffset")
                 dpg.add_input_double(tag='widthOffset')
                 dpg.add_text('Height Offset')
+                dpg.add_text('Current: --', tag="currentHeightOffset")
                 dpg.add_input_double(tag='heightOffset')
                 dpg.add_checkbox(label='Matlab mode', tag='matlabModeCheckbox')
-                dpg.add_button(tag='exportContourButton', label='Export Contour', callback=self.callbacks.exportButtonCall)
+                with dpg.group(tag="changeContourParent"):
+                    dpg.add_button(tag='updtadeContourButton', label='Apply Changes', callback=self.callbacks.updateContour)
+                dpg.add_separator()
                 dpg.add_separator()
 
-                with dpg.window(label="Save File", modal=False, show=False, tag="exportContourWindow", no_title_bar=False, min_size=[600,0]):
+                with dpg.window(label="Save File", modal=False, show=False, tag="exportContourWindow", no_title_bar=False, min_size=[600,280]):
                     dpg.add_text("Name your file")
                     dpg.add_input_text(tag='inputContourNameText')
                     dpg.add_separator()
@@ -270,10 +274,10 @@ class Interface:
                     dpg.add_text('File Name: ', tag='exportFileName')
                     dpg.add_text('Complete Path Name: ', tag='exportPathName')
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label='Save', callback=lambda: self.callbacks.exportContourToFile())
+                        dpg.add_button(label='Save', callback=lambda: self.callbacks.exportIndividualContourToFile())
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportContourWindow', show=False))
 
-                with dpg.window(label="Save Files", modal=False, show=False, tag="exportSelectedContourWindow", no_title_bar=False, min_size=[600,0]):
+                with dpg.window(label="Save Files", modal=False, show=False, tag="exportSelectedContourWindow", no_title_bar=False, min_size=[600,255]):
                     dpg.add_text("Name the prefix of your file")
                     dpg.add_input_text(tag='inputSelectedContourNameText')
                     dpg.add_separator()
@@ -286,8 +290,6 @@ class Interface:
                     with dpg.group(horizontal=True):
                         dpg.add_button(label='Save', callback=self.callbacks.exportSelectedContourToFile)
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportSelectedContourWindow', show=False))
-
-                dpg.add_separator()
 
                 pass
             with dpg.child_window(tag='ContourExtractionParent'):
@@ -318,7 +320,7 @@ class Interface:
                 with dpg.tooltip("plotGrid"):
                     dpg.add_text("Click to draw mesh grid and count the number of internal node. Might take a while.")
 
-                dpg.add_text('Contour ordering: ')
+                dpg.add_text('Contour Ordering: ')
                 dpg.add_button(tag='contour_ordering', enabled=False, label='Anticlockwise', callback=self.callbacks.toggleOrdering)
                 with dpg.tooltip("contour_ordering"):
                     dpg.add_text("Click to change contour ordering. If the ordering is incorrect the mesh generation may have some errors")
@@ -359,33 +361,33 @@ class Interface:
                 dpg.add_separator()
                 
                 with dpg.group(tag="sparseGroup"):
-                    dpg.add_text('Sparse and adataptive mesh')
-                    dpg.add_button(label='Add mesh zoom region', enabled=False, tag="sparseButton", callback=lambda: dpg.configure_item("sparsePopup", show=True))
-                    dpg.add_button(label ='Reset mesh', tag='resetMesh', callback=self.callbacks.resetMesh, show=False)
+                    dpg.add_text('Sparse and Adataptive Mesh')
+                    dpg.add_button(label='Add Mesh Zoom Region', enabled=False, tag="sparseButton", callback=lambda: dpg.configure_item("sparsePopup", show=True))
+                    dpg.add_button(label ='Reset Mesh', tag='resetMesh', callback=self.callbacks.resetMesh, show=False)
                     with dpg.tooltip("resetMesh"):
                         dpg.add_text("Click to remove all zoom regions.")
 
                 dpg.add_separator()
-                dpg.add_button(tag='exportMesh', enabled=False, label='Export mesh', callback=lambda: dpg.configure_item("exportMeshFile", show=True))
+                dpg.add_button(tag='exportMesh', enabled=False, label='Export Mesh', callback=lambda: dpg.configure_item("exportMeshFile", show=True))
                 with dpg.tooltip("exportMesh"):
                     dpg.add_text("Click to save mesh data in text files.")
                 
-                with dpg.window(label='Add mesh zoom region', modal=True, show=False, tag="sparsePopup", min_size=[400,420]):
-                    dpg.add_text('Type of mesh zoom')
+                with dpg.window(label='Add Mesh Zoom Region', modal=True, show=False, tag="sparsePopup", min_size=[400,420]):
+                    dpg.add_text('Type of Mesh Zoom')
                     dpg.add_button(tag='meshZoomType', enabled=True, label='Sparse', callback=self.callbacks.toggleZoom)
                     with dpg.tooltip("meshZoomType"):
                         dpg.add_text("Click to change the mesh zoom type.", tag="meshZoomTypeTooltip")
                     
                     dpg.add_separator()
-                    dpg.add_text('Zoom region name')
+                    dpg.add_text('Zoom Region Name')
                     dpg.add_input_text(tag="zoomRegionName", default_value="Zoom region 1")
 
                     dpg.add_separator()
-                    dpg.add_text('Zoom node size')
+                    dpg.add_text('Zoom Node Size')
                     dpg.add_listbox(tag='dxListbox', items=['Divided by 2', 'Divided by 4', 'Divided by 8', 'Divided by 16'])
                     
                     dpg.add_separator()
-                    dpg.add_text('Zoom bottom')
+                    dpg.add_text('Zoom Bottom')
                     with dpg.group(horizontal=True):
                         dpg.add_text('Bottom x:')
                         dpg.add_input_float(tag='xi_zoom')
@@ -394,17 +396,17 @@ class Interface:
                         dpg.add_input_float(tag='yi_zoom')
 
                     dpg.add_separator()
-                    dpg.add_text('Zoom top')
+                    dpg.add_text('Zoom Top')
                     with dpg.group(horizontal=True):
                         dpg.add_text('Top x:')
                         dpg.add_input_float(tag='xf_zoom')
                     with dpg.group(horizontal=True):
-                        dpg.add_text('top y:')
+                        dpg.add_text('Top y:')
                         dpg.add_input_float(tag='yf_zoom')
                     
                     dpg.add_separator()
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label="Add zoom", width=100, callback=self.callbacks.addZoomRegion)
+                        dpg.add_button(label="Add Zoom", width=100, callback=self.callbacks.addZoomRegion)
                         dpg.add_button(label="Cancel", width=100, callback=lambda: dpg.configure_item("sparsePopup", show=False))
 
                 with dpg.window(label="Save File", modal=False, show=False, tag="exportMeshFile", no_title_bar=False, min_size=[600,0]):
@@ -420,6 +422,9 @@ class Interface:
                     with dpg.group(horizontal=True):
                         dpg.add_button(label='Save', callback=lambda: self.callbacks.exportMesh())
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportMeshWindow', show=False))
+                
+                dpg.add_separator()
+                dpg.add_separator()
 
             with dpg.child_window(tag='MeshGenerationParent'):
                 with dpg.theme(tag="grid_plot_theme"):

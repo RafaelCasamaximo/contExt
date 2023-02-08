@@ -42,6 +42,7 @@ class Callbacks:
         self.toggleZoomFlag = True
         self.toggleGridFlag = False
         self.sparseMeshHandler = None
+        self.countGrid = 0
         self.originalX = []
         self.originalY = []
         self.currentX = []
@@ -285,7 +286,7 @@ class Callbacks:
             'otsuBinarization',
             'matlabModeCheckbox',
             'extractContourButton',
-            'exportContourButton'
+            'updtadeContourButton'
         ]
         for checkbox in checkboxes:
             dpg.configure_item(checkbox, enabled=False)
@@ -309,7 +310,7 @@ class Callbacks:
             'otsuBinarization',
             'matlabModeCheckbox',
             'extractContourButton',
-            'exportContourButton'
+            'updtadeContourButton'
         ]
         for checkbox in checkboxes:
             dpg.configure_item(checkbox, enabled=True)
@@ -573,6 +574,8 @@ class Callbacks:
                     'pointsNo': len(contour),
                     'color': contourColorBGR,
                     'data': contour,
+                    'contourX': [x[0][0] for x in contour],
+                    'contourY': [x[0][1] for x in contour],
                 }
             )
             cv2.drawContours(image, contour, -1, contourColor, thicknessValue)
@@ -601,31 +604,130 @@ class Callbacks:
             borders_outerH=True, parent='ContourExtractionParent'):
 
             dpg.add_table_column(label="Id", width_fixed=True)
-            dpg.add_table_column(label="Size", width_fixed=True)
             dpg.add_table_column(label="Color", width_fixed=True)
             dpg.add_table_column(label="Visible", width_fixed=True)
+            dpg.add_table_column(label="Size", width_fixed=True)
+            dpg.add_table_column(label="Position", width_fixed=True)
             dpg.add_table_column(label="Export to Mesh Generation", width_fixed=True)
+            dpg.add_table_column(label="Export Individual Contour", width_fixed=True)
 
 
             for contourEntry in self.contourTableEntry:
                 with dpg.table_row():
-                    for j in range(5):
+                    for j in range(7):
                         if j == 0:
                             dpg.add_text(contourEntry['id'])
                         if j == 1:
-                            dpg.add_text(contourEntry['pointsNo'])
-                        if j == 2:
                             dpg.add_color_button(default_value=contourEntry['color'])
-                        if j == 3:
+                        if j == 2:
                             dpg.add_checkbox(tag='checkboxContourId' + str(contourEntry['id']), callback= lambda sender, app_data: self.redrawContours(), default_value=True)
+                        if j == 3:
+                            dpg.add_text(contourEntry['pointsNo'])
                         if j == 4:
+                            xmin = min(contourEntry["contourX"])
+                            ymin = min(contourEntry["contourY"])
+                            xmax = max(contourEntry["contourX"])
+                            ymax = max(contourEntry["contourY"])
+                            dpg.add_text("Xmin = " + str(xmin) + "\nYmin = " + str(ymin) + "\nXmax = " + str(xmax) + "\nYmax = " + str(ymax), tag="position" + str(contourEntry['id']))
+                        if j == 5:
                             dpg.add_button(label='Export to Mesh Generation', tag="exportMeshGeneration" + str(contourEntry['id']), callback=self.exportToMeshGeneration)
-        
+                        if j == 6:
+                            dpg.add_button(label='Export Individual Contour', tag="exportContour" + str(contourEntry['id']), callback=self.exportButtonCall)
+
         self.blocks[Blocks.findContour.value]['output'] = image
         self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
 
+        xRes = int(dpg.get_value("currentWidth")[6:-2])
+        yRes = int(dpg.get_value("currentHeight")[7:-2])
+        dpg.set_value("currentWidthOffset", 'Current: 0')
+        dpg.set_value("currentHeightOffset", 'Current: 0')
+        dpg.set_value("currentMaxWidth", 'Current: ' + str(xRes))
+        dpg.set_value("currentMaxHeight", 'Current: ' + str(yRes))
+        dpg.configure_item("maxWidthMapping", default_value = xRes)
+        dpg.configure_item("maxHeightMapping", default_value = yRes)
+
     def exportToMeshGeneration(self, sender, app_data=None):
+        auxId = int(sender[20:])
+        for i in self.contourTableEntry:
+            if i["id"] == auxId:
+                entry = i
+                break
+        xarray = entry["contourX"][::-1]
+        yarray = entry["contourY"][::-1]
+        xRes = int(dpg.get_value("currentWidth")[6:-2])
+        yRes = int(dpg.get_value("currentHeight")[7:-2])
+        w = int(dpg.get_value("currentMaxWidth")[9:])
+        h = int(dpg.get_value("currentMaxHeight")[9:])
+        dx = w/xRes
+        dy = h/yRes
+        xmin = min(xarray)
+        ymin = min(yarray)
+        xmax = max(xarray)
+        ymax = max(yarray)
+        nx = round((xmax - xmin)/dx) + 1
+        ny = round((ymax - ymin)/dy) + 1
+        xarray.append(xarray[0])
+        yarray.append(yarray[0])
+        self.originalX = [nx, xmin, xmax, dx] + xarray
+        self.originalY = [ny, ymin, ymax, dy] + yarray
+        self.importContour()
         pass
+
+    def updateContour(self, sender, app_data=None):
+        xRes = int(dpg.get_value("currentWidth")[6:-2])
+        yRes = int(dpg.get_value("currentHeight")[7:-2])
+        xoffset = float(dpg.get_value("widthOffset"))
+        yoffset = float(dpg.get_value("heightOffset"))
+        w = float(dpg.get_value("maxWidthMapping"))
+        h = float(dpg.get_value("maxHeightMapping"))
+        matlabFlag = dpg.get_value("matlabModeCheckbox")
+
+        for i in range(len(self.contourTableEntry)):
+            entry = self.contourTableEntry[i]
+            xarray = [x[0][0] for x in entry["data"]]
+            yarray = [x[0][1] for x in entry["data"]]
+            if matlabFlag:
+                yarray = Mesh.convert_matlab(yarray, yRes - 1)
+            xarray, yarray = Mesh.change_scale(xarray, yarray, xRes, yRes, w, h, xoffset, yoffset)
+            self.contourTableEntry[i]["contourX"] = xarray
+            self.contourTableEntry[i]["contourX"] = yarray
+            xmin = min(xarray)
+            ymin = min(yarray)
+            xmax = max(xarray)
+            ymax = max(yarray)
+            dpg.set_value("position" + str(entry['id']), "Xmin = " + str(xmin) + "\nYmin = " + str(ymin) + "\nXmax = " + str(xmax) + "\nYmax = " + str(ymax))
+
+        dpg.set_value("currentWidthOffset", 'Current: ' + str(xoffset))
+        dpg.set_value("currentHeightOffset", 'Current: ' + str(yoffset))
+        dpg.set_value("currentMaxWidth", 'Current: ' + str(w))
+        dpg.set_value("currentMaxHeight", 'Current: ' + str(h)) 
+        dpg.add_button(tag="resetContour", label="Reset Contour Properties", parent="changeContourParent", callback=self.resetContour)
+
+    def resetContour(self, sender, app_data=None):
+        for i in range(len(self.contourTableEntry)):
+            entry = self.contourTableEntry[i]
+            xarray = [x[0][0] for x in entry["data"]]
+            yarray = [x[0][1] for x in entry["data"]]
+            self.contourTableEntry[i]["contourX"] = xarray
+            self.contourTableEntry[i]["contourX"] = yarray
+            xmin = min(xarray)
+            ymin = min(yarray)
+            xmax = max(xarray)
+            ymax = max(yarray)
+            dpg.set_value("position" + str(entry['id']), "Xmin = " + str(xmin) + "\nYmin = " + str(ymin) + "\nXmax = " + str(xmax) + "\nYmax = " + str(ymax))
+        
+        dpg.delete_item("resetContour")
+        xRes = int(dpg.get_value("currentWidth")[6:-2])
+        yRes = int(dpg.get_value("currentHeight")[7:-2])
+        dpg.set_value("currentWidthOffset", 'Current: 0')
+        dpg.set_value("currentHeightOffset", 'Current: 0')
+        dpg.set_value("currentMaxWidth", 'Current: ' + str(xRes))
+        dpg.set_value("currentMaxHeight", 'Current: ' + str(yRes))
+        dpg.set_value("maxWidthMapping", xRes)
+        dpg.set_value("maxHeightMapping", yRes)
+        dpg.set_value("widthOffset", 0)
+        dpg.set_value("heightOffset", 0)
+        dpg.set_value("matlabModeCheckbox", False)
 
     def redrawContours(self):
         image = self.blocks[self.getLastActiveBeforeMethod('findContour')]['output'].copy()
@@ -655,11 +757,9 @@ class Callbacks:
 
         self.exportFilePath = app_data['file_path_name']
 
-        contourId = int(dpg.get_value('inputContourId'))
         self.exportFileName = dpg.get_value('inputContourNameText') + '.txt'
         filePath = os.path.join(self.exportFilePath, self.exportFileName)
 
-        dpg.set_value('contourIdExportText', 'Contour ID: ' + str(contourId))
         dpg.set_value('exportFileName', 'File Name: ' + self.exportFileName)
         dpg.set_value('exportPathName', 'Complete Path Name: ' + filePath)
 
@@ -684,9 +784,10 @@ class Callbacks:
         dpg.set_value('exportSelectedPathName', 'Complete Path Name: ' + filesPath)
         pass
 
-    def exportButtonCall(self, sender=None, app_data=None):
+    def exportButtonCall(self, sender, app_data=None):
+        auxId = sender[13:]
         dpg.set_value('inputContourNameText', '')
-        dpg.set_value('contourIdExportText', 'Contour ID: ')
+        dpg.set_value('contourIdExportText', 'Contour ID: ' + auxId)
         dpg.set_value('exportFileName', 'File Name: ')
         dpg.set_value('exportPathName', 'Complete Path Name: ')
         self.exportFileName = None
@@ -707,6 +808,9 @@ class Callbacks:
         pass
 
     def exportSelectedContourToFile(self, sender=None, app_data=None):
+        if self.exportSelectPath is None:
+            dpg.add_text("Missing file name or directory.", parent="exportSelectedContourWindow")
+            return
 
         selectedContours = []
         for entry in self.contourTableEntry:
@@ -714,83 +818,49 @@ class Callbacks:
                 selectedContours.append(entry)
 
         for selectedContour in selectedContours:
-            self.exportIndividualContourToFile(selectedContour['id'], selectedContour['data'])
+            self.exportContourToFile(selectedContour['id'], os.path.join(self.exportSelectPath, self.exportSelectFileName + '_' + str(selectedContour['id'])) + '.txt')
         self.exportFilePath = None
         self.exportFileName = None
         dpg.configure_item('exportSelectedContourWindow', show=False)
         pass
 
-    def exportIndividualContourToFile(self, id, array):
-        flattenContour = array.flatten()
-
-        convertedArray = []
-        i = 0
-        while i < len(flattenContour):
-            convertedArray.append([flattenContour[i], flattenContour[i+1]])
-            i += 2
-        convertedArray.append([flattenContour[0], flattenContour[1]])
-        self.pointArrayToFile(os.path.join(self.exportSelectPath, self.exportSelectFileName + '-' + str(id)) + '.txt', convertedArray)
-        pass
-
-    def exportContourToFile(self, sender=None, app_data=None):
-
+    def exportIndividualContourToFile(self, sender=None, app_data=None):
         if self.exportFilePath is None:
+            dpg.add_text("Missing file name or directory.", parent="exportContourWindow")
             return
 
-        # Pega os dados dos campos
-        maxWidthMapping = dpg.get_value('maxWidthMapping')
-        maxHeightMapping = dpg.get_value('maxHeightMapping')
-        widthOffset = dpg.get_value('widthOffset')
-        heightOffset = dpg.get_value('heightOffset')
-        matlabMode = dpg.get_value('matlabModeCheckbox')
-        contourId = dpg.get_value('inputContourId')
-
-        flattenContour = None
-
-        for contour in self.contourTableEntry:
-            if contour['id'] == contourId:
-                flattenContour = contour['data'].flatten()
-
-
-        xArray = []
-        yArray = []
-        convertedArray = []
-        i = 0
-        while i < len(flattenContour):
-            convertedArray.append([flattenContour[i], flattenContour[i+1]])
-            xArray.append(flattenContour[i])
-            yArray.append(flattenContour[i+1])
-            i += 2
-        convertedArray.append([flattenContour[0], flattenContour[1]])
-        xArray.append(flattenContour[0])
-        yArray.append(flattenContour[1])
-
-        # TODO: colocar métodos de redimensionar e converter pra matlab aqui
-
-        self.pointArrayToFile(os.path.join(self.exportFilePath, self.exportFileName), convertedArray)
+        auxId = int(dpg.get_value("contourIdExportText")[12:])
+        self.exportContourToFile(auxId, os.path.join(self.exportFilePath, self.exportFileName))
         dpg.configure_item('exportContourWindow', show=False)
-        self.exportFilePath = None
-        self.exportFileName = None
         pass
 
-    
-    def pointArrayToFile(self, filePath, array):
-        fp = open(filePath, 'w')
-        fp.write(self.pointArrayToString(array))
-        fp.close()
-
-    def pointArrayToString(self, array):
-        content = ''
-        for point in array:
-            content += str(point[0]) + ' ' + str(point[1]) + '\n'
-        return content
+    def exportContourToFile(self, auxId, path):
+        for i in self.contourTableEntry:
+            if i["id"] == auxId:
+                entry = i
+                break
+        xarray = entry["contourX"][::-1]
+        yarray = entry["contourY"][::-1]
+        xRes = int(dpg.get_value("currentWidth")[6:-2])
+        yRes = int(dpg.get_value("currentHeight")[7:-2])
+        w = int(dpg.get_value("currentMaxWidth")[9:])
+        h = int(dpg.get_value("currentMaxHeight")[9:])
+        dx = w/xRes
+        dy = h/yRes
+        xmin = min(xarray)
+        ymin = min(yarray)
+        xmax = max(xarray)
+        ymax = max(yarray)
+        nx = round((xmax - xmin)/dx) + 1
+        ny = round((ymax - ymin)/dy) + 1
+        xarray.append(xarray[0])
+        yarray.append(yarray[0])
+        Mesh.export_coords_mesh(path, xarray, yarray, nx, ny, xmin, ymin, xmax, ymax, dx, dy)
+        pass
 
     def openContourFile(self, sender = None, app_data = None):
         self.txtFilePath = app_data['file_path_name']
         self.txtFileName = app_data['file_name']
-        dpg.configure_item('contour_ordering', enabled=True)
-        dpg.configure_item('sparseButton', enabled=True)
-        dpg.configure_item('plotGrid', enabled=True)
         
         dpg.set_value('contour_file_name_text', 'File Name: ' + self.txtFileName)
         dpg.set_value('contour_file_path_text', 'File Path: ' + self.txtFilePath)
@@ -819,6 +889,9 @@ class Callbacks:
             self.removeGrid()
         dpg.delete_item("meshPlot")
         dpg.delete_item("originalMeshPlot")
+        dpg.configure_item('contour_ordering', enabled=True)
+        dpg.configure_item('sparseButton', enabled=True)
+        dpg.configure_item('plotGrid', enabled=True)
 
         self.currentX = self.originalX
         self.currentY = self.originalY
@@ -903,7 +976,7 @@ class Callbacks:
         dpg.add_text("Bottom y: " + str(xmin), tag="yminZoom" + str(nZoom), parent="sparseGroup")
         dpg.add_text("Top x: " + str(xmin), tag="xmaxZoom" + str(nZoom), parent="sparseGroup")
         dpg.add_text("Top x: " + str(xmin), tag="ymaxZoom" + str(nZoom), parent="sparseGroup")
-        dpg.add_button(tag="removeZoom" + str(nZoom), label="Remove zoom region", parent="sparseGroup", callback=self.removeZoomRegion)
+        dpg.add_button(tag="removeZoom" + str(nZoom), label="Remove Zoom Region", parent="sparseGroup", callback=self.removeZoomRegion)
 
         if nZoom == 2:
             dpg.configure_item("resetMesh", show=True)
@@ -1045,11 +1118,9 @@ class Callbacks:
 
 
         for i in range(ny):
-            flag = False
-            inside = False
+            flag = True
             xGrid = []
             yGrid = []
-            
             for j in range(nx):
                 if meshTypeFlag == 2:
                     auxX = dx[j]
@@ -1057,11 +1128,8 @@ class Callbacks:
                 else:
                     auxX = xmin + j * dx
                     auxY = ymin + i * dy
-                    
-                if inside != Mesh.isOnContour(self.currentX, self.currentY, auxX, auxY, meshTypeFlag):
-                    flag = True
-                    inside = not inside
-                if inside:
+
+                if Mesh.insidePolygon(self.currentX, self.currentY, auxX, auxY):
                     if flag:
                         flag = False
                         xGrid.append(auxX)
@@ -1071,14 +1139,20 @@ class Callbacks:
                     else:
                         xGrid[-1] = auxX
                         yGrid[-1] = auxY
-                if inside:
                     nInternalNodes += 1
-            dpg.add_line_series(xGrid, yGrid, tag="meshGridPlotY0" + str(i), parent='y_axis')
-            dpg.bind_item_theme("meshGridPlotY0" + str(i), "grid_plot_theme")
+                else:
+                    flag = True
+            tam = len(xGrid)
+            count = 0
+            while count < tam:
+                dpg.add_line_series(xGrid[count:count + 2], yGrid[count:count + 2], tag="meshGridPlotY0/" + str(i) + "/" + str(count), parent='y_axis')
+                dpg.bind_item_theme("meshGridPlotY0/" + str(i) + "/"  + str(count), "grid_plot_theme")
+                count += 2
+            if count > self.countGrid:
+                self.countGrid = count 
 
         for j in range(nx):
-            flag = False
-            inside = False
+            flag = True
             xGrid = []
             yGrid = []
             for i in range(ny):
@@ -1089,10 +1163,7 @@ class Callbacks:
                     auxX = xmin + j * dx
                     auxY = ymin + i * dy
 
-                if inside !=  Mesh.isOnContour(self.currentX, self.currentY, auxX, auxY, meshTypeFlag):
-                    flag = True
-                    inside = not inside
-                if inside:
+                if Mesh.insidePolygon(self.currentX, self.currentY, auxX, auxY):
                     if flag:
                         flag = False
                         xGrid.append(auxX)
@@ -1102,8 +1173,18 @@ class Callbacks:
                     else:
                         xGrid[-1] = auxX
                         yGrid[-1] = auxY
-            dpg.add_line_series(xGrid, yGrid, tag="meshGridPlotX0" + str(j), parent='y_axis')
-            dpg.bind_item_theme("meshGridPlotX0" + str(j), "grid_plot_theme")
+                else:
+                    flag = True
+
+            tam = len(xGrid)
+            count = 0
+            while count < tam:
+                dpg.add_line_series(xGrid[count:count + 2], yGrid[count:count + 2], tag="meshGridPlotX0/" + str(j) + "/" + str(count), parent='y_axis')
+                dpg.bind_item_theme("meshGridPlotX0/" + str(j) + "/"  + str(count), "grid_plot_theme")
+                count += 2
+            if count > self.countGrid:
+                self.countGrid = count 
+        
         if meshTypeFlag == 1:
             nAux = 0
             for z in range(1, len(self.sparseMeshHandler.ranges)):
@@ -1128,8 +1209,14 @@ class Callbacks:
                             nAux += 1
                         else:
                             flag = True
-                    dpg.add_line_series(xGrid, yGrid, tag="meshGridPlotY" + str(z) + str(i), parent='y_axis')
-                    dpg.bind_item_theme("meshGridPlotY" + str(z) + str(i), "grid_plot_theme")
+                    tam = len(xGrid)
+                    count = 0
+                    while count < tam:
+                        dpg.add_line_series(xGrid[count:count + 2], yGrid[count:count + 2], tag="meshGridPlotY" + str(z) + "/" + str(i) + "/" + str(count), parent='y_axis')
+                        dpg.bind_item_theme("meshGridPlotY" + str(z) + "/" + str(i) + "/" + str(count), "grid_plot_theme")
+                        count += 2
+                    if count > self.countGrid:
+                        self.countGrid = count 
 
                 for j in range(r["nx"]):
                     flag = True
@@ -1150,10 +1237,14 @@ class Callbacks:
                                 yGrid[-1] = auxY
                         else:
                             flag = True
-                        
-                    dpg.add_line_series(xGrid, yGrid, tag="meshGridPlotX" + str(z) + str(j), parent='y_axis')
-                    dpg.bind_item_theme("meshGridPlotX" + str(z) + str(j), "grid_plot_theme")
-                
+                    tam = len(xGrid)
+                    count = 0
+                    while count < tam:
+                        dpg.add_line_series(xGrid[count:count + 2], yGrid[count:count + 2], tag="meshGridPlotX" + str(z) + "/" + str(j) + "/" + str(count), parent='y_axis')
+                        dpg.bind_item_theme("meshGridPlotX" + str(z) + "/" + str(j) + "/" + str(count), "grid_plot_theme")
+                        count += 2
+                    if count > self.countGrid:
+                        self.countGrid = count 
                 
                 nAux -= (1 + (r["xf"] - r["xi"])//dx) * (1 + (r["yf"] - r["yi"])//dy)    
             nInternalNodes += nAux
@@ -1171,13 +1262,14 @@ class Callbacks:
             ny = []
             for r in aux:
                 nx.append(r["nx"])
-                ny.append(r["ny"])  
-        for z in range(n):
-            for i in range(ny[z]):
-                    dpg.delete_item("meshGridPlotY" + str(z) + str(i))
-            for j in range(nx[z]):
-                    dpg.delete_item("meshGridPlotX" + str(z) + str(j))
-
+                ny.append(r["ny"])
+        for k in range(0,self.countGrid,2):
+            for z in range(n):
+                for i in range(ny[z]):
+                        dpg.delete_item("meshGridPlotY" + str(z) + "/" + str(i) + "/" + str(k))
+                for j in range(nx[z]):
+                        dpg.delete_item("meshGridPlotX" + str(z) + "/" + str(j) + "/" + str(k))
+        self.countGrid = 0
 
     def toggleGrid(self, sender=None, app_data=None):
         self.toggleGridFlag = not self.toggleGridFlag
