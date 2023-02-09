@@ -11,7 +11,7 @@ This application performs treatment and contour extraction from an image, and th
 This software uses `Python` and libraries managed by `PIP`.
 
 ### Graphical User Interface
-The graphical interface was implemented using the [DearPyGUI](https://github.com/hoffstadt/DearPyGui) library, which makes use of graphical APIs (`DirectX 11` on Windows, `Metal` on macOS, `OpenGL 3` on Linux and `OpenGL` ES on Raspberry Pi 4), therefore, you must have the necessary drivers and software to run this software.
+The graphical interface was implemented using the [DearPyGUI](https://github.com/hoffstadt/DearPyGui) library, which makes use of graphical APIs (`DirectX 11` on Windows, `Metal` on macOS, `OpenGL 3` on Linux and `OpenGL ES` on Raspberry Pi 4), therefore, you must have the necessary drivers and software to run this software.
 
 ### Installing Libraries
 To install all the requirements run the command:
@@ -63,6 +63,7 @@ You can download the binaries for each operating system on the [Releases tab](ht
 
 ## Contributing
 You can [open a new issue or request a feature here](https://github.com/RafaelCasamaximo/contExt/issues/new/choose).
+If you want to contribute to the project [see our Guideline](https://github.com/RafaelCasamaximo/contExt/blob/main/CONTRIBUTING.md)
 
 ## Code of Conduct
 Access our [Code of Conduct](https://github.com/RafaelCasamaximo/contExt/blob/main/CODE_OF_CONDUCT.md)
