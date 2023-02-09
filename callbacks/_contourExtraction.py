@@ -336,8 +336,8 @@ class ContourExtraction:
         yarray = entry["contourY"]
         xRes = int(dpg.get_value("currentWidth")[6:-2])
         yRes = int(dpg.get_value("currentHeight")[7:-2])
-        w = int(dpg.get_value("currentMaxWidth")[9:])
-        h = int(dpg.get_value("currentMaxHeight")[9:])
+        w = float(dpg.get_value("currentMaxWidth")[9:])
+        h = float(dpg.get_value("currentMaxHeight")[9:])
         dx = w/xRes
         dy = h/yRes
         xmin = min(xarray)

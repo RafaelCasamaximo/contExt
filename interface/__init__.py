@@ -84,7 +84,7 @@ class Interface:
             dpg.add_separator()
             dpg.add_text("You MUST enter a File Name to select a directory")
             dpg.add_button(label='Select the directory', callback=self.callbacks.imageProcessing.exportImageDirectorySelector)
-            dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='exportImageDirectorySelector', id="exportImageDirectorySelector", callback=lambda sender, app_data: self.callbacks.exportImageSelectDirectory(sender, app_data))
+            dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='exportImageDirectorySelector', id="exportImageDirectorySelector", callback=lambda sender, app_data: self.callbacks.imageProcessing.exportImageSelectDirectory(sender, app_data))
             dpg.add_separator()
             dpg.add_text('File Name: ', tag='exportImageFileName')
             dpg.add_text('Complete Path Name: ', tag='exportImageFilePath')
