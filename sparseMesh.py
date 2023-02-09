@@ -328,7 +328,10 @@ class SparseMesh:
             return
 
 
-    def export_coords_mesh(path, x, y):
+    def export_coords_mesh(path, x, y, toggleOrderingFlag):
+        if not toggleOrderingFlag:
+            x = x[::-1]
+            y = y[::-1]
         content = ''
         try:
             with open(path, "w") as dataFile:

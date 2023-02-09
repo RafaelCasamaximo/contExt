@@ -95,7 +95,10 @@ class Mesh:
     Função responsável por exportar as coordenadas dos nós da malha em um arquivo path
     """
 
-    def export_coords_mesh(path, x, y, nx, ny, xmin, ymin, xmax, ymax, dx, dy):
+    def export_coords_mesh(path, x, y, nx, ny, xmin, ymin, xmax, ymax, dx, dy, toggleOrderingFlag):
+        if not toggleOrderingFlag:
+            x = x[::-1]
+            y = y[::-1]
         content = ''
         content = content + str(nx) + " " + str(ny) + "\n"
         content = content + str(xmin) + " " + str(ymin) + "\n"

@@ -263,6 +263,13 @@ class Interface:
                 with dpg.window(label="ERROR! The image must be in a binary color scheme!", modal=True, show=False, tag="nonBinary", no_title_bar=False):
                     dpg.add_text("ERROR: You must select a binarization filter on the Thresholding Tab.")
                     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("nonBinary", show=False))
+                
+                dpg.add_separator()
+                
+                dpg.add_text('Contour Ordering')
+                dpg.add_button(tag='contour_ordering', enabled=False, label='Anticlockwise', callback=self.callbacks.toggleOrdering)
+                with dpg.tooltip("contour_ordering"):
+                    dpg.add_text("Click to change contour ordering. If the ordering is incorrect the mesh generation may have some errors")
                 dpg.add_separator()
 
                 dpg.add_text('Contour Properties')
@@ -343,8 +350,8 @@ class Interface:
                 dpg.add_separator()
 
                 dpg.add_text('Contour Ordering')
-                dpg.add_button(tag='contour_ordering', enabled=False, label='Anticlockwise', callback=self.callbacks.toggleOrdering)
-                with dpg.tooltip("contour_ordering"):
+                dpg.add_button(tag='contour_ordering2', enabled=False, label='Anticlockwise', callback=self.callbacks.toggleOrdering)
+                with dpg.tooltip("contour_ordering2"):
                     dpg.add_text("Click to change contour ordering. If the ordering is incorrect the mesh generation may have some errors")
 
                 dpg.add_separator()

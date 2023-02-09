@@ -691,6 +691,7 @@ class Callbacks:
         self.blocks[Blocks.findContour.value]['output'] = image
         self.updateTexture(self.blocks[Blocks.findContour.value]['tab'], image)
 
+        dpg.configure_item('contour_ordering', enabled=True)
         xRes = int(dpg.get_value("currentWidth")[6:-2])
         yRes = int(dpg.get_value("currentHeight")[7:-2])
         dpg.set_value("currentWidthOffset", 'Current: 0')
@@ -912,7 +913,7 @@ class Callbacks:
         ny = round((ymax - ymin)/dy) + 1
         xarray.append(xarray[0])
         yarray.append(yarray[0])
-        Mesh.export_coords_mesh(path, xarray, yarray, nx, ny, xmin, ymin, xmax, ymax, dx, dy)
+        Mesh.export_coords_mesh(path, xarray, yarray, nx, ny, xmin, ymin, xmax, ymax, dx, dy, self.toggleOrderingFlag)
         pass
 
     def openContourFile(self, sender = None, app_data = None):
@@ -938,6 +939,9 @@ class Callbacks:
                 print("File doesn't contain a valid contour")
                 dpg.configure_item("txtFileErrorPopup", show=True)
                 return
+        if not self.toggleOrderingFlag:
+            self.originalX = self.originalX[:4] + self.originalX[4::-1]
+            self.originalY = self.originalY[:4] + self.originalY[4::-1]
         f.close()
         self.importContour()
         
@@ -946,7 +950,7 @@ class Callbacks:
             self.removeGrid()
         dpg.delete_item("meshPlot")
         dpg.delete_item("originalMeshPlot")
-        dpg.configure_item('contour_ordering', enabled=True)
+        dpg.configure_item('contour_ordering2', enabled=True)
         dpg.configure_item('sparseButton', enabled=True)
         dpg.configure_item('plotGrid', enabled=True)
 
@@ -991,14 +995,12 @@ class Callbacks:
 
     def toggleOrdering(self, sender = None, app_data = None):
         self.toggleOrderingFlag = not self.toggleOrderingFlag
-        self.originalX = self.originalX[::-1]
-        self.originalY = self.originalY[::-1]
-        self.currentX = self.currentX[::-1]
-        self.currentY = self.currentY[::-1]
         if self.toggleOrderingFlag:
             dpg.configure_item('contour_ordering', label="Anticlockwise")
+            dpg.configure_item('contour_ordering2', label="Anticlockwise")
         else:
             dpg.configure_item('contour_ordering', label="Clockwise")
+            dpg.configure_item('contour_ordering2', label="Clockwise")
         pass
 
     def toggleZoom(self, sender = None, app_data = None):
@@ -1383,12 +1385,12 @@ class Callbacks:
         filePath = os.path.join(self.exportFilePath, self.exportFileName)
         if self.sparseMeshHandler != None:
             if self.toggleZoomFlag:
-                self.sparseMeshHandler.export_coords_mesh(filePath, self.currentX, self.currentY)
+                self.sparseMeshHandler.export_coords_mesh(filePath, self.currentX, self.currentY, self.toggleOrderingFlag)
                 filePathDx = filePath[:-4] + "_dx.txt"
                 filePathDy = filePath[:-4] + "_dy.txt"
                 self.sparseMeshHandler.export_node_size_mesh(filePathDx, filePathDy)
             else:
-                self.sparseMeshHandler.export_coords_mesh(filePath, self.currentX, self.currentY)
+                self.sparseMeshHandler.export_coords_mesh(filePath, self.currentX, self.currentY, self.toggleOrderingFlag)
                 filePathRanges = filePath[:-4] + "_ranges.txt"
                 self.sparseMeshHandler.export_ranges(filePathRanges)
         else:
@@ -1400,7 +1402,7 @@ class Callbacks:
             ymax = max(self.currentY)
             dx = (xmax - xmin)/(nx - 1)
             dy = (ymax - ymin)/(ny - 1)
-            Mesh.export_coords_mesh(filePath, self.currentX, self.currentY, nx, ny, xmin, ymin, xmax, ymax, dx, dy)
+            Mesh.export_coords_mesh(filePath, self.currentX, self.currentY, nx, ny, xmin, ymin, xmax, ymax, dx, dy, self.toggleOrderingFlag)
             self.exportFilePath = None
             self.exportFileName = None
             dpg.configure_item("exportMeshFile", show=False)
