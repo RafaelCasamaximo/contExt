@@ -221,7 +221,7 @@ class ContourExtraction:
         dpg.set_value("matlabModeCheckbox", False)
 
     def redrawContours(self):
-        image = self.imageProcessing.blocks[self.getLastActiveBeforeMethod('findContour')]['output'].copy()
+        image = self.imageProcessing.blocks[self.imageProcessing.getLastActiveBeforeMethod('findContour')]['output'].copy()
 
         thicknessValue = dpg.get_value('contourThicknessSlider')
 

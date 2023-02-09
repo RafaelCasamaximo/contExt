@@ -3,6 +3,7 @@ import dearpygui.dearpygui as dpg
 def showProcessing(callbacks):
     with dpg.group(horizontal=True):
         with dpg.child_window(width=300):
+            
 
             with dpg.file_dialog(directory_selector=False, min_size=[400,300], show=False, tag='file_dialog_id', id="file_dialog_id", callback=callbacks.imageProcessing.openFile):
                 dpg.add_file_extension("", color=(150, 255, 150, 255))
@@ -71,4 +72,7 @@ def showProcessing(callbacks):
                 dpg.add_text("ERROR: This is not a valid path.")
                 dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("noPath", show=False))
             dpg.add_separator()
+            pass
+
+        with dpg.child_window(tag='ProcessingParent'):
             pass
