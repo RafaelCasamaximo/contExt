@@ -1,5 +1,5 @@
 
-from mesh import Mesh
+from ._mesh import Mesh
 
 
 class SparseMesh:

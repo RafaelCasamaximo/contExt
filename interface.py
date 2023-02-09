@@ -73,14 +73,14 @@ class Interface:
         with dpg.tab(label='Mesh Generation'):
             self.showMeshGeneration()
             pass
-        self.callbacks.disableAllTags()
+        self.callbacks.imageProcessing.disableAllTags()
         pass
 
     def showProcessing(self):
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
 
-                with dpg.file_dialog(directory_selector=False, min_size=[400,300], show=False, tag='file_dialog_id', id="file_dialog_id", callback=self.callbacks.openFile):
+                with dpg.file_dialog(directory_selector=False, min_size=[400,300], show=False, tag='file_dialog_id', id="file_dialog_id", callback=self.callbacks.imageProcessing.openFile):
                     dpg.add_file_extension("", color=(150, 255, 150, 255))
                     dpg.add_file_extension(".jpg", color=(0, 255, 255, 255))
                     dpg.add_file_extension(".png", color=(0, 255, 255, 255))
@@ -104,9 +104,9 @@ class Interface:
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(tag='cropCheckbox', callback=lambda sender, app_data: self.callbacks.toggleEffect('crop', sender, app_data))
+                    dpg.add_checkbox(tag='cropCheckbox', callback=lambda sender, app_data: self.callbacks.imageProcessing.toggleEffect('crop', sender, app_data))
                     dpg.add_text('Cropping')
-                    dpg.add_button(label='Reset', callback=lambda: self.callbacks.resetCrop())
+                    dpg.add_button(label='Reset', callback=lambda: self.callbacks.imageProcessing.resetCrop())
                 dpg.add_text('Original Resolution:')
                 dpg.add_text('Width:', tag='originalWidth')
                 dpg.add_text('Height:', tag='originalHeight')
@@ -127,12 +127,12 @@ class Interface:
                     dpg.add_text('End Height')
                     dpg.add_input_int(tag='endX')
 
-                dpg.add_button(label='Apply Changes', callback=lambda: self.callbacks.executeQuery('crop'))
+                dpg.add_button(label='Apply Changes', callback=lambda: self.callbacks.imageProcessing.executeQuery('crop'))
 
                 with dpg.group(tag="exportImageAsFileProcessingGroup", show=False):
                     dpg.add_separator()
                     dpg.add_text("Save Image")
-                    dpg.add_button(tag='exportImageAsFileProcessing', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Processing'))
+                    dpg.add_button(tag='exportImageAsFileProcessing', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.imageProcessing.exportImage(sender, app_data, 'Processing'))
 
                 with dpg.window(label="ERROR! Crop not possible!", modal=True, show=False, tag="incorrectCrop", no_title_bar=False):
                     dpg.add_text("ERROR: The start values must be smaller than the end values.")
@@ -157,43 +157,43 @@ class Interface:
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300):
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(tag='histogramCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('histogramEqualization', sender, app_data));
+                    dpg.add_checkbox(tag='histogramCheckbox', callback=lambda sender, app_data: self.callbacks.imageProcessing.toggleAndExecuteQuery('histogramEqualization', sender, app_data));
                     dpg.add_text('Histogram Equalization')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(tag='brightnessAndContrastCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('brightnessAndContrast', sender, app_data))
+                    dpg.add_checkbox(tag='brightnessAndContrastCheckbox', callback=lambda sender, app_data: self.callbacks.imageProcessing.toggleAndExecuteQuery('brightnessAndContrast', sender, app_data))
                     dpg.add_text('Brightness and Contrast')
                 dpg.add_text('Brightness')
-                dpg.add_slider_int(default_value=0, min_value=-100, max_value=100, tag='brightnessSlider', callback=lambda: self.callbacks.executeQuery('brightnessAndContrast'))
+                dpg.add_slider_int(default_value=0, min_value=-100, max_value=100, tag='brightnessSlider', callback=lambda: self.callbacks.imageProcessing.executeQuery('brightnessAndContrast'))
                 dpg.add_text('Contrast')
-                dpg.add_slider_float(default_value=1.0, min_value=0.0, max_value=3.0, tag='contrastSlider', callback=lambda: self.callbacks.executeQuery('brightnessAndContrast'))
+                dpg.add_slider_float(default_value=1.0, min_value=0.0, max_value=3.0, tag='contrastSlider', callback=lambda: self.callbacks.imageProcessing.executeQuery('brightnessAndContrast'))
                 dpg.add_separator()
                 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(tag='averageBlurCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('averageBlur', sender, app_data))
+                    dpg.add_checkbox(tag='averageBlurCheckbox', callback=lambda sender, app_data: self.callbacks.imageProcessing.toggleAndExecuteQuery('averageBlur', sender, app_data))
                     dpg.add_text('Average Blur')
                 dpg.add_text('Intensity')
-                dpg.add_slider_int(tag='averageBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('averageBlur'))
+                dpg.add_slider_int(tag='averageBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.imageProcessing.executeQuery('averageBlur'))
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(tag='gaussianBlurCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('gaussianBlur', sender, app_data))
+                    dpg.add_checkbox(tag='gaussianBlurCheckbox', callback=lambda sender, app_data: self.callbacks.imageProcessing.toggleAndExecuteQuery('gaussianBlur', sender, app_data))
                     dpg.add_text('Gaussian Blur')
                 dpg.add_text('Intensity')
-                dpg.add_slider_int(tag='gaussianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('gaussianBlur'))
+                dpg.add_slider_int(tag='gaussianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.imageProcessing.executeQuery('gaussianBlur'))
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(tag='medianBlurCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('medianBlur', sender, app_data))
+                    dpg.add_checkbox(tag='medianBlurCheckbox', callback=lambda sender, app_data: self.callbacks.imageProcessing.toggleAndExecuteQuery('medianBlur', sender, app_data))
                     dpg.add_text('Median Blur')
                 dpg.add_text('Intensity')
-                dpg.add_slider_int(tag='medianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.executeQuery('medianBlur'))
+                dpg.add_slider_int(tag='medianBlurSlider', default_value=1, min_value=1, max_value=100, callback=lambda: self.callbacks.imageProcessing.executeQuery('medianBlur'))
                 
                 with dpg.group(tag="exportImageAsFileFilteringGroup", show=False):
                     dpg.add_separator()
                     dpg.add_text("Save Image")
-                    dpg.add_button(tag='exportImageAsFileFiltering', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Filtering'))
+                    dpg.add_button(tag='exportImageAsFileFiltering', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.imageProcessing.exportImage(sender, app_data, 'Filtering'))
                 
                 dpg.add_separator()
                 dpg.add_separator()
@@ -207,40 +207,40 @@ class Interface:
             with dpg.child_window(width=300):
 
                 dpg.add_text('Grayscale Conversion')
-                dpg.add_checkbox(label='Exclude Blue Channel', tag='excludeBlueChannel', callback=lambda: self.callbacks.executeQuery('grayscale'))
-                dpg.add_checkbox(label='Exclude Green Channel', tag='excludeGreenChannel', callback=lambda: self.callbacks.executeQuery('grayscale'))
-                dpg.add_checkbox(label='Exclude Red Channel', tag='excludeRedChannel', callback=lambda: self.callbacks.executeQuery('grayscale'))
+                dpg.add_checkbox(label='Exclude Blue Channel', tag='excludeBlueChannel', callback=lambda: self.callbacks.imageProcessing.executeQuery('grayscale'))
+                dpg.add_checkbox(label='Exclude Green Channel', tag='excludeGreenChannel', callback=lambda: self.callbacks.imageProcessing.executeQuery('grayscale'))
+                dpg.add_checkbox(label='Exclude Red Channel', tag='excludeRedChannel', callback=lambda: self.callbacks.imageProcessing.executeQuery('grayscale'))
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(tag='globalThresholdingCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('globalThresholding', sender, app_data))
+                    dpg.add_checkbox(tag='globalThresholdingCheckbox', callback=lambda sender, app_data: self.callbacks.imageProcessing.toggleAndExecuteQuery('globalThresholding', sender, app_data))
                     dpg.add_text('Global Thresholding')
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(tag='invertGlobalThresholding', callback=lambda: self.callbacks.executeQuery('globalThresholding'))
+                    dpg.add_checkbox(tag='invertGlobalThresholding', callback=lambda: self.callbacks.imageProcessing.executeQuery('globalThresholding'))
                     dpg.add_text('Invert Tresholding')
                 dpg.add_text('Threshold')
-                dpg.add_slider_int(tag='globalThresholdSlider', default_value=127, min_value=0, max_value=255, callback=lambda: self.callbacks.executeQuery('globalThresholding'))
+                dpg.add_slider_int(tag='globalThresholdSlider', default_value=127, min_value=0, max_value=255, callback=lambda: self.callbacks.imageProcessing.executeQuery('globalThresholding'))
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(tag='adaptativeThresholdingCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('adaptativeMeanThresholding', sender, app_data))
+                    dpg.add_checkbox(tag='adaptativeThresholdingCheckbox', callback=lambda sender, app_data: self.callbacks.imageProcessing.toggleAndExecuteQuery('adaptativeMeanThresholding', sender, app_data))
                     dpg.add_text('Adaptative Mean Thresholding')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(tag='adaptativeGaussianThresholdingCheckbox', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('adaptativeGaussianThresholding', sender, app_data))
+                    dpg.add_checkbox(tag='adaptativeGaussianThresholdingCheckbox', callback=lambda sender, app_data: self.callbacks.imageProcessing.toggleAndExecuteQuery('adaptativeGaussianThresholding', sender, app_data))
                     dpg.add_text('Adaptative Gaussian Thresholding')
                 dpg.add_separator()
 
                 with dpg.group(horizontal=True):
-                    dpg.add_checkbox(tag='otsuBinarization', callback=lambda sender, app_data: self.callbacks.toggleAndExecuteQuery('otsuBinarization', sender, app_data))
+                    dpg.add_checkbox(tag='otsuBinarization', callback=lambda sender, app_data: self.callbacks.imageProcessing.toggleAndExecuteQuery('otsuBinarization', sender, app_data))
                     dpg.add_text('Otsu\'s Binarization')
                 dpg.add_text('(Works better after Gaussian Blur)')
 
                 with dpg.group(tag="exportImageAsFileThresholdingGroup", show=False):
                     dpg.add_separator()
                     dpg.add_text("Save Image")
-                    dpg.add_button(tag='exportImageAsFileThresholding', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.exportImage(sender, app_data, 'Thresholding'))
+                    dpg.add_button(tag='exportImageAsFileThresholding', label='Export Image as File', callback=lambda sender, app_data: self.callbacks.imageProcessing.exportImage(sender, app_data, 'Thresholding'))
 
                 dpg.add_separator()
                 dpg.add_separator()
@@ -259,7 +259,7 @@ class Interface:
                 dpg.add_text('Contour Thickness')
                 dpg.add_text('(Only for the drawing)')
                 dpg.add_slider_int(tag='contourThicknessSlider', default_value=3, min_value=1, max_value=100)
-                dpg.add_button(tag='extractContourButton', label='Apply Method', callback=lambda sender, app_data: self.callbacks.extractContour(sender, app_data))
+                dpg.add_button(tag='extractContourButton', label='Apply Method', callback=lambda sender, app_data: self.callbacks.contourExtraction.extractContour(sender, app_data))
                 with dpg.window(label="ERROR! The image must be in a binary color scheme!", modal=True, show=False, tag="nonBinary", no_title_bar=False):
                     dpg.add_text("ERROR: You must select a binarization filter on the Thresholding Tab.")
                     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("nonBinary", show=False))
@@ -267,7 +267,7 @@ class Interface:
                 dpg.add_separator()
                 
                 dpg.add_text('Contour Ordering')
-                dpg.add_button(tag='contour_ordering', enabled=False, label='Anticlockwise', callback=self.callbacks.toggleOrdering)
+                dpg.add_button(tag='contour_ordering', enabled=False, label='Anticlockwise', callback=self.callbacks.meshGeneration.toggleOrdering)
                 with dpg.tooltip("contour_ordering"):
                     dpg.add_text("Click to change contour ordering. If the ordering is incorrect the mesh generation may have some errors")
                 dpg.add_separator()
@@ -287,7 +287,7 @@ class Interface:
                 dpg.add_input_double(tag='heightOffset')
                 dpg.add_checkbox(label='Matlab mode', tag='matlabModeCheckbox')
                 with dpg.group(tag="changeContourParent"):
-                    dpg.add_button(tag='updtadeContourButton', label='Apply Changes', callback=self.callbacks.updateContour)
+                    dpg.add_button(tag='updtadeContourButton', label='Apply Changes', callback=self.callbacks.contourExtraction.updateContour)
                 dpg.add_separator()
                 dpg.add_separator()
 
@@ -296,14 +296,14 @@ class Interface:
                     dpg.add_input_text(tag='inputContourNameText')
                     dpg.add_separator()
                     dpg.add_text("You MUST enter a File Name to select a directory")
-                    dpg.add_button(label='Select the directory', callback= self.callbacks.openDirectorySelector)
-                    dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='directorySelectorFileDialog', id="directorySelectorFileDialog", callback=self.callbacks.selectFolder)
+                    dpg.add_button(label='Select the directory', callback= self.callbacks.contourExtraction.openDirectorySelector)
+                    dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='directorySelectorFileDialog', id="directorySelectorFileDialog", callback=self.callbacks.contourExtraction.selectFolder)
                     dpg.add_separator()
                     dpg.add_text('Contour ID: ', tag='contourIdExportText')
                     dpg.add_text('File Name: ', tag='exportFileName')
                     dpg.add_text('Complete Path Name: ', tag='exportPathName')
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label='Save', callback=lambda: self.callbacks.exportIndividualContourToFile())
+                        dpg.add_button(label='Save', callback=lambda: self.callbacks.contourExtraction.exportIndividualContourToFile())
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportContourWindow', show=False))
                     dpg.add_text("Missing file name or directory.", tag="exportContourError", show=False)
 
@@ -312,13 +312,13 @@ class Interface:
                     dpg.add_input_text(tag='inputSelectedContourNameText')
                     dpg.add_separator()
                     dpg.add_text("You MUST enter a prefix to the File Name to select a directory")
-                    dpg.add_button(label='Select the directory', callback= self.callbacks.openExportSelectedDirectorySelector)
-                    dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='directoryFolderExportSelected', id="directoryFolderExportSelected", callback=self.callbacks.selectExportAllFolder)
+                    dpg.add_button(label='Select the directory', callback= self.callbacks.contourExtraction.openExportSelectedDirectorySelector)
+                    dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='directoryFolderExportSelected', id="directoryFolderExportSelected", callback=self.callbacks.contourExtraction.selectExportAllFolder)
                     dpg.add_separator()
                     dpg.add_text('File Default Name: ', tag='exportSelectedFileName')
                     dpg.add_text('Complete Path Name: ', tag='exportSelectedPathName')
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label='Save', callback=self.callbacks.exportSelectedContourToFile)
+                        dpg.add_button(label='Save', callback=self.callbacks.contourExtraction.exportSelectedContourToFile)
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportSelectedContourWindow', show=False))
                     dpg.add_text("Missing file name or directory.", tag="exportSelectedContourError", show=False)
                     
@@ -331,7 +331,7 @@ class Interface:
         with dpg.group(horizontal=True):
             with dpg.child_window(width=300, tag="meshGeneration"):
                 
-                with dpg.file_dialog(directory_selector=False, show=False, min_size=[400,300], tag='txt_file_dialog_id', id="txt_file_dialog_id", callback=self.callbacks.openContourFile):
+                with dpg.file_dialog(directory_selector=False, show=False, min_size=[400,300], tag='txt_file_dialog_id', id="txt_file_dialog_id", callback=self.callbacks.meshGeneration.openContourFile):
                     dpg.add_file_extension("", color=(150, 255, 150, 255))
                     dpg.add_file_extension(".txt", color=(0, 255, 255, 255))
                     dpg.add_file_extension(".dat", color=(0, 255, 255, 255))
@@ -350,14 +350,14 @@ class Interface:
                 dpg.add_separator()
 
                 dpg.add_text('Contour Ordering')
-                dpg.add_button(tag='contour_ordering2', enabled=False, label='Anticlockwise', callback=self.callbacks.toggleOrdering)
+                dpg.add_button(tag='contour_ordering2', enabled=False, label='Anticlockwise', callback=self.callbacks.meshGeneration.toggleOrdering)
                 with dpg.tooltip("contour_ordering2"):
                     dpg.add_text("Click to change contour ordering. If the ordering is incorrect the mesh generation may have some errors")
 
                 dpg.add_separator()
 
                 dpg.add_text("Mesh Grid")
-                dpg.add_button(label ='Plot Mesh Grid', tag='plotGrid', callback=self.callbacks.toggleGrid, enabled=False)
+                dpg.add_button(label ='Plot Mesh Grid', tag='plotGrid', callback=self.callbacks.meshGeneration.toggleGrid, enabled=False)
                 with dpg.tooltip("plotGrid"):
                     dpg.add_text("Click to draw mesh grid and count the number of internal node. Might take a while.")
                 
@@ -394,13 +394,13 @@ class Interface:
                 with dpg.group(horizontal=True):
                     dpg.add_text('y:')
                     dpg.add_input_float(tag='yi')
-                dpg.add_button(label='Apply Changes', callback= self.callbacks.updateMesh)
+                dpg.add_button(label='Apply Changes', callback= self.callbacks.meshGeneration.updateMesh)
                 dpg.add_separator()
                 
                 with dpg.group(tag="sparseGroup"):
                     dpg.add_text('Sparse and Adataptive Mesh')
                     dpg.add_button(label='Add Mesh Zoom Region', enabled=False, tag="sparseButton", callback=lambda: dpg.configure_item("sparsePopup", show=True))
-                    dpg.add_button(label ='Reset Mesh', tag='resetMesh', callback=self.callbacks.resetMesh, show=False)
+                    dpg.add_button(label ='Reset Mesh', tag='resetMesh', callback=self.callbacks.meshGeneration.resetMesh, show=False)
                     with dpg.tooltip("resetMesh"):
                         dpg.add_text("Click to remove all zoom regions.")
 
@@ -413,7 +413,7 @@ class Interface:
                 
                 with dpg.window(label='Add Mesh Zoom Region', modal=True, show=False, tag="sparsePopup", min_size=[400,420]):
                     dpg.add_text('Type of Mesh Zoom')
-                    dpg.add_button(tag='meshZoomType', enabled=True, label='Sparse', callback=self.callbacks.toggleZoom)
+                    dpg.add_button(tag='meshZoomType', enabled=True, label='Sparse', callback=self.callbacks.meshGeneration.toggleZoom)
                     with dpg.tooltip("meshZoomType"):
                         dpg.add_text("Click to change the mesh zoom type.", tag="meshZoomTypeTooltip")
                     
@@ -445,7 +445,7 @@ class Interface:
                     
                     dpg.add_separator()
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label="Add Zoom", width=100, callback=self.callbacks.addZoomRegion)
+                        dpg.add_button(label="Add Zoom", width=100, callback=self.callbacks.meshGeneration.addZoomRegion)
                         dpg.add_button(label="Cancel", width=100, callback=lambda: dpg.configure_item("sparsePopup", show=False))
                     dpg.add_text("Invalid range due to overlap", tag="addZoomError", show=False)
 
@@ -454,13 +454,13 @@ class Interface:
                     dpg.add_input_text(tag='inputMeshNameText')
                     dpg.add_separator()
                     dpg.add_text("You MUST enter a File Name to select a directory")
-                    dpg.add_button(label='Select the directory', callback= self.callbacks.openMeshDirectorySelector)
-                    dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='meshDirectorySelectorFileDialog', id="meshDirectorySelectorFileDialog", callback=self.callbacks.selectMeshFileFolder)
+                    dpg.add_button(label='Select the directory', callback= self.callbacks.meshGeneration.openMeshDirectorySelector)
+                    dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='meshDirectorySelectorFileDialog', id="meshDirectorySelectorFileDialog", callback=self.callbacks.meshGeneration.selectMeshFileFolder)
                     dpg.add_separator()
                     dpg.add_text('File Name: ', tag='exportMeshFileName')
                     dpg.add_text('Complete Path Name: ', tag='exportMeshPathName')
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label='Save', callback=lambda: self.callbacks.exportMesh())
+                        dpg.add_button(label='Save', callback=lambda: self.callbacks.meshGeneration.exportMesh())
                         dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportMeshWindow', show=False))
                     dpg.add_text("Missing file name or directory.", tag="exportMeshError", show=False)
 
@@ -554,12 +554,12 @@ class Interface:
             dpg.add_input_text(tag='imageNameExportAsFile')
             dpg.add_separator()
             dpg.add_text("You MUST enter a File Name to select a directory")
-            dpg.add_button(label='Select the directory', callback=self.callbacks.exportImageDirectorySelector)
+            dpg.add_button(label='Select the directory', callback=self.callbacks.imageProcessing.exportImageDirectorySelector)
             dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='exportImageDirectorySelector', id="exportImageDirectorySelector", callback=lambda sender, app_data: self.callbacks.exportImageSelectDirectory(sender, app_data))
             dpg.add_separator()
             dpg.add_text('File Name: ', tag='exportImageFileName')
             dpg.add_text('Complete Path Name: ', tag='exportImageFilePath')
             with dpg.group(horizontal=True):
-                dpg.add_button(label='Save', callback=self.callbacks.exportImageAsFile)
+                dpg.add_button(label='Save', callback=self.callbacks.imageProcessing.exportImageAsFile)
                 dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportImageAsFile', show=False))
             dpg.add_text("Missing file name or directory.", tag="exportImageError", show=False)     
