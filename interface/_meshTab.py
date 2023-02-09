@@ -134,7 +134,7 @@ def showMeshGeneration(callbacks):
                 dpg.add_text('Complete Path Name: ', tag='exportMeshPathName')
                 with dpg.group(horizontal=True):
                     dpg.add_button(label='Save', callback=lambda: callbacks.meshGeneration.exportMesh())
-                    dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportMeshWindow', show=False))
+                    dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportMeshFile', show=False))
                 dpg.add_text("Missing file name or directory.", tag="exportMeshError", show=False)
 
             dpg.add_separator()
