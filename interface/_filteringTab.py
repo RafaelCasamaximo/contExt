@@ -4,7 +4,7 @@ def showFiltering(callbacks):
     with dpg.group(horizontal=True):
         with dpg.child_window(width=300):
             with dpg.group(horizontal=True):
-                dpg.add_checkbox(tag='histogramCheckbox', callback=lambda sender, app_data: callbacks.imageProcessing.toggleAndExecuteQuery('histogramEqualization', sender, app_data));
+                dpg.add_checkbox(tag='histogramCheckbox', callback=lambda sender, app_data: callbacks.imageProcessing.toggleAndExecuteQuery('histogramEqualization', sender, app_data))
                 dpg.add_text('Histogram Equalization')
             dpg.add_separator()
 

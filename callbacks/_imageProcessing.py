@@ -24,7 +24,7 @@ class ImageProcessing:
             {
                 'method': self.crop,
                 'name': self.crop.__name__,
-                'status': False,
+                'status': True,
                 'output': None,
                 'tab': 'Processing'
             },
@@ -175,8 +175,27 @@ class ImageProcessing:
             dpg.configure_item('noPath', show=True)
             return
 
+        dpg.set_value("brightnessSlider",0)
+        dpg.set_value("contrastSlider",1)
+        dpg.set_value("averageBlurSlider",1)
+        dpg.set_value("gaussianBlurSlider",1)
+        dpg.set_value("medianBlurSlider",1)
+        dpg.set_value("globalThresholdSlider",127)
+        
+        try:
+            dpg.get_item_callback("removeExtractContour")()
+        except:
+            pass
+        self.uncheckAllTags()
+        for entry in self.blocks[1:-1]:
+            if entry['name'] != self.grayscale.__name__ and entry['name'] != self.crop.__name__:
+                entry['status'] = False
         self.executeQuery('importImage')
         self.enableAllTags()
+        pass
+
+    def cancelImportImage(self, sender = None, app_data = None):
+        dpg.hide_item("file_dialog_id")
         pass
 
     def toggleEffect(self, methodName, sender = None, app_data = None):
@@ -187,7 +206,6 @@ class ImageProcessing:
 
     def importImage(self, sender = None, app_data = None):
         # Cria imagem na aba
-        dpg.hide_item('import_image')
         self.blocks[Blocks.importImage.value]['output'] = self.openImage(self.filePath)
 
         Texture.createAllTextures(self.blocks[Blocks.importImage.value]['output'])
@@ -449,7 +467,6 @@ class ImageProcessing:
 
     def enableAllTags(self):
         checkboxes = [
-            'cropCheckbox',
             'histogramCheckbox',
             'brightnessAndContrastCheckbox',
             'averageBlurCheckbox',
@@ -476,7 +493,6 @@ class ImageProcessing:
 
     def disableAllTags(self):
         checkboxes = [
-            'cropCheckbox',
             'histogramCheckbox',
             'brightnessAndContrastCheckbox',
             'averageBlurCheckbox',
@@ -499,4 +515,30 @@ class ImageProcessing:
         ]
         for checkbox in checkboxes:
             dpg.configure_item(checkbox, enabled=False)
+        pass
+
+    def uncheckAllTags(self):
+        checkboxes = [
+            'histogramCheckbox',
+            'brightnessAndContrastCheckbox',
+            'averageBlurCheckbox',
+            'gaussianBlurCheckbox',
+            'medianBlurCheckbox',
+            'excludeBlueChannel',
+            'excludeGreenChannel',
+            'excludeRedChannel',
+            'globalThresholdingCheckbox',
+            'invertGlobalThresholding',
+            'adaptativeThresholdingCheckbox',
+            'adaptativeGaussianThresholdingCheckbox',
+            'otsuBinarization',
+            'matlabModeCheckbox',
+            'extractContourButton',
+            'updtadeContourButton',
+            'exportImageAsFileProcessing',
+            'exportImageAsFileFiltering',
+            'exportImageAsFileThresholding'
+        ]
+        for checkbox in checkboxes:
+            dpg.set_value(checkbox, False)
         pass

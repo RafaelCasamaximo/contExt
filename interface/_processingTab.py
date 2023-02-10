@@ -5,7 +5,7 @@ def showProcessing(callbacks):
         with dpg.child_window(width=300):
             
 
-            with dpg.file_dialog(directory_selector=False, min_size=[400,300], show=False, tag='file_dialog_id', id="file_dialog_id", callback=callbacks.imageProcessing.openFile):
+            with dpg.file_dialog(directory_selector=False, min_size=[400,300], show=False, tag='file_dialog_id', callback=callbacks.imageProcessing.openFile, cancel_callback=callbacks.imageProcessing.cancelImportImage):
                 dpg.add_file_extension("", color=(150, 255, 150, 255))
                 dpg.add_file_extension(".jpg", color=(0, 255, 255, 255))
                 dpg.add_file_extension(".png", color=(0, 255, 255, 255))
@@ -22,16 +22,11 @@ def showProcessing(callbacks):
 
             dpg.add_text('Select a Image to Use')
             dpg.add_button(tag='import_image', label='Import Image', callback=lambda: dpg.show_item("file_dialog_id"))
-            with dpg.tooltip("import_image"):
-                dpg.add_text("It is not possible to import more than one image! Close the program and open it again to import another image.")
             dpg.add_text('File Name:', tag='file_name_text')
             dpg.add_text('File Path:', tag='file_path_text')
             dpg.add_separator()
-
-            with dpg.group(horizontal=True):
-                dpg.add_checkbox(tag='cropCheckbox', callback=lambda sender, app_data: callbacks.imageProcessing.toggleEffect('crop', sender, app_data))
-                dpg.add_text('Cropping')
-                dpg.add_button(label='Reset', callback=lambda: callbacks.imageProcessing.resetCrop())
+    
+            dpg.add_text('Cropping')
             dpg.add_text('Original Resolution:')
             dpg.add_text('Width:', tag='originalWidth')
             dpg.add_text('Height:', tag='originalHeight')
@@ -51,7 +46,8 @@ def showProcessing(callbacks):
             with dpg.group(horizontal=True):
                 dpg.add_text('End Height')
                 dpg.add_input_int(tag='endX')
-
+            
+            dpg.add_button(label='Reset', callback=lambda: callbacks.imageProcessing.resetCrop())
             dpg.add_button(label='Apply Changes', callback=lambda: callbacks.imageProcessing.executeQuery('crop'))
 
             with dpg.group(tag="exportImageAsFileProcessingGroup", show=False):

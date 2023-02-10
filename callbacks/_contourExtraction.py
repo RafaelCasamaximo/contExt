@@ -71,26 +71,19 @@ class ContourExtraction:
 
         self.contourTableEntry = list(sorted(self.contourTableEntry, key=lambda x: x['pointsNo'], reverse=True))
 
-        try:
-            dpg.delete_item('ContourExtractionTable')
-            dpg.delete_item('showAllContoursButton')
-            dpg.delete_item('hideAllContoursButton')
-            dpg.delete_item('separator1')
-            dpg.delete_item('exportAllContours')
-            dpg.delete_item('exportSelectedContours')
-            dpg.delete_item('separator2')
-        except:
-            pass
+        self.removeContour()
 
-        dpg.add_button(tag='showAllContoursButton', label='Show All Contours', parent='ContourExtractionParent', callback=lambda sender, app_data: self.showAllContours())
-        dpg.add_button(tag='hideAllContoursButton', label='Hide All Contours', parent='ContourExtractionParent', callback=lambda sender, app_data: self.hideAllContours())
-        dpg.add_separator(tag='separator1', parent='ContourExtractionParent')
-        dpg.add_button(tag='exportSelectedContours', label='Export Selected Contours as Files', parent='ContourExtractionParent', callback=self.exportSelectedButtonCall)
-        dpg.add_separator(tag='separator2', parent='ContourExtractionParent')
+        dpg.add_button(tag='showAllContoursButton', label='Show All Contours', parent='ContourExtractionChildWindow', callback=lambda sender, app_data: self.showAllContours())
+        dpg.add_button(tag='hideAllContoursButton', label='Hide All Contours', parent='ContourExtractionChildWindow', callback=lambda sender, app_data: self.hideAllContours())
+        dpg.add_separator(tag='separator1', parent='ContourExtractionChildWindow')
+        dpg.add_button(tag='removeExtractContour', label='Remove Contour', parent='ContourExtractionChildWindow', callback=self.removeContour())
+        dpg.add_separator(tag='separator2', parent='ContourExtractionChildWindow')
+        dpg.add_button(tag='exportSelectedContours', label='Export Selected Contours as Files', parent='ContourExtractionChildWindow', callback=self.exportSelectedButtonCall)
+        dpg.add_separator(tag='separator3', parent='ContourExtractionChildWindow')
         with dpg.table(tag='ContourExtractionTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
             resizable=True, no_host_extendX=False, hideable=True,
             borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True,
-            borders_outerH=True, parent='ContourExtractionParent'):
+            borders_outerH=True, parent='ContourExtractionChildWindow'):
 
             dpg.add_table_column(label="Id", width_fixed=True)
             dpg.add_table_column(label="Color", width_fixed=True)
@@ -194,6 +187,18 @@ class ContourExtraction:
         dpg.delete_item("resetContour")
         dpg.add_button(tag="resetContour", label="Reset Contour Properties", parent="changeContourParent", callback=self.resetContour)
 
+    def removeContour(self, sender, app_data=None):
+        dpg.delete_item('removeExtractContour')
+        dpg.delete_item('ContourExtractionTable')
+        dpg.delete_item('showAllContoursButton')
+        dpg.delete_item('hideAllContoursButton')
+        dpg.delete_item('separator1')
+        dpg.delete_item('exportAllContours')
+        dpg.delete_item('exportSelectedContours')
+        dpg.delete_item('separator2')
+        dpg.delete_item('separator3')
+        pass
+
     def resetContour(self, sender, app_data=None):
         for i in range(len(self.contourTableEntry)):
             entry = self.contourTableEntry[i]
@@ -295,7 +300,6 @@ class ContourExtraction:
         self.exportSelectFileName = None
 
         dpg.configure_item('exportSelectedContourWindow', show=True)
-
         pass
 
     def exportSelectedContourToFile(self, sender=None, app_data=None):

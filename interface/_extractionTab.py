@@ -74,5 +74,6 @@ def showContourExtraction(callbacks):
                 dpg.add_text("Missing file name or directory.", tag="exportSelectedContourError", show=False)
                     
                 pass
-        with dpg.child_window(tag='ContourExtractionParent'):
-            pass
+        with dpg.child_window(tag='ContourExtractionChildWindow'):
+            with dpg.group(tag='ContourExtractionParent'):
+                pass
