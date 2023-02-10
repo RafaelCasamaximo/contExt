@@ -248,7 +248,7 @@ class MeshGeneration:
         aux = dpg.get_value("original_area")
         originalArea = float(aux[15:])
         dif = abs(originalArea - area)
-        dpg.set_value("difference", "Difference: " + str(dif) + " ({:.2f}%)".format(100*dif/originalArea))
+        dpg.set_value("difference", "Difference: " + str(dif) + " ({:.2f}%)".format(abs(100*dif/originalArea)))
         dpg.set_value("contour_nodes_number", "Contour Nodes Number: " + str(len(self.currentX)))
 
         dpg.delete_item("meshPlot")

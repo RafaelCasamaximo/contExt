@@ -233,7 +233,6 @@ class ImageProcessing:
 
         if self.blocks[Blocks.importImage.value]['output'] is None:
             dpg.configure_item('noImage', show=True)
-            dpg.set_value('cropCheckbox', False)
             self.blocks[Blocks.crop.value]['status'] = False
             return
 
