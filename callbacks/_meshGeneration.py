@@ -265,6 +265,7 @@ class MeshGeneration:
             dpg.configure_item("current_nodes_number", show=False)
 
     def drawGrid(self, sender=None, app_data=None):
+        dpg.configure_item('plotGrid', enabled=False)
         nInternalNodes = 0       
         meshTypeFlag = 0
         if self.sparseMeshHandler != None:
@@ -416,6 +417,7 @@ class MeshGeneration:
                 
                 nAux -= (1 + (r["xf"] - r["xi"])//dx) * (1 + (r["yf"] - r["yi"])//dy)    
             nInternalNodes += nAux
+        dpg.configure_item('plotGrid', enabled=True)
         return nInternalNodes
 
     def removeGrid(self, sender=None, app_data=None):
@@ -512,3 +514,22 @@ class MeshGeneration:
             self.exportFilePath = None
             self.exportFileName = None
             dpg.configure_item("exportMeshFile", show=False)
+
+    def exportContourOnMesh(self, xarray, yarray, path):
+        if self.sparseMeshHandler == None:
+            dx = dpg.get_value("dx")
+            dy = dpg.get_value("dy")
+            xmin = dpg.get_value("xi")
+            ymin = dpg.get_value("yi")
+            xarray, yarray = Mesh.getMesh(xarray, yarray, xmin, ymin, dx, dy)
+            xmax = max(xarray)
+            ymax = max(yarray)
+            nx = (xmax - xmin)// dx + 1
+            ny = (ymax - ymin)// dy + 1
+            Mesh.export_coords_mesh(path, self.currentX, self.currentY, nx, ny, xmin, ymin, xmax, ymax, dx, dy, self.toggleOrderingFlag)
+        else:
+            if self.toggleZoomFlag == True:
+                xarray, yarray = self.sparseMeshHandler.get_sparse_mesh(xarray, yarray)
+            else:
+                xarray, yarray = self.sparseMeshHandler.get_adaptative_mesh(xarray, yarray)
+            self.sparseMeshHandler.export_coords_mesh(path, self.currentX, self.currentY, self.toggleOrderingFlag)
