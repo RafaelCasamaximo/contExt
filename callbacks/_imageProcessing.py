@@ -279,7 +279,10 @@ class ImageProcessing:
         dpg.set_value('endY', shape[1])
 
         Texture.createAllTextures(self.blocks[Blocks.crop.value]['output'])
-        pass
+        try:
+            dpg.get_item_callback("removeExtractContour")()
+        except:
+            pass
 
     def histogramEqualization(self, sender=None, app_data=None):
 
