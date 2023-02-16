@@ -143,7 +143,11 @@ class SparseMesh:
         self.dy.sort()
 
 
-
+    def getIndex(item, itens):
+        for i in range(len(itens)):
+            if item == itens[i]:
+                return i
+        return None
 
     """
     Retorna o valor de x da coordenada do nó da malha onde o ponto informado está 
@@ -229,6 +233,35 @@ class SparseMesh:
         if point[0] != prevpoint[0] or point[1] != prevpoint[1]:
             xResult.append(point[0])
             yResult.append(point[1])
+
+        xAux = xResult
+        yAux = yResult
+        xResult = [xAux[0]]
+        yResult = [yAux[0]]
+        xIndex = SparseMesh.getIndex(xResult[0], self.dx)
+        yIndex = SparseMesh.getIndex(yResult[0], self.dy)
+        for i in range(1, len(xAux)):
+            while True: 
+                dxAux = xResult[-1]
+                dyAux = yResult[-1]
+                if xAux[i] - xResult[-1] > 0:
+                    xIndex += 1
+                    dxAux = self.dx[xIndex]
+                elif xResult[-1] - xAux[i] > 0:
+                    xIndex -= 1
+                    dxAux = self.dx[xIndex]
+                if yAux[i] - yResult[-1] > 0:
+                    yIndex += 1
+                    dyAux = self.dy[yIndex]
+                elif yResult[-1] - yAux[i] > 0:
+                    yIndex -= 1
+                    dyAux = self.dy[yIndex]
+                if dxAux != xResult[-1] or dyAux != yResult[-1]:
+                    xResult.append(dxAux)
+                    yResult.append(dyAux)
+                else:
+                    break
+        
         return xResult, yResult
 
     """
