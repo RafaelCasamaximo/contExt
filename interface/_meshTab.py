@@ -52,10 +52,10 @@ def showMeshGeneration(callbacks):
             dpg.add_text('Node Size')
             with dpg.group(horizontal=True):
                 dpg.add_text('dx:')
-                dpg.add_input_float(tag='dx', default_value=1, min_value=1, min_clamped=True)
+                dpg.add_input_float(tag='dx', default_value=1, min_value=0.000001, min_clamped=True)
             with dpg.group(horizontal=True):
                 dpg.add_text('dy:')
-                dpg.add_input_float(tag='dy', default_value=1, min_value=1, min_clamped=True)
+                dpg.add_input_float(tag='dy', default_value=1, min_value=0.000001, min_clamped=True)
 
             dpg.add_text('Original Mesh Start:')
             dpg.add_text('x: --', tag='original_xi')
