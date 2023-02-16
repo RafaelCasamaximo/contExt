@@ -52,10 +52,10 @@ def showMeshGeneration(callbacks):
             dpg.add_text('Node Size')
             with dpg.group(horizontal=True):
                 dpg.add_text('dx:')
-                dpg.add_input_float(tag='dx', default_value=1, min_value=1, min_clamped=True)
+                dpg.add_input_float(tag='dx', default_value=1, min_value=0.000001, min_clamped=True)
             with dpg.group(horizontal=True):
                 dpg.add_text('dy:')
-                dpg.add_input_float(tag='dy', default_value=1, min_value=1, min_clamped=True)
+                dpg.add_input_float(tag='dy', default_value=1, min_value=0.000001, min_clamped=True)
 
             dpg.add_text('Original Mesh Start:')
             dpg.add_text('x: --', tag='original_xi')
@@ -78,10 +78,9 @@ def showMeshGeneration(callbacks):
                     dpg.add_text("Click to remove all zoom regions.")
 
             dpg.add_separator()
-                
-            dpg.add_text("Save Mesh")
-            dpg.add_button(tag='exportMesh', enabled=False, label='Export Mesh', callback=lambda: dpg.configure_item("exportMeshFile", show=True))
-            with dpg.tooltip("exportMesh"):
+            dpg.add_text("Save Mesh", tag="exportMeshText", show=False)
+            dpg.add_button(tag='exportMesh', show=False, label='Export Mesh', callback=lambda: dpg.configure_item("exportMeshFile", show=True))
+            with dpg.tooltip("exportMesh", tag="exportMeshTooltip", show=False):
                 dpg.add_text("Click to save mesh data in text files.")
                 
             with dpg.window(label='Add Mesh Zoom Region', modal=True, show=False, tag="sparsePopup", min_size=[400,420]):

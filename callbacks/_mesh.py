@@ -63,7 +63,31 @@ class Mesh:
         if point[0] != prevpoint[0] or point[1] != prevpoint[1]:
             xResult.append(point[0])
             yResult.append(point[1])
-        
+
+        xAux = xResult
+        yAux = yResult
+        xResult = [xAux[0]]
+        yResult = [yAux[0]]
+        for i in range(1, len(xAux)):
+            while True: 
+                offsetX = 0
+                offsetY = 0
+                if xAux[i] - xResult[-1] > dx:
+                    offsetX = dx
+                elif xResult[-1] - xAux[i] > dx:
+                    offsetX = - dx
+                if yAux[i] - yResult[-1] > dy:
+                    offsetY = dy
+                elif yResult[-1] - yAux[i] > dy:
+                    offsetY = - dy
+                if offsetX != 0 or offsetY != 0:
+                    xResult.append(xResult[-1] + offsetX)
+                    yResult.append(yResult[-1] + offsetY)
+                else:
+                    break
+            xResult.append(xAux[i])
+            yResult.append(yAux[i])
+
         aux = max(xResult)
         if aux != xmax:
             xmax = aux

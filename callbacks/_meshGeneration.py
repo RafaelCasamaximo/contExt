@@ -82,15 +82,18 @@ class MeshGeneration:
         dpg.set_value("original_ny", 'ny: ' + str(int(ny)))
         dpg.set_value("nx", 'nx: ' + str(int(nx)))
         dpg.set_value("ny", 'ny: ' + str(int(ny)))
-        dpg.configure_item("dx", default_value = dx, min_value = dx)
-        dpg.configure_item("dy", default_value = dy, min_value = dy)
+        dpg.configure_item("dx", default_value = dx)
+        dpg.configure_item("dy", default_value = dy)
         dpg.configure_item("xi", default_value = xmin)
         dpg.configure_item("yi", default_value = ymin)
         dpg.configure_item("xi_zoom", default_value = xmin, min_value = xmin)
         dpg.configure_item("yi_zoom", default_value = ymin, min_value = ymin)
         dpg.configure_item("xf_zoom", default_value = xmin + dx, min_value = xmin + dx, max_value = xmax)
         dpg.configure_item("yf_zoom", default_value = ymin + dy, min_value = ymin + dy, max_value = ymax)
-        dpg.configure_item("exportMesh", enabled=True)
+        dpg.configure_item("exportMesh", show=True)
+        dpg.configure_item("exportMeshText", show=True)
+        dpg.configure_item("exportMeshTooltip", show=True)
+        dpg.add_separator(parent="meshGeneration")
 
         self.currentX = self.currentX[4:]
         self.currentY = self.currentY[4:]
@@ -248,7 +251,7 @@ class MeshGeneration:
         aux = dpg.get_value("original_area")
         originalArea = float(aux[15:])
         dif = abs(originalArea - area)
-        dpg.set_value("difference", "Difference: " + str(dif) + " ({:.2f}%)".format(100*dif/originalArea))
+        dpg.set_value("difference", "Difference: " + str(dif) + " ({:.2f}%)".format(abs(100*dif/originalArea)))
         dpg.set_value("contour_nodes_number", "Contour Nodes Number: " + str(len(self.currentX)))
 
         dpg.delete_item("meshPlot")

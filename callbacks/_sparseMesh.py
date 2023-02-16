@@ -80,10 +80,10 @@ class SparseMesh:
                 r["xi"] = xmin
                 r["yi"] = ymin
             else:
-                nx = originaldx//r["dx"]
-                r["dx"] = dxAux/nx
-                ny = originaldy//r["dy"]
-                r["dy"] = dyAux/ny 
+                auxX = originaldx//r["dx"]
+                r["dx"] = dxAux/auxX
+                auxY = originaldy//r["dy"]
+                r["dy"] = dyAux/auxY
                 if xmin > r["xi"]:
                     r["xi"] = xmin
                 elif xmin < r["xi"]:
@@ -98,16 +98,19 @@ class SparseMesh:
             xmax = r["xf"]
             ymax = r["yf"]
 
-            nx = round((xmax - xminAux)/r["dx"]) + 1
-            ny = round((ymax - yminAux)/r["dy"]) + 1
             if (xmax - xminAux)/r["dx"] != (xmax - xminAux)//r["dx"]:
-                r["xf"] = xminAux + nx * r["dx"]
-                nx += 1
+                nx = (xmax - xminAux)//self.ranges[0]["dx"]
+                if i == 0:
+                    nx += 1
+                r["xf"] = xminAux + nx * self.ranges[0]["dx"]
             if (ymax - yminAux)/r["dy"] != (ymax - yminAux)//r["dy"]:
-                r["yf"] = yminAux + ny * r["dy"]
-                ny += 1
-            r["nx"] = nx
-            r["ny"] = ny
+                ny = (ymax - yminAux)//self.ranges[0]["dy"]
+                if i == 0:
+                    ny += 1
+                r["yf"] = yminAux + ny * self.ranges[0]["dy"]
+
+            r["nx"] = round((r["xf"] - xminAux)/r["dx"]) + 1
+            r["ny"] = round((r["yf"] - yminAux)/r["dy"]) + 1
 
             self.ranges[i] = r
 
@@ -143,7 +146,11 @@ class SparseMesh:
         self.dy.sort()
 
 
-
+    def getIndex(item, itens):
+        for i in range(len(itens)):
+            if item == itens[i]:
+                return i
+        return None
 
     """
     Retorna o valor de x da coordenada do nó da malha onde o ponto informado está 
@@ -229,6 +236,35 @@ class SparseMesh:
         if point[0] != prevpoint[0] or point[1] != prevpoint[1]:
             xResult.append(point[0])
             yResult.append(point[1])
+
+        xAux = xResult
+        yAux = yResult
+        xResult = [xAux[0]]
+        yResult = [yAux[0]]
+        xIndex = SparseMesh.getIndex(xResult[0], self.dx)
+        yIndex = SparseMesh.getIndex(yResult[0], self.dy)
+        for i in range(1, len(xAux)):
+            while True: 
+                dxAux = xResult[-1]
+                dyAux = yResult[-1]
+                if xAux[i] - xResult[-1] > 0:
+                    xIndex += 1
+                    dxAux = self.dx[xIndex]
+                elif xResult[-1] - xAux[i] > 0:
+                    xIndex -= 1
+                    dxAux = self.dx[xIndex]
+                if yAux[i] - yResult[-1] > 0:
+                    yIndex += 1
+                    dyAux = self.dy[yIndex]
+                elif yResult[-1] - yAux[i] > 0:
+                    yIndex -= 1
+                    dyAux = self.dy[yIndex]
+                if dxAux != xResult[-1] or dyAux != yResult[-1]:
+                    xResult.append(dxAux)
+                    yResult.append(dyAux)
+                else:
+                    break
+        
         return xResult, yResult
 
     """
@@ -237,20 +273,31 @@ class SparseMesh:
 
 
     def getNode(self, xpoint, ypoint):
-        auxX = xpoint
-        auxY = ypoint
-        flag = 0
+
+        flag = False
         for r in self.ranges[::-1]:
             if r["xi"] <= xpoint <= r["xf"] and r["yi"] <= ypoint <= r["yf"]:
                 auxX = (xpoint - r["xi"]) // r["dx"] * r["dx"] + r["xi"]
                 auxY = (ypoint - r["yi"]) // r["dy"] * r["dy"] + r["yi"]
-                flag = 1
+                flag = True
                 break
         if flag:
             return[auxX, auxY]
-        print([auxX, auxY]) 
+        
         print("A figura é maior que os limites da malha")
         quit(1)
+
+    def getNodeSize(self, xpoint, ypoint):
+        dxAux = self.ranges[0]["dx"]
+        dyAux = self.ranges[0]["dy"]
+
+        for r in self.ranges[:0:-1]:
+            if r["xi"] <= xpoint < r["xf"] and r["yi"] <= ypoint < r["yf"]:
+                dxAux = r["dx"]
+                dyAux = r["dy"]
+                break
+
+        return dxAux, dyAux
 
     """
     Percore x e y, obtendo os nós da malha irregular para cada ponto com a função getNode, 
@@ -307,6 +354,32 @@ class SparseMesh:
         if point[0] != prevpoint[0] or point[1] != prevpoint[1]:
             xResult.append(point[0])
             yResult.append(point[1])
+        
+        xAux = xResult
+        yAux = yResult
+        xResult = [xAux[0]]
+        yResult = [yAux[0]]
+        for i in range(1, len(xAux)):
+            dxAux, dyAux = self.getNodeSize(xResult[-1], yResult[-1])
+            while True: 
+                offsetX = 0
+                offsetY = 0
+                if xAux[i] - xResult[-1] > dxAux:
+                    offsetX = dxAux
+                elif xResult[-1] - xAux[i] > dxAux:
+                    offsetX = - dxAux
+                if yAux[i] - yResult[-1] > dyAux:
+                    offsetY = dyAux
+                elif yResult[-1] - yAux[i] > dyAux:
+                    offsetY = - dyAux
+                if offsetX != 0 or offsetY != 0:
+                    xResult.append(xResult[-1] + offsetX)
+                    yResult.append(yResult[-1] + offsetY)
+                else:
+                    break
+            xResult.append(xAux[i])
+            yResult.append(yAux[i])
+
         return xResult, yResult
 
 
