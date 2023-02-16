@@ -90,7 +90,10 @@ class MeshGeneration:
         dpg.configure_item("yi_zoom", default_value = ymin, min_value = ymin)
         dpg.configure_item("xf_zoom", default_value = xmin + dx, min_value = xmin + dx, max_value = xmax)
         dpg.configure_item("yf_zoom", default_value = ymin + dy, min_value = ymin + dy, max_value = ymax)
-        dpg.configure_item("exportMesh", enabled=True)
+        dpg.configure_item("exportMesh", show=True)
+        dpg.configure_item("exportMeshText", show=True)
+        dpg.configure_item("exportMeshTooltip", show=True)
+        dpg.add_separator(parent="meshGeneration")
 
         self.currentX = self.currentX[4:]
         self.currentY = self.currentY[4:]
