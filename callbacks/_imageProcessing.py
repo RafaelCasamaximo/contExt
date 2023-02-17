@@ -117,7 +117,10 @@ class ImageProcessing:
                 executeFlag = 1
             if executeFlag == 1 and entry['status'] is True:
                 entry['method']()
-        pass
+        try:
+            dpg.get_item_callback("removeExtractContour")()
+        except:
+            pass
 
     def executeQueryFromNext(self, methodName):
         executeFlag = 0
@@ -127,7 +130,10 @@ class ImageProcessing:
                 continue
             if executeFlag == 1 and entry['status'] is True:
                 entry['method']()
-        pass
+        try:
+            dpg.get_item_callback("removeExtractContour")()
+        except:
+            pass
 
     def toggleAndExecuteQuery(self, methodName, sender = None, app_data = None):
         self.toggleEffect(methodName, sender, app_data)
@@ -136,7 +142,10 @@ class ImageProcessing:
         else:
             self.retrieveFromLastActive(methodName, sender, app_data)
             self.executeQueryFromNext(methodName)
-        pass
+        try:
+            dpg.get_item_callback("removeExtractContour")()
+        except:
+            pass
 
     def getIdByMethod(self, methodName):
         id = 0
@@ -278,10 +287,6 @@ class ImageProcessing:
         dpg.set_value('endY', shape[1])
 
         Texture.createAllTextures(self.blocks[Blocks.crop.value]['output'])
-        try:
-            dpg.get_item_callback("removeExtractContour")()
-        except:
-            pass
 
     def histogramEqualization(self, sender=None, app_data=None):
 

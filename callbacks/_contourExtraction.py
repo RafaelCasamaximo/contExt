@@ -192,6 +192,8 @@ class ContourExtraction:
             yarray = [x[0][1] for x in entry["data"]]
             if matlabFlag:
                 yarray = Mesh.convert_matlab(yarray, yRes - 1)
+                xarray = xarray[::-1]
+                yarray = yarray[::-1]
             xarray, yarray = Mesh.change_scale(xarray, yarray, xRes, yRes, w, h, xoffset, yoffset)
             self.contourTableEntry[i]["contourX"] = xarray
             self.contourTableEntry[i]["contourY"] = yarray

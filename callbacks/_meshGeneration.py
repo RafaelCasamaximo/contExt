@@ -496,14 +496,14 @@ class MeshGeneration:
         filePath = os.path.join(self.exportFilePath, self.exportFileName)
         if self.sparseMeshHandler != None:
             if self.toggleZoomFlag:
-                self.sparseMeshHandler.export_coords_mesh(filePath, self.currentX, self.currentY, self.toggleOrderingFlag)
+                SparseMesh.export_coords_mesh(filePath, self.currentX, self.currentY, self.toggleOrderingFlag)
+                filePathRanges = filePath[:-4] + "_ranges.txt"
+                self.sparseMeshHandler.export_ranges(filePathRanges)
+            else:
+                SparseMesh.export_coords_mesh(filePath, self.currentX, self.currentY, self.toggleOrderingFlag)
                 filePathDx = filePath[:-4] + "_dx.txt"
                 filePathDy = filePath[:-4] + "_dy.txt"
                 self.sparseMeshHandler.export_node_size_mesh(filePathDx, filePathDy)
-            else:
-                self.sparseMeshHandler.export_coords_mesh(filePath, self.currentX, self.currentY, self.toggleOrderingFlag)
-                filePathRanges = filePath[:-4] + "_ranges.txt"
-                self.sparseMeshHandler.export_ranges(filePathRanges)
         else:
             nx = int(dpg.get_value("nx")[4:])
             ny = int(dpg.get_value("ny")[4:])
@@ -514,9 +514,9 @@ class MeshGeneration:
             dx = (xmax - xmin)/(nx - 1)
             dy = (ymax - ymin)/(ny - 1)
             Mesh.export_coords_mesh(filePath, self.currentX, self.currentY, nx, ny, xmin, ymin, xmax, ymax, dx, dy, self.toggleOrderingFlag)
-            self.exportFilePath = None
-            self.exportFileName = None
-            dpg.configure_item("exportMeshFile", show=False)
+        self.exportFilePath = None
+        self.exportFileName = None
+        dpg.configure_item("exportMeshFile", show=False)
 
     def exportContourOnMesh(self, xarray, yarray, path):
         if self.sparseMeshHandler == None:
