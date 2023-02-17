@@ -60,6 +60,12 @@ class MeshGeneration:
         dpg.configure_item('sparseButton', enabled=True)
         dpg.configure_item('plotGrid', enabled=True)
 
+        if self.currentX == [] and self.currentY == []:
+            dpg.configure_item("exportMesh", show=True)
+            dpg.configure_item("exportMeshText", show=True)
+            dpg.configure_item("exportMeshTooltip", show=True)
+            dpg.add_separator(parent="meshGeneration")
+
         self.currentX = self.originalX
         self.currentY = self.originalY
         self.originalX = self.originalX[4:]
@@ -90,10 +96,9 @@ class MeshGeneration:
         dpg.configure_item("yi_zoom", default_value = ymin, min_value = ymin)
         dpg.configure_item("xf_zoom", default_value = xmin + dx, min_value = xmin + dx, max_value = xmax)
         dpg.configure_item("yf_zoom", default_value = ymin + dy, min_value = ymin + dy, max_value = ymax)
-        dpg.configure_item("exportMesh", show=True)
-        dpg.configure_item("exportMeshText", show=True)
-        dpg.configure_item("exportMeshTooltip", show=True)
-        dpg.add_separator(parent="meshGeneration")
+
+        dpg.set_value('current_area', 'Current Area: --')
+        dpg.set_value('difference', 'Difference: --')
 
         self.currentX = self.currentX[4:]
         self.currentY = self.currentY[4:]
@@ -101,6 +106,10 @@ class MeshGeneration:
         dpg.add_line_series(self.currentX, self.currentY, label="Original Mesh", tag="originalMeshPlot", parent='y_axis')
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")     
+
+    def cancelImportContour(self, sender = None, app_data = None):
+        dpg.hide_item("txt_file_dialog_id")
+        pass
 
     def toggleOrdering(self, sender = None, app_data = None):
         self.toggleOrderingFlag = not self.toggleOrderingFlag

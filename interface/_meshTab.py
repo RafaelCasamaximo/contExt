@@ -4,7 +4,7 @@ def showMeshGeneration(callbacks):
     with dpg.group(horizontal=True):
         with dpg.child_window(width=300, tag="meshGeneration"):
                 
-            with dpg.file_dialog(directory_selector=False, show=False, min_size=[400,300], tag='txt_file_dialog_id', id="txt_file_dialog_id", callback=callbacks.meshGeneration.openContourFile):
+            with dpg.file_dialog(directory_selector=False, show=False, min_size=[400,300], tag='txt_file_dialog_id', callback=callbacks.meshGeneration.openContourFile, cancel_callback=callbacks.meshGeneration.cancelImportContour):
                 dpg.add_file_extension("", color=(150, 255, 150, 255))
                 dpg.add_file_extension(".txt", color=(0, 255, 255, 255))
                 dpg.add_file_extension(".dat", color=(0, 255, 255, 255))
