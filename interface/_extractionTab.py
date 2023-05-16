@@ -20,7 +20,7 @@ def showContourExtraction(callbacks):
             dpg.add_text('Contour Ordering')
             dpg.add_button(tag='contour_ordering', enabled=False, label='Anticlockwise', callback=callbacks.meshGeneration.toggleOrdering)
             with dpg.tooltip("contour_ordering"):
-                dpg.add_text("Click to change contour ordering. If the ordering is incorrect the mesh generation may have some errors")
+                dpg.add_text("Click to change contour ordering for export.")
             dpg.add_text('Export on Mesh')
             dpg.add_button(tag='contourExportOption', enabled=False, label='Disable', callback=callbacks.contourExtraction.toggleExportOnMesh)
             with dpg.tooltip("contourExportOption"):

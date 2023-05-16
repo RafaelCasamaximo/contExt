@@ -92,10 +92,10 @@ class MeshGeneration:
         dpg.configure_item("dy", default_value = dy)
         dpg.configure_item("xi", default_value = xmin)
         dpg.configure_item("yi", default_value = ymin)
-        dpg.configure_item("xi_zoom", default_value = xmin, min_value = xmin)
-        dpg.configure_item("yi_zoom", default_value = ymin, min_value = ymin)
-        dpg.configure_item("xf_zoom", default_value = xmin + dx, min_value = xmin + dx, max_value = xmax)
-        dpg.configure_item("yf_zoom", default_value = ymin + dy, min_value = ymin + dy, max_value = ymax)
+        dpg.configure_item("xi_zoom", default_value = xmin)
+        dpg.configure_item("yi_zoom", default_value = ymin)
+        dpg.configure_item("xf_zoom", default_value = xmin + dx, min_value = xmin + dx)
+        dpg.configure_item("yf_zoom", default_value = ymin + dy, min_value = ymin + dy)
 
         dpg.set_value('current_area', 'Current Area: --')
         dpg.set_value('difference', 'Difference: --')
@@ -126,7 +126,7 @@ class MeshGeneration:
         if self.toggleZoomFlag:
             dpg.configure_item('meshZoomType', label="Sparse")
         else:
-            dpg.configure_item('meshZoomType', label="Adaptative")
+            dpg.configure_item('meshZoomType', label="Adaptive")
         pass
 
     def addZoomRegion(self, sender = None, app_data = None):
@@ -427,8 +427,8 @@ class MeshGeneration:
                     if count > self.countGrid:
                         self.countGrid = count 
                 
-                nAux -= (1 + (r["xf"] - r["xi"])//dx) * (1 + (r["yf"] - r["yi"])//dy)    
-            nInternalNodes += nAux
+                #nAux -= (1 + (r["xf"] - r["xi"])//dx) * (1 + (r["yf"] - r["yi"])//dy)    
+            nInternalNodes += nAux - nAux//4
         dpg.configure_item('plotGrid', enabled=True)
         return nInternalNodes
 

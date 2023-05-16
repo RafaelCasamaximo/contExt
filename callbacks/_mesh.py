@@ -143,13 +143,14 @@ class Mesh:
     Para esse algoritmo funcionar ele precisa de uma lista ordenada de pontos. No caso, a própria lista de pontos que foi adquirida a partir da extração de contorno
     """
 
-    def get_area(x,y):
+    def get_area(xarray,yarray):
         area = 0
-        i = 0
-        j = 0
-        for index in range(0, (len(x)) - 1):
-            area += y[index] * x[index + 1] - x[index] * y[index + 1]
-        area += y[index - 1] * x[index] - x[index - 1] * y[index]
+
+        x = xarray[::-1]
+        y = yarray[::-1]
+        for index in range(0, len(x) - 1):
+            area += x[index] * y[index + 1] - y[index] * x[index + 1]
+        #area += x[index - 1] * y[index] - y[index - 1] * x[index]
         area = area / 2
         return area
 
