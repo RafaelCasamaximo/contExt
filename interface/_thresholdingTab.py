@@ -11,6 +11,17 @@ def showThresholding(callbacks):
             dpg.add_separator()
 
             with dpg.group(horizontal=True):
+                dpg.add_checkbox(tag='laplacianCheckbox', callback=lambda sender, app_data: callbacks.imageProcessing.toggleAndExecuteQuery('laplacian', sender, app_data))
+                dpg.add_text('Laplacian')
+            dpg.add_text('Intensity')
+            dpg.add_slider_int(tag='laplacianSlider', default_value=1, min_value=1, max_value=8, callback=lambda: callbacks.imageProcessing.executeQuery('laplacian'))
+            dpg.add_separator()
+
+            dpg.add_checkbox(tag='sobelCheckbox', label='Sobel', callback=lambda sender, app_data: callbacks.imageProcessing.toggleAndExecuteQuery('sobel', sender, app_data))
+            dpg.add_listbox(tag='sobelListbox', items=['X-Axis', 'Y-Axis', 'XY-Axis'], callback=lambda: callbacks.imageProcessing.executeQuery('sobel'))
+            dpg.add_separator()
+
+            with dpg.group(horizontal=True):
                 dpg.add_checkbox(tag='globalThresholdingCheckbox', callback=lambda sender, app_data: callbacks.imageProcessing.toggleAndExecuteQuery('globalThresholding', sender, app_data))
                 dpg.add_text('Global Thresholding')
             with dpg.group(horizontal=True):
