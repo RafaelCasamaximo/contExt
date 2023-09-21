@@ -71,6 +71,20 @@ class ImageProcessing:
                 'tab': 'Thresholding'
             },
             {
+                'method': self.laplacian,
+                'name': self.laplacian.__name__,
+                'status': False,
+                'output': None,
+                'tab': 'Thresholding'
+            },
+            {
+                'method': self.sobel,
+                'name': self.sobel.__name__,
+                'status': False,
+                'output': None,
+                'tab': 'Thresholding'
+            },
+            {
                 'method': self.globalThresholding,
                 'name': self.globalThresholding.__name__,
                 'status': False,
@@ -189,6 +203,7 @@ class ImageProcessing:
         dpg.set_value("averageBlurSlider",1)
         dpg.set_value("gaussianBlurSlider",1)
         dpg.set_value("medianBlurSlider",1)
+        dpg.set_value("laplacianSlider",1)
         dpg.set_value("globalThresholdSlider",127)
         
         try:
@@ -368,8 +383,35 @@ class ImageProcessing:
         Texture.updateTexture(self.blocks[Blocks.grayscale.value]['tab'], image)
         pass
 
-    def globalThresholding(self, sender=None, app_data=None):
+    def laplacian(self, sender=None, app_data=None):
         image = self.blocks[Blocks.grayscale.value]['output'].copy()
+
+        kernelSize = (2 * dpg.get_value('laplacianSlider')) - 1
+        laplacian = cv2.Laplacian(image, cv2.CV_8U, ksize=kernelSize)
+                
+        self.blocks[Blocks.laplacian.value]['output'] = laplacian
+        Texture.updateTexture(self.blocks[Blocks.laplacian.value]['tab'], laplacian)
+        pass
+
+    def sobel(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('sobel')]['output']
+
+        sobel = None
+        value = dpg.get_value('sobelListbox')
+
+        if value == 'X-Axis':
+            sobel = cv2.Sobel(image, cv2.CV_8U, 1, 0, ksize=3)
+        elif value == 'Y-Axis':
+            sobel = cv2.Sobel(image, cv2.CV_8U, 0, 1, ksize=3)
+        elif value == 'XY-Axis':
+            sobel = cv2.bitwise_or(cv2.Sobel(image, cv2.CV_8U, 1, 0, ksize=3), cv2.Sobel(image, cv2.CV_8U, 0, 1, ksize=3))
+
+        self.blocks[Blocks.sobel.value]['output'] = sobel
+        Texture.updateTexture(self.blocks[Blocks.sobel.value]['tab'], sobel)
+        pass
+
+    def globalThresholding(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('globalThresholding')]['output']
         threshold = dpg.get_value('globalThresholdSlider')
 
         thresholdMode = cv2.THRESH_BINARY 
@@ -482,6 +524,8 @@ class ImageProcessing:
             'excludeBlueChannel',
             'excludeGreenChannel',
             'excludeRedChannel',
+            'laplacianCheckbox',
+            'sobelCheckbox',
             'globalThresholdingCheckbox',
             'invertGlobalThresholding',
             'adaptativeThresholdingCheckbox',
@@ -508,6 +552,8 @@ class ImageProcessing:
             'excludeBlueChannel',
             'excludeGreenChannel',
             'excludeRedChannel',
+            'laplacianCheckbox',
+            'sobelCheckbox',
             'globalThresholdingCheckbox',
             'invertGlobalThresholding',
             'adaptativeThresholdingCheckbox',
@@ -534,6 +580,8 @@ class ImageProcessing:
             'excludeBlueChannel',
             'excludeGreenChannel',
             'excludeRedChannel',
+            'laplacianCheckbox',
+            'sobelCheckbox',
             'globalThresholdingCheckbox',
             'invertGlobalThresholding',
             'adaptativeThresholdingCheckbox',
