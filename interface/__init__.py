@@ -4,6 +4,7 @@ from ._filteringTab import showFiltering
 from ._meshTab import showMeshGeneration
 from ._processingTab import showProcessing
 from ._thresholdingTab import showThresholding
+from ._interpolationTab import showInterpolation
 from ._theme import applyTheme
 
 """
@@ -70,6 +71,9 @@ class Interface:
             pass
         with dpg.tab(label='Contour Extraction'):
             showContourExtraction(self.callbacks)
+            pass
+        with dpg.tab(label='Interpolation'):
+            showInterpolation(self.callbacks)
             pass
         with dpg.tab(label='Mesh Generation'):
             showMeshGeneration(self.callbacks)

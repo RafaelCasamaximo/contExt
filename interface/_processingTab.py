@@ -4,7 +4,6 @@ def showProcessing(callbacks):
     with dpg.group(horizontal=True):
         with dpg.child_window(width=300):
             
-
             with dpg.file_dialog(directory_selector=False, min_size=[400,300], show=False, tag='file_dialog_id', callback=callbacks.imageProcessing.openFile, cancel_callback=callbacks.imageProcessing.cancelImportImage):
                 dpg.add_file_extension("", color=(150, 255, 150, 255))
                 dpg.add_file_extension(".jpg", color=(0, 255, 255, 255))
@@ -68,7 +67,15 @@ def showProcessing(callbacks):
                 dpg.add_text("ERROR: This is not a valid path.")
                 dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("noPath", show=False))
             dpg.add_separator()
+
+            with dpg.window(label="CAUTION!", modal=True, show=False, tag="cropInterpolation", no_title_bar=False):
+                dpg.add_text("Crop images will remove contours in the interpolation tab.")
+                dpg.add_button(label="OK", width=75, callback=wrapperCropInterpolation, user_data=callbacks)
             pass
 
         with dpg.child_window(tag='ProcessingParent'):
             pass
+
+def wrapperCropInterpolation(sender=None, app_data=None, user_data=None):
+    user_data.imageProcessing.resetContours()
+    user_data.imageProcessing.executeQuery('crop')
