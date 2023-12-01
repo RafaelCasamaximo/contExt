@@ -74,6 +74,12 @@ def showProcessing(callbacks):
             pass
 
         with dpg.child_window(tag='ProcessingParent'):
+            with dpg.plot(tag="ProcessingPlotParent", label="Processing", height=650, width=650):
+                dpg.add_plot_legend()
+                dpg.add_plot_axis(dpg.mvXAxis, label="Width", tag="Processing_x_axis")
+                dpg.add_plot_axis(dpg.mvYAxis, label="Height", tag="Processing_y_axis")
+                dpg.fit_axis_data("Processing_x_axis")
+                dpg.fit_axis_data("Processing_y_axis")
             pass
 
 def wrapperCropInterpolation(sender=None, app_data=None, user_data=None):

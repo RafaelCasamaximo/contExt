@@ -56,4 +56,9 @@ def showThresholding(callbacks):
 
             pass
         with dpg.child_window(tag='ThresholdingParent'):
-            pass
+            with dpg.plot(tag="ThresholdingPlotParent", label="Thresholding", height=650, width=650):
+                dpg.add_plot_legend()
+                dpg.add_plot_axis(dpg.mvXAxis, label="Width", tag="Thresholding_x_axis")
+                dpg.add_plot_axis(dpg.mvYAxis, label="Height", tag="Thresholding_y_axis")
+                dpg.fit_axis_data("Thresholding_x_axis")
+                dpg.fit_axis_data("Thresholding_y_axis")

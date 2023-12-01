@@ -45,6 +45,9 @@ def applyTheme():
 
     dpg.bind_theme(global_theme)
 
+    # FIXME: Blurry font on Windows with DPI scaling
+    # https://github.com/hoffstadt/DearPyGui/issues/1380
+
     fontPath = ''
     fontPathWindows = 'fonts\Inter-Regular.otf'
     fontPathLinux = 'fonts/Inter-Regular.otf'

@@ -19,7 +19,9 @@ class Texture:
         width = textureImage.shape[1]
         textureData = Texture.textureToData(textureImage)
         dpg.add_dynamic_texture(width=width, height=height, default_value=textureData, tag=textureTag, parent='textureRegistry')
-        dpg.add_image(textureTag, parent=textureTag + 'Parent', tag=textureTag + 'Image')
+        # dpg.add_image(textureTag, parent=textureTag + 'Parent', tag=textureTag + 'Image')
+        dpg.add_image_series(texture_tag=textureTag, parent=textureTag + "_y_axis", bounds_min=[0, 0], bounds_max=[width, height], tag=textureTag + 'Image')
+
         pass
 
     def deleteTexture(textureTag):
