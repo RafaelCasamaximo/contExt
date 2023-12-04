@@ -77,11 +77,79 @@ def showMeshGeneration(callbacks):
                 with dpg.tooltip("resetMesh"):
                     dpg.add_text("Click to remove all zoom regions.")
 
+
+
+
+
+
+            dpg.add_separator()
+            dpg.add_text("Edit Actives Subcontours", tag="editContourText", show=True)
+            dpg.add_button(tag='editContour', show=True, label='Edit Contour', callback=lambda: dpg.configure_item("editContourPopup", show=True))
+
+            # EDIT CONTOUR WINDOW
+            with dpg.window(label='Edit Actives Subcontours', modal=True, show=False, tag="editContourPopup", min_size=[900,600]):
+                with dpg.group(horizontal=True):
+                    with dpg.child_window(width=300, tag="editContourColumn"):
+                        # Lista de subcontornos ativos
+                        with dpg.table(tag='EditContourTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
+                            resizable=True, no_host_extendX=False, hideable=True,
+                            borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True,
+                            borders_outerH=True, parent='editContourColumn'):
+
+                            dpg.add_table_column(label="Id", width_fixed=True)
+                            dpg.add_table_column(label="Color", width_fixed=True)
+                            dpg.add_table_column(label="Size", width_fixed=True)
+                            dpg.add_table_column(label="Position", width_fixed=True)
+                            dpg.add_table_column(label="Option", width_fixed=True)
+
+                        with dpg.group(horizontal=True):
+                            dpg.add_button(label="Cancel", width=100, callback=lambda: dpg.configure_item("editContourPopup", show=False))
+                            dpg.add_button(label="Save",   width=100, callback=lambda: dpg.configure_item("editContourPopup", show=False))
+                    with dpg.child_window(tag='EditContourParent'):
+
+                        # PLOTAR CONTORNO ATUAL
+
+
+                        # Controle deslizante
+                        
+
+                        # Controle manual
+                        
+
+                        dpg.add_text('Node editing')
+                        with dpg.group(horizontal=True):
+                            with dpg.group(horizontal=True):
+                                dpg.add_text('Start:')
+                                dpg.add_input_int(tag='initialNode', default_value=0, min_value=0, min_clamped=True)
+                            with dpg.group(horizontal=True):
+                                dpg.add_text('End:')
+                                dpg.add_input_int(tag='finalNode',   default_value=0, min_value=0, min_clamped=True)
+                        with dpg.group(horizontal=True):
+                            dpg.add_button(label="Add subcontour",        width=100, callback = callbacks.meshGeneration.addSubcontour)
+                            dpg.add_button(label="Clear all subcontours", width=100, callback = callbacks.meshGeneration.clearAllSubcontours)
+                            #dpg.add_button(label="Save",   width=100, callback=lambda: dpg.configure_item("editContourPopup", show=False))
+                    
+
+
+
+
+
+
+
+
             dpg.add_separator()
             dpg.add_text("Save Mesh", tag="exportMeshText", show=False)
             dpg.add_button(tag='exportMesh', show=False, label='Export Mesh', width=-1, callback=lambda: dpg.configure_item("exportMeshFile", show=True))
             with dpg.tooltip("exportMesh", tag="exportMeshTooltip", show=False):
                 dpg.add_text("Click to save mesh data in text files.")
+
+
+
+            
+
+
+
+
                 
             with dpg.window(label='Add Mesh Zoom Region', modal=True, show=False, tag="sparsePopup", min_size=[400,420]):
                 dpg.add_text('Type of Mesh Zoom')
@@ -151,5 +219,7 @@ def showMeshGeneration(callbacks):
                 dpg.add_text('Original Area: --', tag='original_area')
                 dpg.add_text('Current Area: --', tag='current_area')
                 dpg.add_text('Difference: --', tag='difference')
+            with dpg.group(horizontal=True):
                 dpg.add_text('Contour Nodes Number: --', tag='contour_nodes_number')
                 dpg.add_text('Internal Nodes Number: --', tag='current_nodes_number', show=False)   
+            pass

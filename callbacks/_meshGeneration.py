@@ -2,6 +2,7 @@ import dearpygui.dearpygui as dpg
 import os.path
 from ._mesh import Mesh
 from ._sparseMesh import SparseMesh
+from ._scopeList  import ScopeList
 
 class MeshGeneration:
     
@@ -17,10 +18,24 @@ class MeshGeneration:
         self.countGrid = 0
         self.originalX = []
         self.originalY = []
-        self.currentX = []
-        self.currentY = []
+        self.currentX  = []
+        self.currentY  = []
         self.exportFilePath = None
         self.exportFileName = None
+
+        # Subcontours feature
+        self.subcontours = None
+
+
+    def addSubcontour(self):
+        a = dpg.get_value('initialNode')
+        b = dpg.get_value('finalNode')
+
+        self.subcontours.createScope(a, b)
+    def clearAllSubcontours(self):
+
+        pass
+        
 
     def openContourFile(self, sender = None, app_data = None):
         self.txtFilePath = app_data['file_path_name']
@@ -105,7 +120,11 @@ class MeshGeneration:
         dpg.set_value("original_area", "Original Area: " + str(Mesh.get_area(self.currentX, self.currentY)))
         dpg.add_line_series(self.currentX, self.currentY, label="Original Mesh", tag="originalMeshPlot", parent='y_axis')
         dpg.fit_axis_data("x_axis")
-        dpg.fit_axis_data("y_axis")     
+        dpg.fit_axis_data("y_axis")
+
+        # minhaInstance = createScope();
+        self.subcontours = ScopeList(0, len(self.currentX) - 1)
+        # print(self.subcontours.getScopes)
 
     def cancelImportContour(self, sender = None, app_data = None):
         dpg.hide_item("txt_file_dialog_id")
@@ -198,6 +217,12 @@ class MeshGeneration:
         self.updateMesh()
 
     def updateMesh(self, sender=None, app_data=None):
+        flagMeshType  = 0
+        tempScopeList = []
+        for i in self.subcontours.getScopes:
+            tempScopeList.append((self.currentX[i[0]], self.currentY[i[0]], self.currentX[i[1]], self.currentY[i[1]]))
+
+
         dx = dpg.get_value("dx")
         dy = dpg.get_value("dy")
         xmin = dpg.get_value("xi")
@@ -226,10 +251,14 @@ class MeshGeneration:
                 nx = self.sparseMeshHandler.ranges[0]["nx"]
                 ny = self.sparseMeshHandler.ranges[0]["ny"]
                 dpg.configure_item("nodeNumber", show=True)
+
+                flagMeshType = 1
             else:
                 self.currentX, self.currentY = self.sparseMeshHandler.get_adaptative_mesh(self.originalX, self.originalY)
                 nx = len(self.sparseMeshHandler.dx)
                 ny = len(self.sparseMeshHandler.dy)
+                
+                flagMeshType = 2
             
             dpg.set_value("nx", 'nx: ' + str(int(nx)))
             dpg.set_value("ny", 'ny: ' + str(int(ny)))
@@ -267,6 +296,15 @@ class MeshGeneration:
         dpg.add_line_series(self.currentX, self.currentY, label="Current Mesh", tag="meshPlot", parent='y_axis')
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")
+
+        # self.subcontours = ScopeList(0, len(self.currentX) - 1)
+        # print(self.subcontours.getScopes)
+
+        for j in tempScopeList:
+            if flagMeshType == 0:
+                pass
+            pass
+
 
     def plotGrid(self, sender=None, app_data=None):
         if self.toggleGridFlag:
