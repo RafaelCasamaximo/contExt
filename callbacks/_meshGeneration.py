@@ -90,8 +90,6 @@ class MeshGeneration:
         ny = self.currentY[0]
         xmin = self.currentX[1]
         ymin = self.currentY[1]
-        xmax = self.currentX[2]
-        ymax = self.currentY[2]
         dx = self.currentX[3]
         dy = self.currentY[3]
 
