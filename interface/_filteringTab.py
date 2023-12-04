@@ -51,5 +51,4 @@ def showFiltering(callbacks):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="Width", tag="Filtering_x_axis")
                 dpg.add_plot_axis(dpg.mvYAxis, label="Height", tag="Filtering_y_axis")
-                dpg.fit_axis_data("Filtering_y_axis")
             pass

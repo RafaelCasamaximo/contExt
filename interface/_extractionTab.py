@@ -84,4 +84,4 @@ def showContourExtraction(callbacks):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="Width", tag="ContourExtraction_x_axis")
                 dpg.add_plot_axis(dpg.mvYAxis, label="Height", tag="ContourExtraction_y_axis")
-                dpg.fit_axis_data("ContourExtraction_y_axis")
+                

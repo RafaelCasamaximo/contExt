@@ -9,4 +9,3 @@ def showInterpolation(callbacks):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="Width", tag="Interpolation_x_axis")
                 dpg.add_plot_axis(dpg.mvYAxis, label="Height", tag="Interpolation_y_axis")
-                dpg.fit_axis_data("Interpolation_y_axis")
