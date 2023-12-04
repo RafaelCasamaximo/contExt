@@ -5,6 +5,7 @@ import pydicom
 import os.path
 from ._blocks import Blocks
 from ._texture import Texture
+from ._interpolation import Interpolation
 
 class ImageProcessing:
     def __init__(self) -> None:
@@ -13,6 +14,7 @@ class ImageProcessing:
         self.fileName = None
         self.exportImageFilePath = None
         self.currentTab = None
+        self.resetContours = None
 
         self.blocks = [
             {
@@ -288,6 +290,10 @@ class ImageProcessing:
         pass
 
     def crop(self, sender=None, app_data=None):
+        if dpg.does_item_exist("InterpolationTable"):
+            dpg.configure_item("cropInterpolation", show=True)
+            return
+
         startX = dpg.get_value('startX')
         endX = dpg.get_value('endX')
         startY = dpg.get_value('startY')

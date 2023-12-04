@@ -7,6 +7,7 @@ from ._texture import Texture
 from ._blocks import Blocks
 from ._meshGeneration import MeshGeneration
 from ._imageProcessing import ImageProcessing
+from ._interpolation import Interpolation
 
 class ContourExtraction:
 
@@ -15,6 +16,7 @@ class ContourExtraction:
         self.filePath = None
         self.meshGeneration = MeshGeneration()
         self.imageProcessing = ImageProcessing()
+        self.interpolation = Interpolation()
         self.contourTableEntry = []
         self.exportFilePath = None
         self.exportFileName = None
@@ -22,6 +24,8 @@ class ContourExtraction:
         self.exportSelectFileName = None
         self.toggleDrawContoursFlag = True
         self.toggleMeshImport = False
+
+        self.imageProcessing.resetContours = self.interpolation.resetContours
 
     def extractContour(self, sender=None, app_data=None):
 
@@ -67,6 +71,7 @@ class ContourExtraction:
                     'data': contour,
                     'contourX': [x[0][0] for x in contour],
                     'contourY': [x[0][1] for x in contour],
+                    'sliderInterpolationValue': 255,
                 }
             )
             cv2.drawContours(image, contour, -1, contourColor, thicknessValue)
@@ -92,11 +97,12 @@ class ContourExtraction:
             dpg.add_table_column(label="Position", width_fixed=True)
             dpg.add_table_column(label="Export to Mesh Generation", width_fixed=True)
             dpg.add_table_column(label="Export Contour", width_fixed=True)
+            dpg.add_table_column(label="Export to Interpolation", width_fixed=True)
 
 
             for contourEntry in self.contourTableEntry:
                 with dpg.table_row():
-                    for j in range(7):
+                    for j in range(8):
                         if j == 0:
                             dpg.add_text(contourEntry['id'])
                         if j == 1:
@@ -114,7 +120,9 @@ class ContourExtraction:
                         if j == 5:
                             dpg.add_button(label='Export to Mesh Generation', width=-1, tag="exportMeshGeneration" + str(contourEntry['id']), callback=self.exportToMeshGeneration)
                         if j == 6:
-                            dpg.add_button(label='Export Individual Contour', width=-1, tag="exportContour" + str(contourEntry['id']), callback=self.exportButtonCall)
+                            dpg.add_button(label='Export Individual Contour', tag="exportContour" + str(contourEntry['id']), callback=self.exportButtonCall)
+                        if j == 7:
+                            dpg.add_button(label='Export to Interpolation', tag="exportInterpolation" + str(contourEntry['id']), callback=self.exportToInterpolation)
 
         self.imageProcessing.blocks[Blocks.findContour.value]['output'] = image
         Texture.updateTexture(self.imageProcessing.blocks[Blocks.findContour.value]['tab'], image)
@@ -175,6 +183,20 @@ class ContourExtraction:
         self.meshGeneration.originalX = [nx, xmin, xmax, dx] + xarray
         self.meshGeneration.originalY = [ny, ymin, ymax, dy] + yarray
         self.meshGeneration.importContour()
+        pass
+
+    def exportToInterpolation(self, sender, app_data=None):
+        image = self.imageProcessing.blocks[self.imageProcessing.getLastActiveBeforeMethod('findContour')]['output'].copy()
+        self.interpolation.dimensions = image.shape
+
+        auxId = int(sender[19:])
+        for i in self.contourTableEntry:
+            i["color"] = (i["sliderInterpolationValue"], i["sliderInterpolationValue"], i["sliderInterpolationValue"])
+            if i["id"] == auxId:
+                entry = i
+                break
+        self.interpolation.contours.append(entry)
+        self.interpolation.extractCountour()
         pass
 
     def updateContour(self, sender, app_data=None):
