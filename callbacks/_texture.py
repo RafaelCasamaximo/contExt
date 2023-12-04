@@ -4,12 +4,12 @@ import numpy as np
 import enum
 
 class Tabs(enum.Enum):
-    __order__ = 'Processing Filtering Thresholding ContourExtraction Interpolation'
+    __order__ = 'Processing Filtering Thresholding ContourExtraction'# Interpolation'
     Processing = 0
     Filtering = 1
     Thresholding = 2
     ContourExtraction = 3
-    Interpolation = 4
+    #Interpolation = 4
 
 class Texture:
 

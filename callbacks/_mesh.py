@@ -178,3 +178,9 @@ class Mesh:
         point = Point((x,y))
         polygon = Polygon(list(zip(xarray,yarray)))
         return polygon.contains(point) or polygon.intersects(point)
+    
+    def getIndex(xarray, yarray, x, y):
+        for i in range(len(xarray)):
+            if x == xarray[i] and y == yarray[i]:
+                return i
+        return -1 

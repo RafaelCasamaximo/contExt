@@ -215,10 +215,9 @@ class MeshGeneration:
         self.updateMesh()
 
     def updateMesh(self, sender=None, app_data=None):
-        flagMeshType  = 0
         tempScopeList = []
         for i in self.subcontours.getScopes:
-            tempScopeList.append((self.currentX[i[0]], self.currentY[i[0]], self.currentX[i[1]], self.currentY[i[1]]))
+            tempScopeList.append([self.currentX[i[0]], self.currentY[i[0]], self.currentX[i[1]], self.currentY[i[1]]])
 
 
         dx = dpg.get_value("dx")
@@ -240,6 +239,13 @@ class MeshGeneration:
             self.currentY = self.currentY[4:]
             dpg.set_value("nx", 'nx: ' + str(int(nx)))
             dpg.set_value("ny", 'ny: ' + str(int(ny)))
+
+            for i in range(len(tempScopeList)):
+                j = tempScopeList[i]
+                p1 = Mesh.getNode(j[0], j[1], xmin, ymin, dx, dy)
+                p2 = Mesh.getNode(j[2], j[3], xmin, ymin, dx, dy)
+                tempScopeList[i] = [p1[0], p1[1], p2[0], p2[1]]
+
             self.plotGrid()
         else:
             self.sparseMeshHandler.updateRanges(dx, dy, xmin, ymin)
@@ -250,13 +256,23 @@ class MeshGeneration:
                 ny = self.sparseMeshHandler.ranges[0]["ny"]
                 dpg.configure_item("nodeNumber", show=True)
 
-                flagMeshType = 1
+                for i in range(len(tempScopeList)):
+                    j = tempScopeList[i]
+                    p1 = self.sparseMeshHandler.getNode(j[0], j[2])
+                    p2 = self.sparseMeshHandler.getNode(j[2], j[3])
+                    tempScopeList[i] = [p1[0], p1[1], p2[0], p2[1]]
             else:
                 self.currentX, self.currentY = self.sparseMeshHandler.get_adaptative_mesh(self.originalX, self.originalY)
                 nx = len(self.sparseMeshHandler.dx)
                 ny = len(self.sparseMeshHandler.dy)
                 
-                flagMeshType = 2
+                for i in range(len(tempScopeList)):
+                    j = tempScopeList[i]
+                    p1 = self.sparseMeshHandler.getXNode(j[0])
+                    p2 = self.sparseMeshHandler.getYNode(j[1])
+                    p3 = self.sparseMeshHandler.getXNode(j[2])
+                    p4 = self.sparseMeshHandler.getYNode(j[3])
+                    tempScopeList[i] = [p1, p2, p3, p4]
             
             dpg.set_value("nx", 'nx: ' + str(int(nx)))
             dpg.set_value("ny", 'ny: ' + str(int(ny)))
@@ -295,14 +311,13 @@ class MeshGeneration:
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")
 
-        # self.subcontours = ScopeList(0, len(self.currentX) - 1)
-        # print(self.subcontours.getScopes)
-
+        self.subcontours = ScopeList(0, len(self.currentX) - 1)
+        print(self.subcontours.getScopes)
+        
         for j in tempScopeList:
-            if flagMeshType == 0:
-                pass
-            pass
-
+            a = Mesh.getIndex(self.currentX, self.currentY, j[0], j[1])
+            b = Mesh.getIndex(self.currentX, self.currentY, j[2], j[3])
+            self.subcontours.createScope(a,b)
 
     def plotGrid(self, sender=None, app_data=None):
         if self.toggleGridFlag:
