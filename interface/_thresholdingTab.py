@@ -14,11 +14,11 @@ def showThresholding(callbacks):
                 dpg.add_checkbox(tag='laplacianCheckbox', callback=lambda sender, app_data: callbacks.imageProcessing.toggleAndExecuteQuery('laplacian', sender, app_data))
                 dpg.add_text('Laplacian')
             dpg.add_text('Intensity')
-            dpg.add_slider_int(tag='laplacianSlider', default_value=1, min_value=1, max_value=8, callback=lambda: callbacks.imageProcessing.executeQuery('laplacian'))
+            dpg.add_slider_int(tag='laplacianSlider', default_value=1, min_value=1, max_value=8, width=-1, callback=lambda: callbacks.imageProcessing.executeQuery('laplacian'))
             dpg.add_separator()
 
             dpg.add_checkbox(tag='sobelCheckbox', label='Sobel', callback=lambda sender, app_data: callbacks.imageProcessing.toggleAndExecuteQuery('sobel', sender, app_data))
-            dpg.add_listbox(tag='sobelListbox', items=['X-Axis', 'Y-Axis', 'XY-Axis'], callback=lambda: callbacks.imageProcessing.executeQuery('sobel'))
+            dpg.add_listbox(tag='sobelListbox', items=['X-Axis', 'Y-Axis', 'XY-Axis'], width=-1, callback=lambda: callbacks.imageProcessing.executeQuery('sobel'))
             dpg.add_separator()
 
             with dpg.group(horizontal=True):
@@ -28,7 +28,7 @@ def showThresholding(callbacks):
                 dpg.add_checkbox(tag='invertGlobalThresholding', callback=lambda: callbacks.imageProcessing.executeQuery('globalThresholding'))
                 dpg.add_text('Invert Tresholding')
             dpg.add_text('Threshold')
-            dpg.add_slider_int(tag='globalThresholdSlider', default_value=127, min_value=0, max_value=255, callback=lambda: callbacks.imageProcessing.executeQuery('globalThresholding'))
+            dpg.add_slider_int(tag='globalThresholdSlider', default_value=127, min_value=0, max_value=255, width=-1, callback=lambda: callbacks.imageProcessing.executeQuery('globalThresholding'))
             dpg.add_separator()
 
             with dpg.group(horizontal=True):
@@ -49,16 +49,15 @@ def showThresholding(callbacks):
             with dpg.group(tag="exportImageAsFileThresholdingGroup", show=False):
                 dpg.add_separator()
                 dpg.add_text("Save Image")
-                dpg.add_button(tag='exportImageAsFileThresholding', label='Export Image as File', callback=lambda sender, app_data: callbacks.imageProcessing.exportImage(sender, app_data, 'Thresholding'))
+                dpg.add_button(tag='exportImageAsFileThresholding', label='Export Image as File', width=-1, callback=lambda sender, app_data: callbacks.imageProcessing.exportImage(sender, app_data, 'Thresholding'))
 
             dpg.add_separator()
             dpg.add_separator()
 
             pass
         with dpg.child_window(tag='ThresholdingParent'):
-            with dpg.plot(tag="ThresholdingPlotParent", label="Thresholding", height=650, width=650):
+            with dpg.plot(tag="ThresholdingPlotParent", label="Thresholding", height=-1, width=-1):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="Width", tag="Thresholding_x_axis")
                 dpg.add_plot_axis(dpg.mvYAxis, label="Height", tag="Thresholding_y_axis")
-                dpg.fit_axis_data("Thresholding_x_axis")
                 dpg.fit_axis_data("Thresholding_y_axis")

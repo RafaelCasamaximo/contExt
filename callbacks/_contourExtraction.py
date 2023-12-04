@@ -74,11 +74,11 @@ class ContourExtraction:
         self.contourTableEntry = list(sorted(self.contourTableEntry, key=lambda x: x['pointsNo'], reverse=True))
 
         dpg.add_separator(tag='separator1', parent='ContourExtractionParent')
-        dpg.add_button(tag='toggleDrawContoursButton', label='Hide All Contours', parent='ContourExtractionParent', callback=self.toggleDrawContours)
+        dpg.add_button(tag='toggleDrawContoursButton', width=-1, label='Hide All Contours', parent='ContourExtractionParent', callback=self.toggleDrawContours)
         dpg.add_separator(tag='separator2', parent='ContourExtractionParent')
-        dpg.add_button(tag='removeExtractContour', label='Remove Contour', parent='ContourExtractionParent', callback=self.removeContour)
+        dpg.add_button(tag='removeExtractContour', width=-1, label='Remove Contour', parent='ContourExtractionParent', callback=self.removeContour)
         dpg.add_separator(tag='separator3', parent='ContourExtractionParent')
-        dpg.add_button(tag='exportSelectedContours', label='Export Selected Contours as Files', parent='ContourExtractionParent', callback=self.exportSelectedButtonCall)
+        dpg.add_button(tag='exportSelectedContours', width=-1, label='Export Selected Contours as Files', parent='ContourExtractionParent', callback=self.exportSelectedButtonCall)
         dpg.add_separator(tag='separator4', parent='ContourExtractionParent')
         with dpg.table(tag='ContourExtractionTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
             resizable=True, no_host_extendX=False, hideable=True,
@@ -112,9 +112,9 @@ class ContourExtraction:
                             ymax = max(contourEntry["contourY"])
                             dpg.add_text("Xmin = " + str(xmin) + "\nYmin = " + str(ymin) + "\nXmax = " + str(xmax) + "\nYmax = " + str(ymax), tag="position" + str(contourEntry['id']))
                         if j == 5:
-                            dpg.add_button(label='Export to Mesh Generation', tag="exportMeshGeneration" + str(contourEntry['id']), callback=self.exportToMeshGeneration)
+                            dpg.add_button(label='Export to Mesh Generation', width=-1, tag="exportMeshGeneration" + str(contourEntry['id']), callback=self.exportToMeshGeneration)
                         if j == 6:
-                            dpg.add_button(label='Export Individual Contour', tag="exportContour" + str(contourEntry['id']), callback=self.exportButtonCall)
+                            dpg.add_button(label='Export Individual Contour', width=-1, tag="exportContour" + str(contourEntry['id']), callback=self.exportButtonCall)
 
         self.imageProcessing.blocks[Blocks.findContour.value]['output'] = image
         Texture.updateTexture(self.imageProcessing.blocks[Blocks.findContour.value]['tab'], image)
@@ -208,7 +208,7 @@ class ContourExtraction:
         dpg.set_value("currentMaxWidth", 'Current: ' + str(w))
         dpg.set_value("currentMaxHeight", 'Current: ' + str(h)) 
         dpg.delete_item("resetContour")
-        dpg.add_button(tag="resetContour", label="Reset Contour Properties", parent="changeContourParent", callback=self.resetContour)
+        dpg.add_button(tag="resetContour", width=-1, label="Reset Contour Properties", parent="changeContourParent", callback=self.resetContour)
 
     def removeContour(self, sender=None, app_data=None):
         self.hideAllContours()

@@ -156,7 +156,7 @@ class MeshGeneration:
         dpg.add_text("Bottom y: " + str(xmin), tag="yminZoom" + str(nZoom), parent="sparseGroup")
         dpg.add_text("Top x: " + str(xmin), tag="xmaxZoom" + str(nZoom), parent="sparseGroup")
         dpg.add_text("Top x: " + str(xmin), tag="ymaxZoom" + str(nZoom), parent="sparseGroup")
-        dpg.add_button(tag="removeZoom" + str(nZoom), label="Remove Zoom Region", parent="sparseGroup", callback=self.removeZoomRegion)
+        dpg.add_button(tag="removeZoom" + str(nZoom), width=-1, label="Remove Zoom Region", parent="sparseGroup", callback=self.removeZoomRegion)
 
         if nZoom == 2:
             dpg.configure_item("resetMesh", show=True)

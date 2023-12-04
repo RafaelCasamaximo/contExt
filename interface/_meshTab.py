@@ -11,26 +11,26 @@ def showMeshGeneration(callbacks):
 
 
             dpg.add_text('Select a contour file to use.')
-            dpg.add_button(tag='import_contour', label='Import Contour', callback=lambda: dpg.show_item("txt_file_dialog_id"))
+            dpg.add_button(tag='import_contour', width=-1, label='Import Contour', callback=lambda: dpg.show_item("txt_file_dialog_id"))
 
             dpg.add_text('File Name:', tag='contour_file_name_text')
             dpg.add_text('File Path:', tag='contour_file_path_text')
                 
             with dpg.window(label='Error', modal=True, show=False, tag="txtFileErrorPopup"):
                 dpg.add_text("File doesn't contain a valid contour")
-                dpg.add_button(label="Ok", callback=lambda: dpg.configure_item("txtFileErrorPopup", show=False))
+                dpg.add_button(label="Ok", width=-1, callback=lambda: dpg.configure_item("txtFileErrorPopup", show=False))
 
             dpg.add_separator()
 
             dpg.add_text('Contour Ordering')
-            dpg.add_button(tag='contour_ordering2', enabled=False, label='Anticlockwise', callback=callbacks.meshGeneration.toggleOrdering)
+            dpg.add_button(tag='contour_ordering2', width=-1, enabled=False, label='Anticlockwise', callback=callbacks.meshGeneration.toggleOrdering)
             with dpg.tooltip("contour_ordering2"):
                 dpg.add_text("Click to change contour ordering for export.")
 
             dpg.add_separator()
 
             dpg.add_text("Mesh Grid")
-            dpg.add_button(label ='Plot Mesh Grid', tag='plotGrid', callback=callbacks.meshGeneration.toggleGrid, enabled=False)
+            dpg.add_button(label ='Plot Mesh Grid', width=-1, tag='plotGrid', callback=callbacks.meshGeneration.toggleGrid, enabled=False)
             with dpg.tooltip("plotGrid"):
                 dpg.add_text("Click to draw mesh grid and count the number of internal node. Might take a while.")
                 
@@ -52,10 +52,10 @@ def showMeshGeneration(callbacks):
             dpg.add_text('Node Size')
             with dpg.group(horizontal=True):
                 dpg.add_text('dx:')
-                dpg.add_input_float(tag='dx', default_value=1, min_value=0.000001, min_clamped=True)
+                dpg.add_input_float(tag='dx', width=-1, default_value=1, min_value=0.000001, min_clamped=True)
             with dpg.group(horizontal=True):
                 dpg.add_text('dy:')
-                dpg.add_input_float(tag='dy', default_value=1, min_value=0.000001, min_clamped=True)
+                dpg.add_input_float(tag='dy', width=-1, default_value=1, min_value=0.000001, min_clamped=True)
 
             dpg.add_text('Original Mesh Start:')
             dpg.add_text('x: --', tag='original_xi')
@@ -63,29 +63,29 @@ def showMeshGeneration(callbacks):
             dpg.add_text('Mesh Start')
             with dpg.group(horizontal=True):
                 dpg.add_text('x:')
-                dpg.add_input_float(tag='xi')
+                dpg.add_input_float(tag='xi', width=-1)
             with dpg.group(horizontal=True):
                 dpg.add_text('y:')
-                dpg.add_input_float(tag='yi')
-            dpg.add_button(label='Apply Changes', callback= callbacks.meshGeneration.updateMesh)
+                dpg.add_input_float(tag='yi', width=-1)
+            dpg.add_button(label='Apply Changes', width=-1, callback= callbacks.meshGeneration.updateMesh)
             dpg.add_separator()
                 
             with dpg.group(tag="sparseGroup"):
                 dpg.add_text('Sparse and Adataptive Mesh')
-                dpg.add_button(label='Add Mesh Zoom Region', enabled=False, tag="sparseButton", callback=lambda: dpg.configure_item("sparsePopup", show=True))
-                dpg.add_button(label ='Reset Mesh', tag='resetMesh', callback=callbacks.meshGeneration.resetMesh, show=False)
+                dpg.add_button(label='Add Mesh Zoom Region', width=-1, enabled=False, tag="sparseButton", callback=lambda: dpg.configure_item("sparsePopup", show=True))
+                dpg.add_button(label ='Reset Mesh', tag='resetMesh', width=-1, callback=callbacks.meshGeneration.resetMesh, show=False)
                 with dpg.tooltip("resetMesh"):
                     dpg.add_text("Click to remove all zoom regions.")
 
             dpg.add_separator()
             dpg.add_text("Save Mesh", tag="exportMeshText", show=False)
-            dpg.add_button(tag='exportMesh', show=False, label='Export Mesh', callback=lambda: dpg.configure_item("exportMeshFile", show=True))
+            dpg.add_button(tag='exportMesh', show=False, label='Export Mesh', width=-1, callback=lambda: dpg.configure_item("exportMeshFile", show=True))
             with dpg.tooltip("exportMesh", tag="exportMeshTooltip", show=False):
                 dpg.add_text("Click to save mesh data in text files.")
                 
             with dpg.window(label='Add Mesh Zoom Region', modal=True, show=False, tag="sparsePopup", min_size=[400,420]):
                 dpg.add_text('Type of Mesh Zoom')
-                dpg.add_button(tag='meshZoomType', enabled=True, label='Sparse', callback=callbacks.meshGeneration.toggleZoom)
+                dpg.add_button(tag='meshZoomType', enabled=True, label='Sparse', width=-1, callback=callbacks.meshGeneration.toggleZoom)
                 with dpg.tooltip("meshZoomType"):
                     dpg.add_text("Click to change the mesh zoom type.", tag="meshZoomTypeTooltip")
                     
@@ -117,8 +117,8 @@ def showMeshGeneration(callbacks):
                     
                 dpg.add_separator()
                 with dpg.group(horizontal=True):
-                    dpg.add_button(label="Add Zoom", width=100, callback=callbacks.meshGeneration.addZoomRegion)
-                    dpg.add_button(label="Cancel", width=100, callback=lambda: dpg.configure_item("sparsePopup", show=False))
+                    dpg.add_button(label="Add Zoom", width=-1, callback=callbacks.meshGeneration.addZoomRegion)
+                    dpg.add_button(label="Cancel", width=-1, callback=lambda: dpg.configure_item("sparsePopup", show=False))
                 dpg.add_text("Invalid range due to overlap", tag="addZoomError", show=False)
 
             with dpg.window(label="Save File", modal=False, show=False, tag="exportMeshFile", no_title_bar=False, min_size=[600,255]):
@@ -126,14 +126,14 @@ def showMeshGeneration(callbacks):
                 dpg.add_input_text(tag='inputMeshNameText')
                 dpg.add_separator()
                 dpg.add_text("You MUST enter a File Name to select a directory")
-                dpg.add_button(label='Select the directory', callback= callbacks.meshGeneration.openMeshDirectorySelector)
+                dpg.add_button(label='Select the directory', width=-1, callback= callbacks.meshGeneration.openMeshDirectorySelector)
                 dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='meshDirectorySelectorFileDialog', id="meshDirectorySelectorFileDialog", callback=callbacks.meshGeneration.selectMeshFileFolder)
                 dpg.add_separator()
                 dpg.add_text('File Name: ', tag='exportMeshFileName')
                 dpg.add_text('Complete Path Name: ', tag='exportMeshPathName')
                 with dpg.group(horizontal=True):
-                    dpg.add_button(label='Save', callback=lambda: callbacks.meshGeneration.exportMesh())
-                    dpg.add_button(label='Cancel', callback=lambda: dpg.configure_item('exportMeshFile', show=False))
+                    dpg.add_button(label='Save', width=-1, callback=lambda: callbacks.meshGeneration.exportMesh())
+                    dpg.add_button(label='Cancel', width=-1, callback=lambda: dpg.configure_item('exportMeshFile', show=False))
                 dpg.add_text("Missing file name or directory.", tag="exportMeshError", show=False)
 
             dpg.add_separator()
@@ -142,7 +142,7 @@ def showMeshGeneration(callbacks):
             with dpg.theme(tag="grid_plot_theme"):
                 with dpg.theme_component(dpg.mvLineSeries):
                     dpg.add_theme_color(dpg.mvPlotCol_Line, (100, 100, 100), category=dpg.mvThemeCat_Plots)
-            with dpg.plot(tag="meshPlotParent", label="Mesh Plot", height=650, width=650):
+            with dpg.plot(tag="meshPlotParent", label="Mesh Plot", height=-1 - 20, width=-1):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="x_axis")
                 dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="y_axis")
@@ -151,7 +151,5 @@ def showMeshGeneration(callbacks):
                 dpg.add_text('Original Area: --', tag='original_area')
                 dpg.add_text('Current Area: --', tag='current_area')
                 dpg.add_text('Difference: --', tag='difference')
-            with dpg.group(horizontal=True):
                 dpg.add_text('Contour Nodes Number: --', tag='contour_nodes_number')
                 dpg.add_text('Internal Nodes Number: --', tag='current_nodes_number', show=False)   
-            pass

@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
 import cv2
+import pydicom
 import os.path
 from ._blocks import Blocks
 from ._texture import Texture
@@ -184,6 +185,19 @@ class ImageProcessing:
         return lastActiveIndex
 
     def openImage(self, filePath):
+        # Check if image is .dcm or .dicom or other format
+        if filePath.endswith('.dcm') or filePath.endswith('.dicom'):
+            return self.openDicom(filePath)
+        return self.openOtherImage(filePath)
+
+    def openDicom(self, filePath):
+        ds = pydicom.dcmread(filePath)
+        pixelArray = ds.pixel_array
+        _, encodedImage = cv2.imencode('.jpg', pixelArray)
+        numpyarray = cv2.imdecode(encodedImage, cv2.IMREAD_COLOR)
+        return numpyarray
+    
+    def openOtherImage(self, filePath):
         stream = open(filePath, "rb")
         bytes = bytearray(stream.read())
         numpyarray = np.asarray(bytes, dtype=np.uint8)
