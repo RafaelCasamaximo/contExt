@@ -32,6 +32,7 @@ class MeshGeneration:
         b = dpg.get_value('finalNode')
 
         self.subcontours.createScope(a, b)
+
     def clearAllSubcontours(self):
 
         pass
@@ -120,9 +121,8 @@ class MeshGeneration:
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")
 
-        # minhaInstance = createScope();
-        self.subcontours = ScopeList(0, len(self.currentX) - 1)
-        # print(self.subcontours.getScopes)
+        #self.subcontours = ScopeList(0, len(self.currentX))
+        print(self.subcontours.getScopes())
 
     def cancelImportContour(self, sender = None, app_data = None):
         dpg.hide_item("txt_file_dialog_id")
@@ -216,7 +216,7 @@ class MeshGeneration:
 
     def updateMesh(self, sender=None, app_data=None):
         tempScopeList = []
-        for i in self.subcontours.getScopes:
+        for i in self.subcontours.getScopes()[:-1]:
             tempScopeList.append([self.currentX[i[0]], self.currentY[i[0]], self.currentX[i[1]], self.currentY[i[1]]])
 
 
@@ -311,13 +311,15 @@ class MeshGeneration:
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")
 
-        self.subcontours = ScopeList(0, len(self.currentX) - 1)
-        print(self.subcontours.getScopes)
+        #print(self.subcontours.getScopes())
+        self.subcontours = ScopeList(0, len(self.currentX))
+        #print(self.subcontours.getScopes())
         
         for j in tempScopeList:
             a = Mesh.getIndex(self.currentX, self.currentY, j[0], j[1])
             b = Mesh.getIndex(self.currentX, self.currentY, j[2], j[3])
             self.subcontours.createScope(a,b)
+        #print(self.subcontours.getScopes())
 
     def plotGrid(self, sender=None, app_data=None):
         if self.toggleGridFlag:

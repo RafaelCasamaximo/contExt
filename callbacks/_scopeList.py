@@ -2,8 +2,10 @@ class Scope:
     def __init__(self, lower, upper) -> None:
         self.lower = lower
         self.upper = upper
+        
     def __str__(self) -> str:
         return f"({self.lower}, {self.upper})"
+    
 class ScopeList:
     def __init__(self, startIndex, endIndex) -> None:
         scope = Scope(startIndex, endIndex)
@@ -14,6 +16,7 @@ class ScopeList:
         for p in self.scopes:
             pairs.append((p.lower, p.upper))
         return pairs
+    
     def getSize(self) -> int:
         return len(self.scopes)
     
