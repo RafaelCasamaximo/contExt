@@ -61,12 +61,12 @@ class MeshGeneration:
                 print("File doesn't contain a valid contour")
                 dpg.configure_item("txtFileErrorPopup", show=True)
                 return
-        if not self.toggleOrderingFlag:
-            self.originalX = self.originalX[:4] + self.originalX[4::-1]
-            self.originalY = self.originalY[:4] + self.originalY[4::-1]
         f.close()
         self.importContour()
-        
+
+    def cancelImportContour(self, sender = None, app_data = None):
+        dpg.hide_item("txt_file_dialog_id")
+
     def importContour(self, sender = None, app_data = None):
         if self.toggleGridFlag:
             self.removeGrid()
@@ -82,10 +82,19 @@ class MeshGeneration:
             dpg.configure_item("exportMeshTooltip", show=True)
             dpg.add_separator(parent="meshGeneration")
 
+
         self.currentX = self.originalX
         self.currentY = self.originalY
         self.originalX = self.originalX[4:]
         self.originalY = self.originalY[4:]
+
+        if not self.toggleOrderingFlag:
+            self.originalX = self.originalX[::-1]
+            self.originalY = self.originalY[::-1]
+            self.toggleOrdering()
+        
+        self.currentX = self.currentX[:4] + self.originalX
+        self.currentY = self.currentY[:4] + self.originalY
 
         nx = self.currentX[0]
         ny = self.currentY[0]
@@ -121,12 +130,8 @@ class MeshGeneration:
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")
 
-        #self.subcontours = ScopeList(0, len(self.currentX))
-        print(self.subcontours.getScopes())
-
-    def cancelImportContour(self, sender = None, app_data = None):
-        dpg.hide_item("txt_file_dialog_id")
-        pass
+        self.subcontours = ScopeList(0, len(self.currentX))
+        #print(self.subcontours.getScopes())
 
     def toggleOrdering(self, sender = None, app_data = None):
         self.toggleOrderingFlag = not self.toggleOrderingFlag
@@ -136,7 +141,6 @@ class MeshGeneration:
         else:
             dpg.configure_item('contour_ordering', label="Clockwise")
             dpg.configure_item('contour_ordering2', label="Clockwise")
-        pass
 
     def toggleZoom(self, sender = None, app_data = None):
         self.toggleZoomFlag = not self.toggleZoomFlag
@@ -144,7 +148,6 @@ class MeshGeneration:
             dpg.configure_item('meshZoomType', label="Sparse")
         else:
             dpg.configure_item('meshZoomType', label="Adaptive")
-        pass
 
     def addZoomRegion(self, sender = None, app_data = None):
         listBoxValue = dpg.get_value("dxListbox")

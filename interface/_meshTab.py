@@ -4,7 +4,7 @@ def showMeshGeneration(callbacks):
     with dpg.group(horizontal=True):
         with dpg.child_window(width=300, tag="meshGeneration"):
                 
-            with dpg.file_dialog(directory_selector=False, show=False, min_size=[400,300], tag='txt_file_dialog_id', callback=callbacks.meshGeneration.openContourFile, cancel_callback=callbacks.meshGeneration.cancelImportContour):
+            with dpg.file_dialog(directory_selector=False, show=False, min_size=[400,300], tag='txt_file_dialog_id', callback=callbacks.meshGeneration.openContourFile):
                 dpg.add_file_extension("", color=(150, 255, 150, 255))
                 dpg.add_file_extension(".txt", color=(0, 255, 255, 255))
                 dpg.add_file_extension(".dat", color=(0, 255, 255, 255))
@@ -23,7 +23,7 @@ def showMeshGeneration(callbacks):
             dpg.add_separator()
 
             dpg.add_text('Contour Ordering')
-            dpg.add_button(tag='contour_ordering2', width=-1, enabled=False, label='Anticlockwise', callback=callbacks.meshGeneration.toggleOrdering)
+            dpg.add_button(tag='contour_ordering2', width=-1, label='Anticlockwise', callback=callbacks.meshGeneration.toggleOrdering)
             with dpg.tooltip("contour_ordering2"):
                 dpg.add_text("Click to change contour ordering for export.")
 
