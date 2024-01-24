@@ -52,24 +52,41 @@ class MeshGeneration:
                 dpg.add_table_column(label="Color", width_fixed=True)
                 dpg.add_table_column(label="Size", width_fixed=True)
                 dpg.add_table_column(label="Position", width_fixed=True)
-                dpg.add_table_column(label="Option", width_fixed=True)
+                dpg.add_table_column(label="Merge", width_fixed=True)
 
                 activeSubcontours = self.subcontours.getScopes()
 
                 for sub in activeSubcontours:
                     with dpg.table_row():
                         with dpg.table_cell():
-                            dpg.add_button(label=f"ID")
+                            dpg.add_text(str(sub['id']))
                         with dpg.table_cell():
-                            dpg.add_button(label=f"COLOR")
+                            dpg.add_color_button(default_value = sub['color'])
                         with dpg.table_cell():
-                            dpg.add_text(f"{str(sub[1] - sub[0])}")
+                            dpg.add_text(str(sub['upper'] - sub['lower']))
                         with dpg.table_cell():
-                            dpg.add_button(label=f"POS")
+                            dpg.add_text(f"[{str(sub['lower'])}, {str(sub['upper']-1)}]")
                         with dpg.table_cell():
-                            dpg.add_button(label=f"OP")
+                            dpg.add_checkbox(tag='subcontourCheckBox' + str(sub['id']), default_value=False, callback=self.scopeSelected, user_data = sub['id'])
 
+    def scopeSelected(sender, app_data, user_data):
+        pass
 
+    def mergeSelectedSubcontours(self):
+        # Get all selected subcontours to merge
+        selected = []
+
+        activeSubcontours = self.subcontours.getScopes()
+        for sub in activeSubcontours:
+            if (dpg.get_value('subcontourCheckBox' + str(sub['id']))):
+                selected.append(sub)
+        #print(f"{selected[0]['id']} and {selected[1]['id']}")
+        
+        self.subcontours.mergeScope(selected[0]['id'], selected[1]['id'])
+
+        self.updateSubcontourTable()
+        
+                
 
 
 

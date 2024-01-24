@@ -91,10 +91,11 @@ def showMeshGeneration(callbacks):
             # EDIT CONTOUR WINDOW
             with dpg.window(label='Edit Actives Subcontours', modal=True, show=False, tag="editContourPopup", min_size=[900,600]):
                 with dpg.group(horizontal=True):
-                    with dpg.child_window(width=300, tag="editContourColumn"):
+                    with dpg.child_window(width=400, tag="editContourColumn",):
                         with dpg.group(horizontal=True):
                             dpg.add_button(label="Cancel", width=100, callback=lambda: dpg.configure_item("editContourPopup", show=False))
                             dpg.add_button(label="Save",   width=100, callback=lambda: dpg.configure_item("editContourPopup", show=False))
+                            dpg.add_button(label="Merge Selected",  width=150, callback=callbacks.meshGeneration.mergeSelectedSubcontours)
                         
                         # DUMMY INITIAL TABLE
                         with dpg.table(tag='EditContourTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
@@ -123,13 +124,13 @@ def showMeshGeneration(callbacks):
                         with dpg.group(horizontal=True):
                             with dpg.group(horizontal=True):
                                 dpg.add_text('Start:')
-                                dpg.add_input_int(tag='initialNode', default_value=0, min_value=0, min_clamped=True)
+                                dpg.add_input_int(tag='initialNode', default_value=0, min_value=0, min_clamped=True, width=150)
                             with dpg.group(horizontal=True):
                                 dpg.add_text('End:')
-                                dpg.add_input_int(tag='finalNode',   default_value=0, min_value=0, min_clamped=True)
+                                dpg.add_input_int(tag='finalNode',   default_value=0, min_value=0, min_clamped=True, width=150)
                         with dpg.group(horizontal=True):
-                            dpg.add_button(label="Add subcontour",        width=100, callback = callbacks.meshGeneration.addSubcontour)
-                            dpg.add_button(label="Clear all subcontours", width=100, callback = callbacks.meshGeneration.clearAllSubcontours)
+                            dpg.add_button(label="Add subcontour",        width=200, callback = callbacks.meshGeneration.addSubcontour)
+                            dpg.add_button(label="Clear all subcontours", width=200, callback = callbacks.meshGeneration.clearAllSubcontours)
                             #dpg.add_button(label="Save",   width=100, callback=lambda: dpg.configure_item("editContourPopup", show=False))
                     
 
