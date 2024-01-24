@@ -84,27 +84,30 @@ def showMeshGeneration(callbacks):
 
             dpg.add_separator()
             dpg.add_text("Edit Actives Subcontours", tag="editContourText", show=True)
-            dpg.add_button(tag='editContour', show=True, label='Edit Contour', callback=lambda: dpg.configure_item("editContourPopup", show=True))
+            dpg.add_button(tag='editContour', show=True, label='Edit Contour', callback = callbacks.meshGeneration.subcontoursTabInit)
 
+
+            
             # EDIT CONTOUR WINDOW
             with dpg.window(label='Edit Actives Subcontours', modal=True, show=False, tag="editContourPopup", min_size=[900,600]):
                 with dpg.group(horizontal=True):
                     with dpg.child_window(width=300, tag="editContourColumn"):
-                        # Lista de subcontornos ativos
+                        with dpg.group(horizontal=True):
+                            dpg.add_button(label="Cancel", width=100, callback=lambda: dpg.configure_item("editContourPopup", show=False))
+                            dpg.add_button(label="Save",   width=100, callback=lambda: dpg.configure_item("editContourPopup", show=False))
+                        
+                        # DUMMY INITIAL TABLE
                         with dpg.table(tag='EditContourTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
                             resizable=True, no_host_extendX=False, hideable=True,
                             borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True,
                             borders_outerH=True, parent='editContourColumn'):
+                                dpg.add_table_column(label="Id", width_fixed=True)
+                                dpg.add_table_column(label="Color", width_fixed=True)
+                                dpg.add_table_column(label="Size", width_fixed=True)
+                                dpg.add_table_column(label="Position", width_fixed=True)
+                                dpg.add_table_column(label="Option", width_fixed=True)
 
-                            dpg.add_table_column(label="Id", width_fixed=True)
-                            dpg.add_table_column(label="Color", width_fixed=True)
-                            dpg.add_table_column(label="Size", width_fixed=True)
-                            dpg.add_table_column(label="Position", width_fixed=True)
-                            dpg.add_table_column(label="Option", width_fixed=True)
 
-                        with dpg.group(horizontal=True):
-                            dpg.add_button(label="Cancel", width=100, callback=lambda: dpg.configure_item("editContourPopup", show=False))
-                            dpg.add_button(label="Save",   width=100, callback=lambda: dpg.configure_item("editContourPopup", show=False))
                     with dpg.child_window(tag='EditContourParent'):
 
                         # PLOTAR CONTORNO ATUAL

@@ -10,6 +10,7 @@ class ScopeList:
     def __init__(self, startIndex, endIndex) -> None:
         scope = Scope(startIndex, endIndex)
         self.scopes = [scope]
+        self.originalScope = scope
 
     def getScopes(self):
         pairs = []
@@ -51,3 +52,6 @@ class ScopeList:
                     if (j == i-1):
                         self.scopes[i].lower = self.scopes[i-1].lower
                         self.scopes.pop(i-1)
+
+    def resetScopeList(self):
+        self.scopes = [self.originalScope]

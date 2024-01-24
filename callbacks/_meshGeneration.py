@@ -32,11 +32,51 @@ class MeshGeneration:
         b = dpg.get_value('finalNode')
 
         self.subcontours.createScope(a, b)
+        self.updateSubcontourTable()
 
     def clearAllSubcontours(self):
+        self.subcontours.resetScopeList()
+        self.updateSubcontourTable()
 
-        pass
-        
+    def subcontoursTabInit(self):
+        dpg.configure_item("editContourPopup", show=True)
+        self.updateSubcontourTable()
+
+    def updateSubcontourTable(self):
+        dpg.delete_item('EditContourTable')
+        with dpg.table(tag='EditContourTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
+            resizable=True, no_host_extendX=False, hideable=True,
+            borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True,
+            borders_outerH=True, parent='editContourColumn'):
+                dpg.add_table_column(label="Id", width_fixed=True)
+                dpg.add_table_column(label="Color", width_fixed=True)
+                dpg.add_table_column(label="Size", width_fixed=True)
+                dpg.add_table_column(label="Position", width_fixed=True)
+                dpg.add_table_column(label="Option", width_fixed=True)
+
+                activeSubcontours = self.subcontours.getScopes()
+
+                for sub in activeSubcontours:
+                    with dpg.table_row():
+                        with dpg.table_cell():
+                            dpg.add_button(label=f"ID")
+                        with dpg.table_cell():
+                            dpg.add_button(label=f"COLOR")
+                        with dpg.table_cell():
+                            dpg.add_text(f"{str(sub[1] - sub[0])}")
+                        with dpg.table_cell():
+                            dpg.add_button(label=f"POS")
+                        with dpg.table_cell():
+                            dpg.add_button(label=f"OP")
+
+
+
+
+
+
+
+
+
 
     def openContourFile(self, sender = None, app_data = None):
         self.txtFilePath = app_data['file_path_name']
