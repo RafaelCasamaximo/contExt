@@ -70,12 +70,15 @@ class MeshGeneration:
             with dpg.theme() as item_theme:
                 with dpg.theme_component(dpg.mvBarSeries):
                     dpg.add_theme_color(dpg.mvPlotCol_Fill, c, category=dpg.mvThemeCat_Plots)
+                with dpg.theme_component(dpg.mvLineSeries):
+                    dpg.add_theme_color(dpg.mvPlotCol_Line, c, category=dpg.mvThemeCat_Plots)
             self.scopeThemes.append(item_theme)
 
         
 
 
         self.plotSubcontourBar()
+        self.plotSubcontourNode()
         self.updateSubcontourTable()
 
     def plotSubcontourBar(self):
@@ -100,6 +103,18 @@ class MeshGeneration:
                     dpg.bind_item_theme(bar, self.scopeThemes[k])
                     k += 1
 
+    def plotSubcontourNode(self):
+        dpg.delete_item("subcontourNodesPlotAxisY")
+        with dpg.plot_axis(dpg.mvYAxis, label="y", tag="subcontourNodesPlotAxisY", parent="subcontourNodesPlot"):
+            for scope, theme in zip(self.subcontoursRanges, reversed(self.scopeThemes)):
+                xSeries = [self.currentX[i] for i in range(scope[0], scope[1]+1)]
+                ySeries = [self.currentY[i] for i in range(scope[0], scope[1]+1)]
+                nodes = dpg.add_line_series(xSeries, ySeries)
+                dpg.bind_item_theme(nodes, theme)
+
+
+
+
     def updateSubcontours(self):
         self.subcontoursLines.clear()
         for linObj in self.scopeLines:
@@ -116,6 +131,7 @@ class MeshGeneration:
 
 
         self.plotSubcontourBar()
+        self.plotSubcontourNode()
         self.updateSubcontourTable()
 
 
@@ -158,6 +174,7 @@ class MeshGeneration:
             self.createSubcontour()
         else:
             self.plotSubcontourBar()
+            self.plotSubcontourNode()
             self.updateSubcontourTable()
 
         
@@ -476,7 +493,7 @@ class MeshGeneration:
 
         dpg.configure_item("dxVector", x=[0, dpg.get_value('dx')])
         dpg.configure_item("dyVector", y=[0, dpg.get_value('dy')])
-        
+
         self.subcontours = ScopeList(0, len(self.currentX))
         self.fullScope = [0, len(self.currentX)-1]
         self.fullScopeSize = self.fullScope[1] - self.fullScope[0]

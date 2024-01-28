@@ -119,6 +119,10 @@ def showMeshGeneration(callbacks):
                                 dpg.set_axis_ticks(dpg.last_item(), (("", -10), ("", 0), ("", 10)))
 
                         # PLOTAR CONTORNO ATUAL
+                        with dpg.plot(tag="subcontourNodesPlot", label="Subcontours Scopes Plot", height=-1 - 20, width=-1, equal_aspects=True):
+                            dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="subcontourNodesPlotAxisX")
+                            dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="subcontourNodesPlotAxisY")
+
                     
 
 
