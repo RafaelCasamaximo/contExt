@@ -283,6 +283,9 @@ class MeshGeneration:
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")
 
+        dpg.configure_item("dxVector", x=[0, dpg.get_value('dx')])
+        dpg.configure_item("dyVector", y=[0, dpg.get_value('dy')])
+
         self.subcontours = ScopeList(0, len(self.currentX))
         self.fullScope = [0, len(self.currentX)-1]
         self.fullScopeSize = self.fullScope[1] - self.fullScope[0]
@@ -471,7 +474,9 @@ class MeshGeneration:
         dpg.fit_axis_data("x_axis")
         dpg.fit_axis_data("y_axis")
 
-        #print(self.subcontours.getScopes())
+        dpg.configure_item("dxVector", x=[0, dpg.get_value('dx')])
+        dpg.configure_item("dyVector", y=[0, dpg.get_value('dy')])
+        
         self.subcontours = ScopeList(0, len(self.currentX))
         self.fullScope = [0, len(self.currentX)-1]
         self.fullScopeSize = self.fullScope[1] - self.fullScope[0]

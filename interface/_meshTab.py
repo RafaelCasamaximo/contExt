@@ -52,10 +52,10 @@ def showMeshGeneration(callbacks):
             dpg.add_text('Node Size')
             with dpg.group(horizontal=True):
                 dpg.add_text('dx:')
-                dpg.add_input_float(tag='dx', width=-1, default_value=1, min_value=0.000001, min_clamped=True)
+                dpg.add_input_float(tag='dx', width=-1, default_value=1, min_value=0.000001, min_clamped=True, callback=lambda: dpg.configure_item("dxVector", x=[0, dpg.get_value('dx')]))
             with dpg.group(horizontal=True):
                 dpg.add_text('dy:')
-                dpg.add_input_float(tag='dy', width=-1, default_value=1, min_value=0.000001, min_clamped=True)
+                dpg.add_input_float(tag='dy', width=-1, default_value=1, min_value=0.000001, min_clamped=True, callback=lambda: dpg.configure_item("dyVector", y=[0, dpg.get_value('dy')]))
 
             dpg.add_text('Original Mesh Start:')
             dpg.add_text('x: --', tag='original_xi')
@@ -103,8 +103,7 @@ def showMeshGeneration(callbacks):
                                 dpg.add_table_column(label="Index Range", width_fixed=True)
 
                         with dpg.group(horizontal=True):
-                            dpg.add_button(label="Cancel", callback=lambda: dpg.configure_item("editContourPopup", show=False))
-                            dpg.add_button(label="Save",   callback=callbacks.meshGeneration.saveSubcontoursEdit)
+                            dpg.add_button(label="Close",   callback=callbacks.meshGeneration.saveSubcontoursEdit)
 
 
                     with dpg.child_window(tag='EditContourParent'):
@@ -198,14 +197,22 @@ def showMeshGeneration(callbacks):
 
             dpg.add_separator()
 
+        
         with dpg.child_window(tag='MeshGenerationParent'):
             with dpg.theme(tag="grid_plot_theme"):
                 with dpg.theme_component(dpg.mvLineSeries):
                     dpg.add_theme_color(dpg.mvPlotCol_Line, (100, 100, 100), category=dpg.mvThemeCat_Plots)
-            with dpg.plot(tag="meshPlotParent", label="Mesh Plot", height=-1 - 20, width=-1):
+            with dpg.theme() as dxdyTheme:
+                with dpg.theme_component(dpg.mvLineSeries):
+                    dpg.add_theme_style(dpg.mvPlotStyleVar_LineWeight, 3, category=dpg.mvThemeCat_Plots)
+            with dpg.plot(tag="meshPlotParent", label="Mesh Plot", height=-1 - 20, width=-1, equal_aspects=True):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="x_axis")
                 dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="y_axis")
+                dpg.add_line_series([0, 1], [0, 0],  parent="y_axis", tag="dxVector")
+                dpg.add_line_series([0, 0], [0, 1],  parent="y_axis", tag="dyVector")
+                dpg.bind_item_theme("dxVector", dxdyTheme)
+                dpg.bind_item_theme("dyVector", dxdyTheme)
 
             with dpg.group(horizontal=True):
                 dpg.add_text('Original Area: --', tag='original_area')
