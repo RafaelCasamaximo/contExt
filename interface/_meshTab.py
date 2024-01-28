@@ -94,6 +94,7 @@ def showMeshGeneration(callbacks):
                     with dpg.child_window(width=300, tag="editContourColumn",):
                         
                         # SUBCONTOUR TABLE STRUCTURE
+                        dpg.add_text("Subcontours Data")
                         with dpg.table(tag='EditContourTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
                             resizable=True, no_host_extendX=False, hideable=True,
                             borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True,
@@ -102,16 +103,14 @@ def showMeshGeneration(callbacks):
                                 dpg.add_table_column(label="Size", width_fixed=True)
                                 dpg.add_table_column(label="Index Range", width_fixed=True)
 
-                        with dpg.group(horizontal=True):
-                            dpg.add_button(label="Close",   callback=callbacks.meshGeneration.saveSubcontoursEdit)
-
 
                     with dpg.child_window(tag='EditContourParent'):
                         # SUBCONTOURS BAR CONTROL
+                        dpg.add_text("Subcontours Panel")
                         with dpg.group(horizontal=True):
-                            dpg.add_text("Subcontours:")
-                            dpg.add_slider_int(default_value=1, min_value=1, max_value=10, tag="subcontoursCount", callback=callbacks.meshGeneration.createSubcontour)
-                        with dpg.plot(label="Subcontours Scopes Control", height=80, width=-1, tag="subcontourBarsPlot", no_mouse_pos=True):
+                            dpg.add_text("Number:")
+                            dpg.add_slider_int(default_value=1, width=-1, min_value=1, max_value=10, tag="subcontoursCount", callback=callbacks.meshGeneration.createSubcontour)
+                        with dpg.plot(label="Subcontours Range Control", height=80, width=-1, tag="subcontourBarsPlot", no_mouse_pos=True):
                             with dpg.plot_axis(dpg.mvXAxis, tag="subcontourBarsPlotAxisX", no_gridlines=True):
                                 dpg.set_axis_limits(dpg.last_item(), 0, 50)
 
@@ -119,11 +118,22 @@ def showMeshGeneration(callbacks):
                                 dpg.set_axis_ticks(dpg.last_item(), (("", -10), ("", 0), ("", 10)))
 
                         # PLOTAR CONTORNO ATUAL
-                        with dpg.plot(tag="subcontourNodesPlot", label="Subcontours Scopes Plot", height=-1 - 20, width=-1, equal_aspects=True):
+                        with dpg.plot(tag="subcontourNodesPlot", label="Subcontours Plot", height=-1 - 20, width=-1, equal_aspects=True):
                             dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="subcontourNodesPlotAxisX")
                             dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="subcontourNodesPlotAxisY")
 
+                            
+                        with dpg.group(horizontal=True) as lowerLine:
+                            closeButton = dpg.add_button(label="Close", callback=callbacks.meshGeneration.saveSubcontoursEdit)
+
                     
+            # dpg.set_item_pos(closeButton, (, ))
+            # dpg.get_item_width(dpg.get_active_window()) 
+            with dpg.item_handler_registry() as resizeEditSubcontourTab:
+                #dpg.add_item_resize_handler(callback=lambda: print(dpg.get_item_rect_max(lowerLine), dpg.get_item_rect_size(lowerLine)))
+                #dpg.add_item_resize_handler(callback=lambda: dpg.set_item_pos(closeButton, (, )))
+                pass
+            dpg.bind_item_handler_registry("editContourPopup", resizeEditSubcontourTab)
 
 
 
