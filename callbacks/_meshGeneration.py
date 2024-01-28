@@ -3,6 +3,8 @@ import os.path
 from ._mesh import Mesh
 from ._sparseMesh import SparseMesh
 from ._scopeList  import ScopeList
+from math import floor, ceil
+import random
 
 class MeshGeneration:
     
@@ -26,21 +28,96 @@ class MeshGeneration:
         # Subcontours feature
         self.subcontours = None
 
+        self.firstSubcontourEdit = True
 
-    def addSubcontour(self):
-        a = dpg.get_value('initialNode')
-        b = dpg.get_value('finalNode')
+        self.subcontoursRanges = []
+        self.fullScope = [0, 100]
+        self.fullScopeSize = self.fullScope[1] - self.fullScope[0]
+        self.subcontoursLines = []
+        self.scopeLines  = []
+        self.scopeColors = []
+        self.scopeThemes = []
 
-        self.subcontours.createScope(a, b)
+
+    def createSubcontour(self):        
+        subcontoursCount = dpg.get_value("subcontoursCount")
+
+        self.subcontoursLines = []
+        for n in range(1, subcontoursCount):
+            self.subcontoursLines.append(n * self.fullScopeSize/subcontoursCount)
+
+        for linObj in self.scopeLines:
+            dpg.delete_item(linObj)
+
+        self.scopeLines.clear()
+
+        scopesLimits = [self.fullScope[0]]
+        for lin in self.subcontoursLines:
+            self.scopeLines.append(dpg.add_drag_line(label="", color=[255, 0, 0, 255], default_value=lin, callback=self.updateSubcontours, parent="subcontourBarsPlot"))
+            # floor(lin) - floor(1 - (lin - floor(lin)))
+            scopesLimits.extend([ceil(lin) - 1,    ceil(lin)])
+        scopesLimits.append(self.fullScope[1])
+
+        self.subcontoursRanges = [[scopesLimits[2*i], scopesLimits[2*i+1]] for i in range(0, subcontoursCount)]
+
+
+        self.scopeColors = []
+        self.scopeThemes = []
+        for i in range(0, subcontoursCount):
+            self.scopeColors.append((random.randint(0,255), random.randint(0,255), random.randint(0,255), 255))
+
+        for c in reversed(self.scopeColors):
+            with dpg.theme() as item_theme:
+                with dpg.theme_component(dpg.mvBarSeries):
+                    dpg.add_theme_color(dpg.mvPlotCol_Fill, c, category=dpg.mvThemeCat_Plots)
+            self.scopeThemes.append(item_theme)
+
+        
+
+
+        self.plotSubcontourBar()
         self.updateSubcontourTable()
 
-    def clearAllSubcontours(self):
-        self.subcontours.resetScopeList()
+    def plotSubcontourBar(self):
+        dpg.delete_item("subcontourBarsPlotAxisX")
+        with dpg.plot_axis(dpg.mvXAxis, tag="subcontourBarsPlotAxisX", parent="subcontourBarsPlot", no_gridlines=True):
+            dpg.set_axis_limits(dpg.last_item(), 0, self.fullScope[1])
+            ticks = [("0", 0), (f"{self.fullScope[1]}", self.fullScope[1])]
+            if (len(self.subcontoursLines) > 0):
+                ticks.extend([(f"{ceil(dpg.get_value(lin))-1} {ceil(dpg.get_value(lin))}", dpg.get_value(lin)) for lin in self.scopeLines])
+            dpg.set_axis_ticks(dpg.last_item(), tuple(ticks))
+
+        dpg.delete_item("subcontourBarsPlotAxisY")
+        with dpg.plot_axis(dpg.mvYAxis, tag="subcontourBarsPlotAxisY", parent="subcontourBarsPlot"):
+            dpg.set_axis_ticks(dpg.last_item(), (("", -10), ("", 0), ("", 10    )))
+
+            bar = dpg.add_bar_series([self.fullScope[1]], [0], label="T",  weight=1, horizontal=True)
+            dpg.bind_item_theme(bar, self.scopeThemes[0])
+            if (len(self.subcontoursLines) > 0):
+                k = 1
+                for lin in reversed(self.scopeLines):
+                    bar = dpg.add_bar_series([dpg.get_value(lin)], [0], label="T",  weight=1, horizontal=True)
+                    dpg.bind_item_theme(bar, self.scopeThemes[k])
+                    k += 1
+
+    def updateSubcontours(self):
+        self.subcontoursLines.clear()
+        for linObj in self.scopeLines:
+            self.subcontoursLines.append(dpg.get_value(linObj))
+
+        subcontoursCount = dpg.get_value("subcontoursCount")
+        scopesLimits = [self.fullScope[0]]
+        for lin in self.subcontoursLines:
+            #floor(lin) - floor(1 - (lin - floor(lin)))
+            scopesLimits.extend([ceil(lin) - 1,    ceil(lin)])
+        scopesLimits.append(self.fullScope[1])
+
+        self.subcontoursRanges = [[scopesLimits[2*i], scopesLimits[2*i+1]] for i in range(0, subcontoursCount)]
+
+
+        self.plotSubcontourBar()
         self.updateSubcontourTable()
 
-    def subcontoursTabInit(self):
-        dpg.configure_item("editContourPopup", show=True)
-        self.updateSubcontourTable()
 
     def updateSubcontourTable(self):
         dpg.delete_item('EditContourTable')
@@ -48,44 +125,63 @@ class MeshGeneration:
             resizable=True, no_host_extendX=False, hideable=True,
             borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True,
             borders_outerH=True, parent='editContourColumn'):
-                dpg.add_table_column(label="Id", width_fixed=True)
                 dpg.add_table_column(label="Color", width_fixed=True)
                 dpg.add_table_column(label="Size", width_fixed=True)
-                dpg.add_table_column(label="Position", width_fixed=True)
-                dpg.add_table_column(label="Merge", width_fixed=True)
+                dpg.add_table_column(label="Index Range", width_fixed=True)
 
-                activeSubcontours = self.subcontours.getScopes()
+
+                activeSubcontours = [
+                    {
+                        "color": scopeColor,
+                        "lower": scopeRange[0],
+                        "upper": scopeRange[1],
+                        "size":  scopeRange[1] - scopeRange[0] + 1
+                     } for scopeRange, scopeColor in zip(self.subcontoursRanges, self.scopeColors)]
 
                 for sub in activeSubcontours:
                     with dpg.table_row():
                         with dpg.table_cell():
-                            dpg.add_text(str(sub['id']))
-                        with dpg.table_cell():
                             dpg.add_color_button(default_value = sub['color'])
                         with dpg.table_cell():
-                            dpg.add_text(str(sub['upper'] - sub['lower']))
+                            dpg.add_text(str(sub['size']))
                         with dpg.table_cell():
-                            dpg.add_text(f"[{str(sub['lower'])}, {str(sub['upper']-1)}]")
-                        with dpg.table_cell():
-                            dpg.add_checkbox(tag='subcontourCheckBox' + str(sub['id']), default_value=False, callback=self.scopeSelected, user_data = sub['id'])
+                            dpg.add_text(f"[{sub['lower']}, {sub['upper']}]")
 
-    def scopeSelected(sender, app_data, user_data):
-        pass
 
-    def mergeSelectedSubcontours(self):
-        # Get all selected subcontours to merge
-        selected = []
 
-        activeSubcontours = self.subcontours.getScopes()
-        for sub in activeSubcontours:
-            if (dpg.get_value('subcontourCheckBox' + str(sub['id']))):
-                selected.append(sub)
-        #print(f"{selected[0]['id']} and {selected[1]['id']}")
+
+    def subcontoursTabInit(self):
+        dpg.configure_item("editContourPopup", show=True)
+
+        if self.firstSubcontourEdit:
+            self.firstSubcontourEdit = False
+            self.createSubcontour()
+        else:
+            self.plotSubcontourBar()
+            self.updateSubcontourTable()
+
         
-        self.subcontours.mergeScope(selected[0]['id'], selected[1]['id'])
 
-        self.updateSubcontourTable()
+            
+
+    def saveSubcontoursEdit(self):
+        self.savedSubcontourData = {
+            "subcontoursRanges":    self.subcontoursRanges,
+            "fullScope":            self.fullScope,
+            "fullScopeSize":        self.fullScopeSize,
+            "subcontoursLines":     self.subcontoursLines,
+            "scopeLines":           self.scopeLines,
+            "scopeColors":          self.scopeColors,
+            "scopeThemes":          self.scopeThemes
+        }
+
+        dpg.configure_item("editContourPopup", show=False)
+
+
+
         
+
+
                 
 
 
@@ -188,6 +284,10 @@ class MeshGeneration:
         dpg.fit_axis_data("y_axis")
 
         self.subcontours = ScopeList(0, len(self.currentX))
+        self.fullScope = [0, len(self.currentX)-1]
+        self.fullScopeSize = self.fullScope[1] - self.fullScope[0]
+        dpg.set_value("subcontoursCount", 1)
+        self.createSubcontour()
         #print(self.subcontours.getScopes())
 
     def toggleOrdering(self, sender = None, app_data = None):
@@ -373,6 +473,10 @@ class MeshGeneration:
 
         #print(self.subcontours.getScopes())
         self.subcontours = ScopeList(0, len(self.currentX))
+        self.fullScope = [0, len(self.currentX)-1]
+        self.fullScopeSize = self.fullScope[1] - self.fullScope[0]
+        dpg.set_value("subcontoursCount", 1)
+        self.createSubcontour()
         #print(self.subcontours.getScopes())
         
         for j in tempScopeList:
