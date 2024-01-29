@@ -1,10 +1,11 @@
 import dearpygui.dearpygui as dpg
 import os.path
+import colorsys
+import random
 from ._mesh import Mesh
 from ._sparseMesh import SparseMesh
 from ._scopeList  import ScopeList
 from math import floor, ceil
-import random
 
 class MeshGeneration:
     
@@ -63,8 +64,12 @@ class MeshGeneration:
 
         self.scopeColors = []
         self.scopeThemes = []
-        for i in range(0, subcontoursCount):
-            self.scopeColors.append((random.randint(0,255), random.randint(0,255), random.randint(0,255), 255))
+        # for i in range(0, subcontoursCount):
+        #     self.scopeColors.append((random.randint(0,255), random.randint(0,255), random.randint(0,255), 255))
+        n = subcontoursCount
+        colorShiftValue = random.random()
+        self.scopeColors = [tuple(map(lambda x: x * 255, colorsys.hsv_to_rgb(1/n * i + colorShiftValue, 1, 1))) for i in range(0, n)]
+        random.shuffle(self.scopeColors)
 
         for c in reversed(self.scopeColors):
             with dpg.theme() as item_theme:
