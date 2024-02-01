@@ -5,7 +5,7 @@ def showInterpolation(callbacks):
         with dpg.child_window(width=300):
             pass
         with dpg.child_window(tag='InterpolationParent'):
-            with dpg.plot(tag="InterpolationPlotParent", label="Interpolation", height=-1, width=-1):
+            with dpg.plot(tag="InterpolationPlotParent", label="Interpolation", height=-1, width=-1, equal_aspects=True):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="Width", tag="Interpolation_x_axis")
                 dpg.add_plot_axis(dpg.mvYAxis, label="Height", tag="Interpolation_y_axis")

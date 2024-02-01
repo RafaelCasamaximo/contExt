@@ -76,7 +76,7 @@ def showProcessing(callbacks):
             pass
 
         with dpg.child_window(tag='ProcessingParent'):
-            with dpg.plot(tag="ProcessingPlotParent", label="Processing", height=-1, width=-1):
+            with dpg.plot(tag="ProcessingPlotParent", label="Processing", height=-1, width=-1, equal_aspects=True):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="Width", tag="Processing_x_axis")
                 dpg.add_plot_axis(dpg.mvYAxis, label="Height", tag="Processing_y_axis")

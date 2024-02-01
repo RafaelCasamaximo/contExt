@@ -80,7 +80,7 @@ def showContourExtraction(callbacks):
                     
                 pass
         with dpg.child_window(tag='ContourExtractionParent'):
-            with dpg.plot(tag="ContourExtractionPlotParent", label="ContourExtraction", height=-1 - 50, width=-1):
+            with dpg.plot(tag="ContourExtractionPlotParent", label="Contour Extraction", height=-1 - 50, width=-1, equal_aspects=True):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="Width", tag="ContourExtraction_x_axis")
                 dpg.add_plot_axis(dpg.mvYAxis, label="Height", tag="ContourExtraction_y_axis")
