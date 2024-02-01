@@ -84,12 +84,12 @@ def showMeshGeneration(callbacks):
 
             dpg.add_separator()
             dpg.add_text("Edit Actives Subcontours", tag="editContourText", show=True)
-            dpg.add_button(tag='editContour', show=True, label='Edit Contour', callback = callbacks.meshGeneration.subcontoursTabInit)
+            dpg.add_button(tag='editContour', show=True, label='Edit Contour', width=-1, callback = callbacks.meshGeneration.subcontoursTabInit)
 
 
             
             # EDIT CONTOUR WINDOW
-            with dpg.window(label='Edit Actives Subcontours', modal=True, show=False, tag="editContourPopup", min_size=[900,600]):
+            with dpg.window(label='Edit Active Subcontours', modal=True, show=False, tag="editContourPopup", min_size=[900,600]):
                 with dpg.group(horizontal=True):
                     with dpg.child_window(width=300, tag="editContourColumn",):
                         
@@ -114,7 +114,7 @@ def showMeshGeneration(callbacks):
                             with dpg.plot_axis(dpg.mvXAxis, tag="subcontourBarsPlotAxisX", no_gridlines=True):
                                 dpg.set_axis_limits(dpg.last_item(), 0, 50)
 
-                            with dpg.plot_axis(dpg.mvYAxis, tag="subcontourBarsPlotAxisY"):
+                            with dpg.plot_axis(dpg.mvYAxis, tag="subcontourBarsPlotAxisY", no_gridlines=True):
                                 dpg.set_axis_ticks(dpg.last_item(), (("", -10), ("", 0), ("", 10)))
 
                         # PLOTAR CONTORNO ATUAL

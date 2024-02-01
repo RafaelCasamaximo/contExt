@@ -96,7 +96,7 @@ class MeshGeneration:
             dpg.set_axis_ticks(dpg.last_item(), tuple(ticks))
 
         dpg.delete_item("subcontourBarsPlotAxisY")
-        with dpg.plot_axis(dpg.mvYAxis, tag="subcontourBarsPlotAxisY", parent="subcontourBarsPlot"):
+        with dpg.plot_axis(dpg.mvYAxis, tag="subcontourBarsPlotAxisY", parent="subcontourBarsPlot", no_gridlines=True):
             dpg.set_axis_ticks(dpg.last_item(), (("", -10), ("", 0), ("", 10    )))
 
             bar = dpg.add_bar_series([self.fullScope[1]], [0], label="T",  weight=1, horizontal=True)
