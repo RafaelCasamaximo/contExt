@@ -70,9 +70,6 @@ def showProcessing(callbacks):
                 dpg.add_button(label="OK", width=-1, callback=lambda: dpg.configure_item("noPath", show=False))
             dpg.add_separator()
 
-            with dpg.window(label="CAUTION!", modal=True, show=False, tag="cropInterpolation", no_title_bar=False):
-                dpg.add_text("Crop images will remove contours in the interpolation tab.")
-                dpg.add_button(label="OK", width=75, callback=wrapperCropInterpolation, user_data=callbacks)
             pass
 
         with dpg.child_window(tag='ProcessingParent'):

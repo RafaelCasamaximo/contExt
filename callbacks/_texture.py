@@ -4,12 +4,11 @@ import numpy as np
 import enum
 
 class Tabs(enum.Enum):
-    __order__ = 'Processing Filtering Thresholding ContourExtraction Interpolation'
+    __order__ = 'Processing Filtering Thresholding ContourExtraction'
     Processing = 0
     Filtering = 1
     Thresholding = 2
     ContourExtraction = 3
-    Interpolation = 4
 
 class Texture:
 
@@ -40,12 +39,7 @@ class Texture:
 
     def createAllTextures(textureImage):
         for tab in Tabs:
-            if tab.name == "Interpolation":
-                dimensions = textureImage.shape
-                blackImage = np.zeros(dimensions, dtype= np.uint8)
-                Texture.createTexture(tab.name, blackImage)
-            else:
-                Texture.createTexture(tab.name, textureImage)
+            Texture.createTexture(tab.name, textureImage)
 
     def deleteAllTextures():
         for tab in Tabs:
@@ -54,8 +48,7 @@ class Texture:
 
     def updateAllTextures(textureImage):
         for tab in Tabs:
-            if tab.name != "Interpolation":
-                Texture.updateTexture(tab.name, textureImage)
+            Texture.updateTexture(tab.name, textureImage)
         pass
 
     def textureToData(texture):

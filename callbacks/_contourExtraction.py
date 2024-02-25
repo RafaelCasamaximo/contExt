@@ -25,8 +25,6 @@ class ContourExtraction:
         self.toggleDrawContoursFlag = True
         self.toggleMeshImport = False
 
-        self.imageProcessing.resetContours = self.interpolation.resetContours
-
     def extractContour(self, sender=None, app_data=None):
 
         globalThresholdSelectedFlag = dpg.get_value('globalThresholdingCheckbox')
@@ -71,7 +69,6 @@ class ContourExtraction:
                     'data': contour,
                     'contourX': [x[0][0] for x in contour],
                     'contourY': [x[0][1] for x in contour],
-                    'sliderInterpolationValue': 255,
                 }
             )
             cv2.drawContours(image, contour, -1, contourColor, thicknessValue)
@@ -186,17 +183,16 @@ class ContourExtraction:
         pass
 
     def exportToInterpolation(self, sender, app_data=None):
-        image = self.imageProcessing.blocks[self.imageProcessing.getLastActiveBeforeMethod('findContour')]['output'].copy()
-        self.interpolation.dimensions = image.shape
-
         auxId = int(sender[19:])
         for i in self.contourTableEntry:
-            i["color"] = (i["sliderInterpolationValue"], i["sliderInterpolationValue"], i["sliderInterpolationValue"])
             if i["id"] == auxId:
                 entry = i
                 break
-        self.interpolation.contours.append(entry)
-        self.interpolation.extractCountour()
+        xarray = entry["contourX"]
+        yarray = entry["contourY"]
+        self.interpolation.originalX = xarray
+        self.interpolation.originalY = yarray
+        self.interpolation.extractContour()
         pass
 
     def updateContour(self, sender, app_data=None):
