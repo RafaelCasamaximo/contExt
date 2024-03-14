@@ -179,6 +179,11 @@ class ContourExtraction:
         yarray.append(yarray[0])
         self.meshGeneration.originalX = [nx, xmin, xmax, dx] + xarray
         self.meshGeneration.originalY = [ny, ymin, ymax, dy] + yarray
+
+        f = open("outputCtoMesh.txt", "a")
+        f.write(' '.join(map(str, self.meshGeneration.originalX)))
+        f.write(' '.join(map(str, self.meshGeneration.originalY)))
+        f.close()
         self.meshGeneration.importContour()
         pass
 
@@ -190,6 +195,8 @@ class ContourExtraction:
                 break
         xarray = entry["contourX"]
         yarray = entry["contourY"]
+        xarray.append(xarray[0])
+        yarray.append(yarray[0])
         self.interpolation.originalX = xarray
         self.interpolation.originalY = yarray
         self.interpolation.extractContour()
