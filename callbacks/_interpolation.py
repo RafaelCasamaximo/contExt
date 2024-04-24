@@ -122,6 +122,21 @@ class Interpolation:
         dpg.fit_axis_data("Interpolation_x_axis")
         dpg.fit_axis_data("Interpolation_y_axis")
 
+
+
+    """
+    O código daqui para baixo não deveria existir e é uma aberração.
+    A função de exportar o contorno da aba ContourExtraction para um arquivo é atrelada com os parâmetros definidos na interface de ContourExtraction e não existem em mais nenhum lugar do código.
+    Por conta disso, para saber dados como xRes, yRes e etc, é necessário pegar os parametros da aba do contourExtraction ou replicar TODOS os parametros nessa aba (o que seria redundante, então, realizamos a primeira opção).
+    Por causa disso, qualquer alteração feita na aba do ContourExtraction é refletida na hora de salvar o contorno da aba interpolation, MAS SÓ NA HORA DE SALVAR E NÃO VISUALMENTE NO RESTO DA ABA.
+    Pra corrigir isso, seria necessário desacoplar os parâmetros da outra aba e criar um estado para a aplicação que permitisse outras abas lerem esses parâmetros cada vez que uma mudança é realizada. Mas, para fazer isso
+    seria necessário reescrever a maior parte do código e não é viável no momento :)
+    Além disso, grande parte das funções abaixo são cópias das mesmas funções que existem dentro da aba e da callback do ContourExtraction. Isso acontece porque o DearPyGui em python não possui "namespaces" pra tags
+    e nem um sistema parecido, então tudo começa a ficar com um nome gigante e tem que ser repetido porque passar como parâmetro toda vez também é inviável. :)))))))
+    Isso tudo dito, agora é possível exportar um contorno da interpolação para um arquivo! :D
+    """
+
+
     def exportToMeshGeneration(self, sender=None, app_data=None):
         spacingValue = dpg.get_value('spacingInterpolationSlider')
         resizeCheckbox = dpg.get_value('resizeInterpolation')
@@ -160,3 +175,62 @@ class Interpolation:
         f.write(' '.join(map(str, self.meshGeneration.originalY)))
         f.close()
         self.meshGeneration.importContour()
+    
+
+    def openDirectorySelector(self, sender=None, app_data=None):
+        if dpg.get_value('inputInterpolatedContourNameText') != '':
+            dpg.configure_item('interpolatedContourDirectorySelectorFileDialog', show=True)
+
+    
+    def selectFolder(self, sender=None, app_data=None):
+
+        self.exportFilePath = app_data['file_path_name']
+
+        self.exportFileName = dpg.get_value('inputInterpolatedContourNameText') + '.txt'
+        filePath = os.path.join(self.exportFilePath, self.exportFileName)
+
+        dpg.set_value('exportInterpolatedFileName', 'File Name: ' + self.exportFileName)
+        dpg.set_value('exportInterpolatedPathName', 'Complete Path Name: ' + filePath)
+
+        pass
+
+    def exportButtonCall(self, sender, app_data=None):
+        auxId = sender[13:]
+        dpg.set_value('inputInterpolatedContourNameText', '')
+        dpg.set_value('exportInterpolatedFileName', 'File Name: ')
+        dpg.set_value('exportInterpolatedPathName', 'Complete Path Name: ')
+        self.exportFileName = None
+        self.exportFilePath = None
+        dpg.configure_item('exportInterpolatedContourWindow', show=True)
+        pass
+
+    def exportIndividualContourToFile(self, sender=None, app_data=None):
+            if self.exportFilePath is None:
+                dpg.configure_item("exportInterpolatedContourError", show=True)
+                return
+
+            dpg.configure_item("exportInterpolatedContourError", show=False)
+            self.exportContourToFile(os.path.join(self.exportFilePath, self.exportFileName))
+            dpg.configure_item('exportInterpolatedContourWindow', show=False)
+            pass
+
+    def exportContourToFile(self, path):
+        xarray = self.currentX
+        yarray = self.currentY
+
+        xRes = int(dpg.get_value("currentWidth")[6:-2])
+        yRes = int(dpg.get_value("currentHeight")[7:-2])
+        w = float(dpg.get_value("currentMaxWidth")[9:])
+        h = float(dpg.get_value("currentMaxHeight")[9:])
+        dx = w/xRes
+        dy = h/yRes
+        xmin = min(xarray)
+        ymin = min(yarray)
+        xmax = max(xarray)
+        ymax = max(yarray)
+        nx = round((xmax - xmin)/dx) + 1
+        ny = round((ymax - ymin)/dy) + 1
+        xarray.append(xarray[0])
+        yarray.append(yarray[0])
+        Mesh.export_coords_mesh(path, xarray, yarray, nx, ny, xmin, ymin, xmax, ymax, dx, dy, 1)
+        pass
