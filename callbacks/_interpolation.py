@@ -44,14 +44,51 @@ class Interpolation:
         dpg.fit_axis_data("Interpolation_x_axis")
         dpg.fit_axis_data("Interpolation_y_axis")
 
+    def ramer_douglas_peucker(self, points, epsilon):
+        if len(points) < 3:
+            return points
+        # Encontrar a maior distância
+        dmax = 0
+        index = 0
+        end = len(points)
+        for i in range(1, end - 1):
+            d = self.perpendicular_distance(points[i], points[0], points[-1])
+            if d > dmax:
+                index = i
+                dmax = d
+        # Se a maior distância é maior que epsilon, simplificar recursivamente
+        if dmax > epsilon:
+            rec_results1 = self.ramer_douglas_peucker(points[:index+1], epsilon)
+            rec_results2 = self.ramer_douglas_peucker(points[index:], epsilon)
+            result = rec_results1[:-1] + rec_results2
+        else:
+            result = [points[0], points[-1]]
+        return result
+
+    def perpendicular_distance(self, point, line_start, line_end):
+        if line_start == line_end:
+            return np.linalg.norm(np.array(point) - np.array(line_start))
+        else:
+            n = np.abs(np.cross(np.array(line_end) - np.array(line_start), np.array(line_start) - np.array(point)))
+            d = np.linalg.norm(np.array(line_end) - np.array(line_start))
+            return n / d
+
+    def calculate_arclength(self, points):
+        length = 0
+        for i in range(1, len(points)):
+            length += np.linalg.norm(np.array(points[i]) - np.array(points[i-1]))
+        return length
+
     def interpolate(self, sender=None, app_data=None):
         dpg.delete_item("originalPlot")
         dpg.delete_item("interpolationPlot")
         dpg.delete_item("originalResizedPlot")
         interpolationMode = dpg.get_value('interpolationListbox')
-        spacingValue = dpg.get_value('spacingInterpolationSlider')
+        spacingValue = dpg.get_value('spacingInterpolationSlider') + 1
         removalValue = dpg.get_value('removalInterpolationSlider')
         resizeCheckbox = dpg.get_value('resizeInterpolation')
+        approxPolyCheckbox = dpg.get_value('approxPolyInterpolation')
+        percArcLeng = dpg.get_value('approxPolySlider')
 
         self.currentX = []
         self.currentY = []
@@ -63,8 +100,9 @@ class Interpolation:
             x.append(float(line_x))
             y.append(float(line_y))
 
-        x = self.remove_values(x, removalValue)
-        y = self.remove_values(y, removalValue)
+        if not approxPolyCheckbox:
+            x = self.remove_values(x, removalValue)
+            y = self.remove_values(y, removalValue)
 
         original_area = Mesh.get_area(self.originalX, self.originalY)
 
@@ -78,7 +116,15 @@ class Interpolation:
             dpg.set_value("area_before_interp", "Original Area Resized: " + str(original_area))
         else:
             dpg.set_value("area_before_interp", "Original Area: " + str(original_area))
-        
+
+        # Aplica approxPoly
+        if approxPolyCheckbox:
+            points = list(zip(x, y))
+            arclength = self.calculate_arclength(points)
+            epsilon = percArcLeng * arclength
+            simplified_points = self.ramer_douglas_peucker(points, epsilon)
+            x, y = zip(*simplified_points)  # Unzip simplified points
+
         x_extended = []
         y_extended = []
         for i, (val_x, val_y) in enumerate(zip(x, y)):
@@ -88,6 +134,7 @@ class Interpolation:
             else:
                 x_extended.extend([val_x] + [np.nan] * (spacingValue - 1))
                 y_extended.extend([val_y] + [np.nan] * (spacingValue - 1))
+        
         if interpolationMode == 'Bilinear':
             x_interpolated = pd.Series(x_extended).interpolate(method='linear', limit_direction='both')
             y_interpolated = pd.Series(y_extended).interpolate(method='linear', limit_direction='both')
