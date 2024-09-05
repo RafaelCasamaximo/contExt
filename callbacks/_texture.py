@@ -53,7 +53,7 @@ class Texture:
 
     def textureToData(texture):
         auxImg = cv2.cvtColor(texture, cv2.COLOR_RGB2BGRA)
-        auxImg = np.asfarray(auxImg, dtype='f')
+        auxImg = np.asarray(auxImg, dtype='f')
         auxImg = auxImg.ravel()
         auxImg = np.true_divide(auxImg, 255.0)
         return auxImg
