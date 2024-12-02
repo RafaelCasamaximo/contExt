@@ -1,7 +1,7 @@
-dearpygui==1.8.0
-numpy==1.24.1
-opencv_python==4.7.0.68
-shapely==2.0.1
-pyinstaller==5.7.0
-pandas==1.5.3
-pydicom==2.3.0
+dearpygui==2.0.0
+numpy==1.26.1
+opencv_python==4.10.0.84
+shapely==2.0.6
+pyinstaller==6.11.1
+pandas==2.2.3
+pydicom==3.0.1
