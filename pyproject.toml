@@ -1,0 +1,23 @@
+[project]
+name = "context"
+version = "0.1.0"
+description = "Software for contour extraction and mesh generation for numerical analysis."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "dearpygui>=2.1.1",
+    "numpy>=2.3.4",
+    "opencv-python>=4.11.0.86",
+    "pandas>=2.3.3",
+    "pydicom>=3.0.1",
+    "pyinstaller>=6.16.0",
+    "shapely>=2.1.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/RafaelCasamaximo/contExt/"
+Repository = "https://github.com/RafaelCasamaximo/contExt.git"
+Documentation = "https://github.com/RafaelCasamaximo/contExt/blob/main/README.md"
+Issues = "https://github.com/RafaelCasamaximo/contExt/issues/"
+Changelog = "https://github.com/RafaelCasamaximo/contExt/commits/main/"
+
