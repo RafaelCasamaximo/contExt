@@ -14,6 +14,7 @@ OPTION_GROUPS = {
     "sobel_axis": ["x_axis", "y_axis", "xy_axis"],
     "interpolation_mode": ["nearest", "bilinear", "bicubic", "quadratic", "spline3"],
     "zoom_node_size": ["div2", "div4", "div8", "div16"],
+    "theme": ["light", "dark"],
 }
 
 

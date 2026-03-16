@@ -1,5 +1,6 @@
 import dearpygui.dearpygui as dpg
 from . import strings
+from ._theme import bind_vector_themes
 
 def showMeshGeneration(callbacks):
     with dpg.group(horizontal=True):
@@ -214,20 +215,13 @@ def showMeshGeneration(callbacks):
 
         
         with dpg.child_window(tag='MeshGenerationParent'):
-            with dpg.theme(tag="grid_plot_theme"):
-                with dpg.theme_component(dpg.mvLineSeries):
-                    dpg.add_theme_color(dpg.mvPlotCol_Line, (100, 100, 100), category=dpg.mvThemeCat_Plots)
-            with dpg.theme() as dxdyTheme:
-                with dpg.theme_component(dpg.mvLineSeries):
-                    dpg.add_theme_style(dpg.mvPlotStyleVar_LineWeight, 3, category=dpg.mvThemeCat_Plots)
             with dpg.plot(tag="meshPlotParent", label=strings.t("mesh.plot"), height=-1 - 20, width=-1, equal_aspects=True):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("axes.x"), tag="x_axis")
                 dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("axes.y"), tag="y_axis")
                 dpg.add_line_series([0, 1], [0, 0],  parent="y_axis", tag="dxVector")
                 dpg.add_line_series([0, 0], [0, 1],  parent="y_axis", tag="dyVector")
-                dpg.bind_item_theme("dxVector", dxdyTheme)
-                dpg.bind_item_theme("dyVector", dxdyTheme)
+                bind_vector_themes("dxVector", "dyVector")
 
             with dpg.group(horizontal=True):
                 dpg.add_text(strings.fmt("original_area", value="--"), tag='original_area')

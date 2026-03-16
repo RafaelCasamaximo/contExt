@@ -12,6 +12,13 @@
         "mesh_generation": "Geracao de Malha"
       }
     },
+    "startup": {
+      "eyebrow": "Antes de comecar",
+      "subtitle": "Escolha o idioma e o tema da sessao antes de abrir a interface principal.",
+      "language": "Idioma da interface",
+      "theme": "Tema visual",
+      "enter": "Entrar no aplicativo"
+    },
     "common": {
       "save": "Salvar",
       "cancel": "Cancelar",
@@ -191,6 +198,10 @@
         "tc89_l1": "TC89_L1",
         "tc89_kcos": "TC89_KCOS"
       },
+      "theme": {
+        "light": "Claro",
+        "dark": "Escuro"
+      },
       "sobel_axis": {
         "x_axis": "Eixo X",
         "y_axis": "Eixo Y",
@@ -263,6 +274,13 @@
         "interpolation": "Interpolation",
         "mesh_generation": "Mesh Generation"
       }
+    },
+    "startup": {
+      "eyebrow": "Before you start",
+      "subtitle": "Choose the session language and theme before opening the main interface.",
+      "language": "Interface language",
+      "theme": "Visual theme",
+      "enter": "Enter application"
     },
     "common": {
       "save": "Save",
@@ -442,6 +460,10 @@
         "simple": "Simple",
         "tc89_l1": "TC89_L1",
         "tc89_kcos": "TC89_KCOS"
+      },
+      "theme": {
+        "light": "Light",
+        "dark": "Dark"
       },
       "sobel_axis": {
         "x_axis": "X-Axis",
