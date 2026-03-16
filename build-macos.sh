@@ -9,9 +9,19 @@ WORK_DIR="$RELEASE_DIR/macos-universal2"
 DIST_DIR="$WORK_DIR/dist"
 BUILD_DIR="$WORK_DIR/build"
 CONFIG_DIR="$WORK_DIR/config"
+VENV_PYTHON="$PROJECT_DIR/.venv/bin/python"
 
 if [ "$(uname -s)" != "Darwin" ]; then
   echo "build-macos.sh must be run on macOS." >&2
+  exit 1
+fi
+
+if [ -x "$VENV_PYTHON" ]; then
+  PYTHON_BIN="$VENV_PYTHON"
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="python3"
+else
+  echo "Python 3 not found. Create the project .venv or install python3." >&2
   exit 1
 fi
 
@@ -44,7 +54,7 @@ mkdir -p "$DIST_DIR" "$BUILD_DIR" "$CONFIG_DIR" "$ARTIFACT_DIR"
 export PYINSTALLER_CONFIG_DIR="$CONFIG_DIR"
 export CONTEXT_TARGET_ARCH="$TARGET_ARCH"
 
-python3 -m PyInstaller \
+"$PYTHON_BIN" -m PyInstaller \
   --noconfirm \
   --clean \
   --distpath "$DIST_DIR" \

@@ -11,6 +11,11 @@ set "BUILD_DIR=%WORK_DIR%\build"
 set "CONFIG_DIR=%WORK_DIR%\config"
 set "ARTIFACT_DIR=%RELEASE_DIR%\ContExt-windows-x64"
 set "ARTIFACT_FILE=%RELEASE_DIR%\ContExt-windows-x64.zip"
+set "PYTHON_BIN=python"
+
+if exist "%PROJECT_DIR%\.venv\Scripts\python.exe" (
+  set "PYTHON_BIN=%PROJECT_DIR%\.venv\Scripts\python.exe"
+)
 
 if exist "%WORK_DIR%" rmdir /s /q "%WORK_DIR%"
 if exist "%ARTIFACT_DIR%" rmdir /s /q "%ARTIFACT_DIR%"
@@ -22,7 +27,7 @@ mkdir "%CONFIG_DIR%"
 mkdir "%ARTIFACT_DIR%"
 set "PYINSTALLER_CONFIG_DIR=%CONFIG_DIR%"
 
-python -m PyInstaller --noconfirm --clean --distpath "%DIST_DIR%" --workpath "%BUILD_DIR%" "%SPEC_FILE%"
+"%PYTHON_BIN%" -m PyInstaller --noconfirm --clean --distpath "%DIST_DIR%" --workpath "%BUILD_DIR%" "%SPEC_FILE%"
 copy /y "%DIST_DIR%\ContExt.exe" "%ARTIFACT_DIR%\ContExt.exe" >nul
 
 powershell -NoProfile -Command "Compress-Archive -Path '%ARTIFACT_DIR%' -DestinationPath '%ARTIFACT_FILE%' -Force"
