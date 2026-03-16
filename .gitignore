@@ -11,6 +11,7 @@ __pycache__
 build
 dist
 *.spec
+!packaging/pyinstaller/ContExt.spec
 *.egg-info/
 release
 release-windows_64x

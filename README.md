@@ -37,15 +37,42 @@ If you prefer a compatibility file instead of editable installation:
 python3 -m pip install -r requirements.txt
 ```
 
-### How to generate the binary
-Use one of the build scripts in the project root.
+### How to generate the binaries
+Use the platform-specific build scripts in the project root. Each script creates a distributable artifact in `release/`.
+
+#### macOS
+
+    bash ./build-macos.sh
+
+Creates:
+
+    release/ContExt-macos-<arch>.app.zip
+
+By default the macOS build uses the current machine architecture (`arm64` or `x64`). You can override it with:
+
+    CONTEXT_TARGET_ARCH=arm64 bash ./build-macos.sh
+
+or, if you have a universal2-compatible Python environment and dependencies:
+
+    CONTEXT_TARGET_ARCH=universal2 bash ./build-macos.sh
 
 #### Windows
 
     .\build.cmd
+
+Creates:
+
+    release\ContExt-windows-x64.zip
+
 #### Linux
 
     bash ./build.sh
+
+Creates:
+
+    release/ContExt-linux-x64.tar.gz
+
+These first-step builds are unsigned. macOS and Windows may show security warnings when opening the application.
 
 ## How to Use
 
@@ -74,6 +101,11 @@ or
 
 ## Download
 You can download the binaries for each operating system on the [Releases tab](https://github.com/RafaelCasamaximo/contExt/releases).
+Tagged releases publish the following artifacts:
+
+ - `ContExt-macos-<arch>.app.zip`
+ - `ContExt-windows-x64.zip`
+ - `ContExt-linux-x64.tar.gz`
 
 ## Contributing
 You can [open a new issue or request a feature here](https://github.com/RafaelCasamaximo/contExt/issues/new/choose).
