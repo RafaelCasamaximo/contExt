@@ -7,6 +7,7 @@ from ._meshGeneration import MeshGeneration
 import os.path
 from ._mesh import Mesh
 from ._scopeList  import ScopeList
+from ..ui import strings
 
 class Interpolation:
     def __init__(self) -> None:
@@ -20,6 +21,44 @@ class Interpolation:
         self.exportFilePath = None
         self.exportFileName = None
         self.methodApplied = False
+        self.imageProcessing = None
+        self.contourExtraction = None
+        self.areaBeforeValue = None
+        self.areaAfterValue = None
+        self.deltaPercent = None
+        self.areaBeforeResized = False
+
+    def renderAreaState(self):
+        before_key = "original_area_resized" if self.areaBeforeResized else "original_area"
+        before_value = "--" if self.areaBeforeValue is None else self.areaBeforeValue
+        after_value = "--" if self.areaAfterValue is None else f"{self.areaAfterValue:.2f}"
+
+        if self.deltaPercent is None:
+            delta_value = strings.fmt("delta", value="--")
+        else:
+            delta_value = strings.fmt("delta_percent", percent=self.deltaPercent)
+
+        dpg.set_value("area_before_interp", strings.fmt(before_key, value=before_value))
+        dpg.set_value("area_after_interp", strings.fmt("interpolation_area", value=after_value))
+        dpg.set_value("delta_interp", delta_value)
+
+    def renderExportState(self):
+        export_file_name = self.exportFileName or ""
+        export_path = ""
+        if self.exportFilePath is not None and self.exportFileName is not None:
+            export_path = os.path.join(self.exportFilePath, self.exportFileName)
+        dpg.set_value('exportInterpolatedFileName', strings.fmt("file_name", value=export_file_name))
+        dpg.set_value('exportInterpolatedPathName', strings.fmt("full_path", value=export_path))
+
+    def refreshTranslations(self):
+        self.renderAreaState()
+        self.renderExportState()
+        if dpg.does_item_exist("originalPlot"):
+            dpg.configure_item("originalPlot", label=strings.t("interpolation.original_contour"))
+        if dpg.does_item_exist("originalResizedPlot"):
+            dpg.configure_item("originalResizedPlot", label=strings.t("interpolation.original_contour_resized"))
+        if dpg.does_item_exist("interpolationPlot"):
+            dpg.configure_item("interpolationPlot", label=strings.t("interpolation.interpolated_contour"))
 
     def remove_values(self, vec, nan_remove):  
         result = []
@@ -36,11 +75,15 @@ class Interpolation:
         return result
 
     def extractContour(self, sender=None, app_data=None):
-        dpg.delete_item("originalPlot")
-        dpg.delete_item("interpolationPlot")
-        dpg.add_line_series(self.originalX, self.originalY, label='Original Contour', tag="originalPlot", parent="Interpolation_y_axis")
-        dpg.set_value('area_after_interp', 'Interpolation Area: --')
-        dpg.set_value("area_before_interp", "Original Area: " + str(Mesh.get_area(self.originalX, self.originalY)))
+        for item in ("originalPlot", "interpolationPlot"):
+            if dpg.does_item_exist(item):
+                dpg.delete_item(item)
+        dpg.add_line_series(self.originalX, self.originalY, label=strings.t("interpolation.original_contour"), tag="originalPlot", parent="Interpolation_y_axis")
+        self.areaBeforeValue = Mesh.get_area(self.originalX, self.originalY)
+        self.areaAfterValue = None
+        self.deltaPercent = None
+        self.areaBeforeResized = False
+        self.renderAreaState()
         dpg.fit_axis_data("Interpolation_x_axis")
         dpg.fit_axis_data("Interpolation_y_axis")
 
@@ -80,10 +123,10 @@ class Interpolation:
         return length
 
     def interpolate(self, sender=None, app_data=None):
-        dpg.delete_item("originalPlot")
-        dpg.delete_item("interpolationPlot")
-        dpg.delete_item("originalResizedPlot")
-        interpolationMode = dpg.get_value('interpolationListbox')
+        for item in ("originalPlot", "interpolationPlot", "originalResizedPlot"):
+            if dpg.does_item_exist(item):
+                dpg.delete_item(item)
+        interpolationMode = strings.option_key("interpolation_mode", dpg.get_value('interpolationListbox'))
         spacingValue = dpg.get_value('spacingInterpolationSlider') + 1
         removalValue = dpg.get_value('removalInterpolationSlider')
         resizeCheckbox = dpg.get_value('resizeInterpolation')
@@ -105,17 +148,18 @@ class Interpolation:
             y = self.remove_values(y, removalValue)
 
         original_area = Mesh.get_area(self.originalX, self.originalY)
+        self.areaBeforeResized = False
 
         if resizeCheckbox:
             x = np.array(x) * spacingValue
             y = np.array(y) * spacingValue
             self.originalXResized = np.array(self.originalX) * spacingValue
             self.originalYResized = np.array(self.originalY) * spacingValue
-            dpg.add_line_series(self.originalXResized, self.originalYResized, label='Original Contour Resized', tag="originalResizedPlot", parent="Interpolation_y_axis")
+            dpg.add_line_series(self.originalXResized, self.originalYResized, label=strings.t("interpolation.original_contour_resized"), tag="originalResizedPlot", parent="Interpolation_y_axis")
             original_area = Mesh.get_area(self.originalX, self.originalY) * spacingValue * spacingValue
-            dpg.set_value("area_before_interp", "Original Area Resized: " + str(original_area))
-        else:
-            dpg.set_value("area_before_interp", "Original Area: " + str(original_area))
+            self.areaBeforeResized = True
+        self.areaBeforeValue = original_area
+        self.renderAreaState()
 
         # Aplica approxPoly
         if approxPolyCheckbox:
@@ -135,19 +179,19 @@ class Interpolation:
                 x_extended.extend([val_x] + [np.nan] * (spacingValue - 1))
                 y_extended.extend([val_y] + [np.nan] * (spacingValue - 1))
         
-        if interpolationMode == 'Bilinear':
+        if interpolationMode == 'bilinear':
             x_interpolated = pd.Series(x_extended).interpolate(method='linear', limit_direction='both')
             y_interpolated = pd.Series(y_extended).interpolate(method='linear', limit_direction='both')
-        elif interpolationMode == 'Bicubic':
+        elif interpolationMode == 'bicubic':
             x_interpolated = pd.Series(x_extended).interpolate(method='cubic', limit_direction='both')
             y_interpolated = pd.Series(y_extended).interpolate(method='cubic', limit_direction='both')
-        elif interpolationMode == 'Nearest':
+        elif interpolationMode == 'nearest':
             x_interpolated = pd.Series(x_extended).interpolate(method='nearest', limit_direction='both')
             y_interpolated = pd.Series(y_extended).interpolate(method='nearest', limit_direction='both')
-        elif interpolationMode == 'Quadratic':
+        elif interpolationMode == 'quadratic':
             x_interpolated = pd.Series(x_extended).interpolate(method='quadratic', limit_direction='both')
             y_interpolated = pd.Series(y_extended).interpolate(method='quadratic', limit_direction='both')
-        elif interpolationMode == 'Spline3':
+        elif interpolationMode == 'spline3':
             x_interpolated = pd.Series(x_extended).interpolate(method='spline', limit_direction='both', order=3)
             y_interpolated = pd.Series(y_extended).interpolate(method='spline', limit_direction='both', order=3)
         
@@ -161,11 +205,12 @@ class Interpolation:
 
         dif = abs(original_area - area_interpolated)
             
-        dpg.set_value("area_after_interp", "Interpolation Area: {:.2f}".format(area_interpolated))
-        dpg.set_value("delta_interp", "Delta: {:.2f}%".format(abs(100*dif/original_area)))
+        self.areaAfterValue = area_interpolated
+        self.deltaPercent = abs(100*dif/original_area)
+        self.renderAreaState()
 
-        dpg.add_line_series(self.currentX, self.currentY, label='Interpolated Contour', tag="interpolationPlot", parent="Interpolation_y_axis")
-        dpg.add_line_series(self.originalX, self.originalY, label='Original Contour', tag="originalPlot", parent="Interpolation_y_axis")
+        dpg.add_line_series(self.currentX, self.currentY, label=strings.t("interpolation.interpolated_contour"), tag="interpolationPlot", parent="Interpolation_y_axis")
+        dpg.add_line_series(self.originalX, self.originalY, label=strings.t("interpolation.original_contour"), tag="originalPlot", parent="Interpolation_y_axis")
         dpg.fit_axis_data("Interpolation_x_axis")
         dpg.fit_axis_data("Interpolation_y_axis")
 
@@ -188,10 +233,8 @@ class Interpolation:
         spacingValue = dpg.get_value('spacingInterpolationSlider')
         resizeCheckbox = dpg.get_value('resizeInterpolation')
 
-        xRes = int(dpg.get_value("currentWidth")[6:-2])
-        yRes = int(dpg.get_value("currentHeight")[7:-2])
-        w = float(dpg.get_value("currentMaxWidth")[9:])
-        h = float(dpg.get_value("currentMaxHeight")[9:])
+        xRes, yRes = self.imageProcessing.getCurrentResolution()
+        w, h = self.contourExtraction.getMappingDimensions()
         
         # Verifica se o método de interpolação foi aplicado
         if self.methodApplied:
@@ -234,20 +277,16 @@ class Interpolation:
         self.exportFilePath = app_data['file_path_name']
 
         self.exportFileName = dpg.get_value('inputInterpolatedContourNameText') + '.txt'
-        filePath = os.path.join(self.exportFilePath, self.exportFileName)
-
-        dpg.set_value('exportInterpolatedFileName', 'File Name: ' + self.exportFileName)
-        dpg.set_value('exportInterpolatedPathName', 'Complete Path Name: ' + filePath)
+        self.renderExportState()
 
         pass
 
     def exportButtonCall(self, sender, app_data=None):
         auxId = sender[13:]
         dpg.set_value('inputInterpolatedContourNameText', '')
-        dpg.set_value('exportInterpolatedFileName', 'File Name: ')
-        dpg.set_value('exportInterpolatedPathName', 'Complete Path Name: ')
         self.exportFileName = None
         self.exportFilePath = None
+        self.renderExportState()
         dpg.configure_item('exportInterpolatedContourWindow', show=True)
         pass
 
@@ -265,10 +304,8 @@ class Interpolation:
         xarray = self.currentX
         yarray = self.currentY
 
-        xRes = int(dpg.get_value("currentWidth")[6:-2])
-        yRes = int(dpg.get_value("currentHeight")[7:-2])
-        w = float(dpg.get_value("currentMaxWidth")[9:])
-        h = float(dpg.get_value("currentMaxHeight")[9:])
+        xRes, yRes = self.imageProcessing.getCurrentResolution()
+        w, h = self.contourExtraction.getMappingDimensions()
         dx = w/xRes
         dy = h/yRes
         xmin = min(xarray)

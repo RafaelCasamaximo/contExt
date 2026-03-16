@@ -1,20 +1,13 @@
 import dearpygui.dearpygui as dpg
 import platform
-import os
-
-def get_correct_path(relative_path):
-    return os.path.join(
-        os.environ.get(
-            "_MEIPASS2",
-            os.path.abspath(".")
-        ),
-        relative_path
-    )
+from ..paths import asset_path
 
 def applyTheme():
 
-    dpg.set_viewport_small_icon("icons/Icon.ico")
-    dpg.set_viewport_large_icon("icons/Icon.ico")
+    icon_path = asset_path("icons", "Icon.ico")
+
+    dpg.set_viewport_small_icon(icon_path)
+    dpg.set_viewport_large_icon(icon_path)
 
     with dpg.theme() as global_theme:
         with dpg.theme_component(0):
@@ -48,17 +41,10 @@ def applyTheme():
     # FIXME: Blurry font on Windows with DPI scaling
     # https://github.com/hoffstadt/DearPyGui/issues/1380
 
-    fontPath = ''
-    fontPathWindows = 'fonts\Inter-Regular.otf'
-    fontPathLinux = 'fonts/Inter-Regular.otf'
-
-    if platform.system() == 'Windows':
-        fontPath = fontPathWindows
+    if platform.system() == "Windows":
+        fontPath = asset_path("fonts", "Inter-Regular.otf")
     else:
-        fontPath = fontPathLinux
-
-    if platform.system() == 'Windows':
-        fontPath = get_correct_path(fontPath)
+        fontPath = asset_path("fonts", "Inter-Regular.otf")
 
     try:
         with dpg.font_registry():

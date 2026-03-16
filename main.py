@@ -1,14 +1,15 @@
-from interface import Interface
-from callbacks import Callbacks
-
-"""
-    A classe app é responsável pela execução do programa como um todo, e é o ponto de partida.
-"""
-class App:
-    def __init__(self) -> None:
-        self.interface = Interface(Callbacks())
-        pass
+from pathlib import Path
+import sys
 
 
-if __name__ == '__main__':
-   app = App()
+ROOT = Path(__file__).resolve().parent
+SRC = ROOT / "src"
+
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from context.app import run
+
+
+if __name__ == "__main__":
+    run()

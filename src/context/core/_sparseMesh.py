@@ -39,7 +39,7 @@ class SparseMesh:
             ymax = (ymax - r["yi"]) // r["dy"] * r["dy"] + r["yi"]
             for i in self.ranges[1:]:
                 if i["xi"] <= xmin <= i["xf"] or i["xi"] <= xmax <= i["xf"] or i["yi"] <= ymin <= i["yf"] or i["yi"] <= ymax <= i["yf"]:
-                    print("Invalid range due to overlap")
+                    print("Invalid range: overlap detected")
                     return False
             dxAux = r["dx"]/dxAux
             dyAux = r["dy"]/dyAux
@@ -185,7 +185,7 @@ class SparseMesh:
     e removendo nós irrelevantes.
     """
 
-    def get_adaptative_mesh(self, x, y):
+    def get_adaptive_mesh(self, x, y):
         self.setIntervals()
         xResult = []
         yResult = []
@@ -433,4 +433,3 @@ class SparseMesh:
         except:
             print('Path for dy does not exist for mesh export')
             return
-

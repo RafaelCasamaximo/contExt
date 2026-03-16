@@ -5,30 +5,40 @@
 </p>
 
 ## About the Project
-This application performs treatment and contour extraction from an image, and the generation of sparse or adaptive meshes intended for the application of numerical methods, especially finite differences.
+ContExt is a desktop application for image processing, contour extraction, interpolation, and sparse or adaptive mesh generation for numerical analysis workflows.
 
 ## Getting Started
-This software uses `Python` and libraries managed by `PIP`.
+This project uses `Python`, a local `.venv` virtual environment, and dependencies defined in `pyproject.toml`.
 
 ### Graphical User Interface
-The graphical interface was implemented using the [DearPyGUI](https://github.com/hoffstadt/DearPyGui) library, which makes use of graphical APIs (`DirectX 11` on Windows, `Metal` on macOS, `OpenGL 3` on Linux and `OpenGL ES` on Raspberry Pi 4), therefore, you must have the necessary drivers and software to run this software.
+The graphical interface is implemented with [DearPyGUI](https://github.com/hoffstadt/DearPyGui), which uses platform graphics APIs (`DirectX 11` on Windows, `Metal` on macOS, `OpenGL 3` on Linux, and `OpenGL ES` on Raspberry Pi 4). Make sure the required graphics drivers are available on the target machine.
 
-### Installing Libraries
-To install all the requirements run the command:
-```python
-pip install -r requirements.txt
+### Create the Environment
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 ```
-### Complete List of Libraries
-| Library | Version |
-|--|--|
-| dearpygui | 1.8.0 |
-| numpy| 1.24.1 |
-| opencv_python| 4.7.0.68 |
-| shapely| 2.0.1 |
-| pyinstaller| 5.7.0 |
+
+On Windows:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+### Install Dependencies
+```bash
+python3 -m pip install --upgrade pip
+python3 -m pip install -e .
+```
+
+If you prefer a compatibility file instead of editable installation:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
 
 ### How to generate the binary
-To generate the binary it is possible to use one of the existing build scripts in the project files.
+Use one of the build scripts in the project root.
 
 #### Windows
 
@@ -39,17 +49,21 @@ To generate the binary it is possible to use one of the existing build scripts i
 
 ## How to Use
 
-To execute the software run the command:
+To execute the software run either command below:
 
-    python main.py
+    python3 -m context
+
+or
+
+    python3 main.py
 
 ### Features
 
- - Importing a large range of image formats;
- - Various filters for image processing;
- - Selection of contour extraction method;
- - Parameterization of the generated contour;
- - Generation of sparse or adaptive meshes;
+ - Import a large range of image formats
+ - Apply multiple image processing filters
+ - Extract contours with configurable approximation options
+ - Interpolate contours before export or meshing
+ - Generate sparse or adaptive meshes
 
 ### Screenshots
 ![Processing Tab](https://i.ibb.co/YbB9Td1/image.png)
@@ -63,13 +77,13 @@ You can download the binaries for each operating system on the [Releases tab](ht
 
 ## Contributing
 You can [open a new issue or request a feature here](https://github.com/RafaelCasamaximo/contExt/issues/new/choose).
-If you want to contribute to the project [see our Guideline](https://github.com/RafaelCasamaximo/contExt/blob/main/CONTRIBUTING.md)
+If you want to contribute to the project, see our [contribution guideline](https://github.com/RafaelCasamaximo/contExt/blob/main/CONTRIBUTING.md).
 
 ## Code of Conduct
-Access our [Code of Conduct](https://github.com/RafaelCasamaximo/contExt/blob/main/CODE_OF_CONDUCT.md)
+Read our [Code of Conduct](https://github.com/RafaelCasamaximo/contExt/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
-We are under the [GNU GENERAL PUBLIC LICENSE V3.0](https://github.com/RafaelCasamaximo/contExt/blob/main/LICENSE) and this software is patented on [INPI (National Institute of Industrial Property)](https://www.gov.br/inpi/pt-br).
+This project is distributed under the [GNU GENERAL PUBLIC LICENSE V3.0](https://github.com/RafaelCasamaximo/contExt/blob/main/LICENSE) and is registered with [INPI (National Institute of Industrial Property)](https://www.gov.br/inpi/pt-br).
 
 ## Credits
 

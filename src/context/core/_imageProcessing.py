@@ -5,6 +5,7 @@ import pydicom
 import os.path
 from ._blocks import Blocks
 from ._texture import Texture
+from ..ui import strings
 
 class ImageProcessing:
     def __init__(self) -> None:
@@ -14,6 +15,8 @@ class ImageProcessing:
         self.exportImageFilePath = None
         self.currentTab = None
         self.resetContours = None
+        self.originalResolution = None
+        self.currentResolution = None
 
         self.blocks = [
             {
@@ -94,15 +97,15 @@ class ImageProcessing:
                 'tab': 'Thresholding'
             },
             {
-                'method': self.adaptativeMeanThresholding,
-                'name': self.adaptativeMeanThresholding.__name__,
+                'method': self.adaptiveMeanThresholding,
+                'name': self.adaptiveMeanThresholding.__name__,
                 'status': False,
                 'output': None,
                 'tab': 'Thresholding'
             },
             {
-                'method': self.adaptativeGaussianThresholding,
-                'name': self.adaptativeGaussianThresholding.__name__,
+                'method': self.adaptiveGaussianThresholding,
+                'name': self.adaptiveGaussianThresholding.__name__,
                 'status': False,
                 'output': None,
                 'tab': 'Thresholding'
@@ -124,6 +127,47 @@ class ImageProcessing:
         ]
 
         pass
+
+    def getCurrentResolution(self):
+        return self.currentResolution
+
+    def renderFileInfo(self):
+        dpg.set_value('file_name_text', strings.fmt("file_name", value=self.fileName or ""))
+        dpg.set_value('file_path_text', strings.fmt("file_path", value=self.filePath or ""))
+
+    def renderResolutionInfo(self):
+        original_width = "--"
+        original_height = "--"
+        current_width = "--"
+        current_height = "--"
+
+        if self.originalResolution is not None:
+            original_width = self.originalResolution[0]
+            original_height = self.originalResolution[1]
+        if self.currentResolution is not None:
+            current_width = self.currentResolution[0]
+            current_height = self.currentResolution[1]
+
+        dpg.set_value('originalWidth', strings.fmt("width_px", value=original_width))
+        dpg.set_value('originalHeight', strings.fmt("height_px", value=original_height))
+        dpg.set_value('currentWidth', strings.fmt("width_px", value=current_width))
+        dpg.set_value('currentHeight', strings.fmt("height_px", value=current_height))
+
+    def renderExportState(self):
+        export_file_name = ""
+        export_full_path = ""
+
+        if self.exportImageFilePath is not None:
+            export_file_name = os.path.basename(self.exportImageFilePath)
+            export_full_path = self.exportImageFilePath
+
+        dpg.set_value('exportImageFileName', strings.fmt("file_name", value=export_file_name))
+        dpg.set_value('exportImageFilePath', strings.fmt("full_path", value=export_full_path))
+
+    def refreshTranslations(self):
+        self.renderFileInfo()
+        self.renderResolutionInfo()
+        self.renderExportState()
 
 
     def executeQuery(self, methodName):
@@ -250,15 +294,13 @@ class ImageProcessing:
         Texture.createAllTextures(self.blocks[Blocks.importImage.value]['output'])
 
         # Popula os dados na lateral
-        dpg.set_value('file_name_text', 'File Name: ' + self.fileName)
-        dpg.set_value('file_path_text', 'File Path: ' + self.filePath)
+        self.renderFileInfo()
 
         shape = self.blocks[Blocks.importImage.value]['output'].shape
+        self.originalResolution = (shape[1], shape[0])
+        self.currentResolution = (shape[1], shape[0])
 
-        dpg.set_value('originalWidth', 'Width: ' + str(shape[1]) + 'px')
-        dpg.set_value('originalHeight', 'Height: ' + str(shape[0]) + 'px')
-        dpg.set_value('currentWidth', 'Width: ' + str(shape[1]) + 'px')
-        dpg.set_value('currentHeight', 'Height: ' + str(shape[0]) + 'px')
+        self.renderResolutionInfo()
 
         dpg.set_value('endX', shape[0])
         dpg.set_value('endY', shape[1])
@@ -278,9 +320,9 @@ class ImageProcessing:
         self.blocks[Blocks.crop.value]['output'] = self.blocks[Blocks.importImage.value]['output']
 
         shape = self.blocks[Blocks.crop.value]['output'].shape
+        self.currentResolution = (shape[1], shape[0])
 
-        dpg.set_value('currentWidth', 'Width: ' + str(shape[1]) + 'px')
-        dpg.set_value('currentHeight', 'Height: ' + str(shape[0]) + 'px')
+        self.renderResolutionInfo()
         dpg.set_value('endX', shape[0])
         dpg.set_value('endY', shape[1])
 
@@ -310,9 +352,9 @@ class ImageProcessing:
         self.blocks[Blocks.crop.value]['output'] = self.blocks[Blocks.importImage.value]['output'][startX:endX, startY:endY]
 
         shape = self.blocks[Blocks.crop.value]['output'].shape
+        self.currentResolution = (shape[1], shape[0])
 
-        dpg.set_value('currentWidth', 'Width: ' + str(shape[1]) + 'px')
-        dpg.set_value('currentHeight', 'Height: ' + str(shape[0]) + 'px')
+        self.renderResolutionInfo()
 
         dpg.set_value('endX', shape[0])
         dpg.set_value('endY', shape[1])
@@ -413,13 +455,13 @@ class ImageProcessing:
         image = self.blocks[self.getLastActiveBeforeMethod('sobel')]['output']
 
         sobel = None
-        value = dpg.get_value('sobelListbox')
+        value = strings.option_key("sobel_axis", dpg.get_value('sobelListbox'))
 
-        if value == 'X-Axis':
+        if value == 'x_axis':
             sobel = cv2.Sobel(image, cv2.CV_8U, 1, 0, ksize=3)
-        elif value == 'Y-Axis':
+        elif value == 'y_axis':
             sobel = cv2.Sobel(image, cv2.CV_8U, 0, 1, ksize=3)
-        elif value == 'XY-Axis':
+        elif value == 'xy_axis':
             sobel = cv2.bitwise_or(cv2.Sobel(image, cv2.CV_8U, 1, 0, ksize=3), cv2.Sobel(image, cv2.CV_8U, 0, 1, ksize=3))
 
         self.blocks[Blocks.sobel.value]['output'] = sobel
@@ -441,33 +483,33 @@ class ImageProcessing:
         Texture.updateTexture(self.blocks[Blocks.globalThresholding.value]['tab'], threshInv)
         pass
 
-    def adaptativeMeanThresholding(self, sender=None, app_data=None):
-        image = self.blocks[self.getLastActiveBeforeMethod('adaptativeMeanThresholding')]['output'].copy()
+    def adaptiveMeanThresholding(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('adaptiveMeanThresholding')]['output'].copy()
 
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         threshInv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,11,2)
         image = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
 
-        self.blocks[Blocks.adaptativeMeanThresholding.value]['output'] = image
-        Texture.updateTexture(self.blocks[Blocks.adaptativeMeanThresholding.value]['tab'], image)
+        self.blocks[Blocks.adaptiveMeanThresholding.value]['output'] = image
+        Texture.updateTexture(self.blocks[Blocks.adaptiveMeanThresholding.value]['tab'], image)
 
         pass
 
-    def adaptativeGaussianThresholding(self, sender=None, app_data=None):
+    def adaptiveGaussianThresholding(self, sender=None, app_data=None):
 
-        image = self.blocks[self.getLastActiveBeforeMethod('adaptativeGaussianThresholding')]['output'].copy()
+        image = self.blocks[self.getLastActiveBeforeMethod('adaptiveGaussianThresholding')]['output'].copy()
 
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         threshInv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
         image = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
 
-        self.blocks[Blocks.adaptativeGaussianThresholding.value]['output'] = image
-        Texture.updateTexture(self.blocks[Blocks.adaptativeGaussianThresholding.value]['tab'], image)
+        self.blocks[Blocks.adaptiveGaussianThresholding.value]['output'] = image
+        Texture.updateTexture(self.blocks[Blocks.adaptiveGaussianThresholding.value]['tab'], image)
 
         pass
 
     def otsuBinarization(self, sender=None, app_data=None):
-        image = self.blocks[self.getLastActiveBeforeMethod('adaptativeGaussianThresholding')]['output'].copy()
+        image = self.blocks[self.getLastActiveBeforeMethod('adaptiveGaussianThresholding')]['output'].copy()
         
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         ret, threshInv = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -489,10 +531,9 @@ class ImageProcessing:
 
     def exportImage(self, sender = None, app_data = None, tab = None):
 
-        dpg.set_value('exportImageFileName', 'File Name: ')
-        dpg.set_value('exportImageFilePath', 'Complete Path Name: ')
-        dpg.set_value('imageNameExportAsFile', '')
         self.exportImageFilePath = None
+        self.renderExportState()
+        dpg.set_value('imageNameExportAsFile', '')
         self.currentTab = tab
         dpg.configure_item('exportImageAsFile', show=True)
         pass
@@ -509,8 +550,7 @@ class ImageProcessing:
         exportImageFileName = dpg.get_value('imageNameExportAsFile')
         exportImageFilePath = app_data['file_path_name']
         self.exportImageFilePath = os.path.join(exportImageFilePath, exportImageFileName + '.jpg')
-        dpg.set_value('exportImageFileName', 'File Name: ' + exportImageFileName + '.jpg')
-        dpg.set_value('exportImageFilePath', 'File Path: ' + self.exportImageFilePath)
+        self.renderExportState()
         pass
 
     def exportImageAsFile(self, sender = None, app_data = None):
@@ -544,12 +584,12 @@ class ImageProcessing:
             'sobelCheckbox',
             'globalThresholdingCheckbox',
             'invertGlobalThresholding',
-            'adaptativeThresholdingCheckbox',
-            'adaptativeGaussianThresholdingCheckbox',
+            'adaptiveThresholdingCheckbox',
+            'adaptiveGaussianThresholdingCheckbox',
             'otsuBinarization',
             'matlabModeCheckbox',
             'extractContourButton',
-            'updtadeContourButton',
+            'updateContourButton',
             'exportImageAsFileProcessing',
             'exportImageAsFileFiltering',
             'exportImageAsFileThresholding'
@@ -572,12 +612,12 @@ class ImageProcessing:
             'sobelCheckbox',
             'globalThresholdingCheckbox',
             'invertGlobalThresholding',
-            'adaptativeThresholdingCheckbox',
-            'adaptativeGaussianThresholdingCheckbox',
+            'adaptiveThresholdingCheckbox',
+            'adaptiveGaussianThresholdingCheckbox',
             'otsuBinarization',
             'matlabModeCheckbox',
             'extractContourButton',
-            'updtadeContourButton',
+            'updateContourButton',
             'exportImageAsFileProcessing',
             'exportImageAsFileFiltering',
             'exportImageAsFileThresholding'
@@ -600,12 +640,12 @@ class ImageProcessing:
             'sobelCheckbox',
             'globalThresholdingCheckbox',
             'invertGlobalThresholding',
-            'adaptativeThresholdingCheckbox',
-            'adaptativeGaussianThresholdingCheckbox',
+            'adaptiveThresholdingCheckbox',
+            'adaptiveGaussianThresholdingCheckbox',
             'otsuBinarization',
             'matlabModeCheckbox',
             'extractContourButton',
-            'updtadeContourButton',
+            'updateContourButton',
             'exportImageAsFileProcessing',
             'exportImageAsFileFiltering',
             'exportImageAsFileThresholding'
