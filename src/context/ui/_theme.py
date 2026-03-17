@@ -24,12 +24,18 @@ _PALETTES = {
         "border": (57, 80, 108, 255),
         "text": (234, 240, 248, 255),
         "text_muted": (134, 151, 174, 255),
+        "button_text": (255, 255, 255, 255),
         "accent": (43, 112, 246, 255),
         "accent_hover": (63, 128, 255, 255),
         "accent_active": (29, 89, 215, 255),
         "accent_soft": (31, 56, 92, 255),
+        "control_button": (43, 112, 246, 255),
+        "control_button_hover": (63, 128, 255, 255),
+        "control_button_active": (29, 89, 215, 255),
         "separator": (73, 95, 121, 255),
         "grid": (96, 114, 136, 180),
+        "tab_active": (43, 112, 246, 255),
+        "tab_unfocused_active": (24, 37, 54, 255),
     },
     "light": {
         "background": (242, 246, 251, 255),
@@ -39,12 +45,18 @@ _PALETTES = {
         "border": (188, 201, 219, 255),
         "text": (24, 34, 49, 255),
         "text_muted": (100, 116, 137, 255),
+        "button_text": (255, 255, 255, 255),
         "accent": (24, 99, 224, 255),
         "accent_hover": (14, 112, 249, 255),
         "accent_active": (18, 77, 184, 255),
         "accent_soft": (214, 229, 248, 255),
+        "control_button": (255, 255, 255, 255),
+        "control_button_hover": (214, 229, 248, 255),
+        "control_button_active": (229, 237, 246, 255),
         "separator": (202, 213, 227, 255),
         "grid": (140, 154, 171, 175),
+        "tab_active": (255, 255, 255, 255),
+        "tab_unfocused_active": (255, 255, 255, 255),
     },
 }
 
@@ -122,15 +134,19 @@ def _build_global_theme(theme_name: str):
             dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, colors["accent_active"])
             dpg.add_theme_color(dpg.mvThemeCol_Tab, colors["surface_alt"])
             dpg.add_theme_color(dpg.mvThemeCol_TabHovered, colors["accent_soft"])
-            dpg.add_theme_color(dpg.mvThemeCol_TabActive, colors["accent"])
+            dpg.add_theme_color(dpg.mvThemeCol_TabActive, colors["tab_active"])
             dpg.add_theme_color(dpg.mvThemeCol_TabUnfocused, colors["surface"])
-            dpg.add_theme_color(dpg.mvThemeCol_TabUnfocusedActive, colors["surface_alt"])
+            dpg.add_theme_color(dpg.mvThemeCol_TabUnfocusedActive, colors["tab_unfocused_active"])
             dpg.add_theme_color(dpg.mvThemeCol_TitleBg, colors["surface"])
             dpg.add_theme_color(dpg.mvThemeCol_TitleBgActive, colors["surface_alt"])
             dpg.add_theme_color(dpg.mvThemeCol_MenuBarBg, colors["surface"])
             dpg.add_theme_color(dpg.mvThemeCol_CheckMark, colors["accent"])
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, colors["accent"])
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, colors["accent_hover"])
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarBg, colors["surface_alt"])
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrab, colors["border"])
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabHovered, colors["text_muted"])
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabActive, colors["accent"])
 
             dpg.add_theme_color(dpg.mvPlotCol_FrameBg, colors["surface"], category=dpg.mvThemeCat_Plots)
             dpg.add_theme_color(dpg.mvPlotCol_PlotBg, colors["surface"], category=dpg.mvThemeCat_Plots)
@@ -141,6 +157,15 @@ def _build_global_theme(theme_name: str):
             dpg.add_theme_color(dpg.mvPlotCol_AxisText, colors["text"], category=dpg.mvThemeCat_Plots)
             dpg.add_theme_color(dpg.mvPlotCol_AxisGrid, colors["grid"], category=dpg.mvThemeCat_Plots)
             dpg.add_theme_color(dpg.mvPlotCol_TitleText, colors["text"], category=dpg.mvThemeCat_Plots)
+
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, colors["button_text"])
+
+        for item_type in (dpg.mvCombo, dpg.mvInputInt, dpg.mvInputFloat, dpg.mvInputDouble):
+            with dpg.theme_component(item_type):
+                dpg.add_theme_color(dpg.mvThemeCol_Button, colors["control_button"])
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, colors["control_button_hover"])
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, colors["control_button_active"])
 
 
 def _build_startup_card_theme(theme_name: str):
@@ -162,6 +187,7 @@ def _build_accent_button_theme(theme_name: str):
 
     with dpg.theme(tag=ACCENT_BUTTON_THEME_TAG):
         with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, colors["button_text"])
             dpg.add_theme_color(dpg.mvThemeCol_Button, colors["accent"])
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, colors["accent_hover"])
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, colors["accent_active"])
