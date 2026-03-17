@@ -254,8 +254,8 @@ class ContourExtraction:
             if i["id"] == auxId:
                 entry = i
                 break
-        xarray = entry["contourX"]
-        yarray = entry["contourY"]
+        xarray = entry["contourX"].copy()
+        yarray = entry["contourY"].copy()
         current_resolution = self.getImageResolution()
         xRes = current_resolution[0]
         yRes = current_resolution[1]
@@ -272,11 +272,6 @@ class ContourExtraction:
         yarray.append(yarray[0])
         self.meshGeneration.originalX = [nx, xmin, xmax, dx] + xarray
         self.meshGeneration.originalY = [ny, ymin, ymax, dy] + yarray
-
-        f = open("outputCtoMesh.txt", "a")
-        f.write(' '.join(map(str, self.meshGeneration.originalX)))
-        f.write(' '.join(map(str, self.meshGeneration.originalY)))
-        f.close()
         self.meshGeneration.importContour()
         pass
 
@@ -286,8 +281,8 @@ class ContourExtraction:
             if i["id"] == auxId:
                 entry = i
                 break
-        xarray = entry["contourX"]
-        yarray = entry["contourY"]
+        xarray = entry["contourX"].copy()
+        yarray = entry["contourY"].copy()
         xarray.append(xarray[0])
         yarray.append(yarray[0])
         self.interpolation.originalX = xarray

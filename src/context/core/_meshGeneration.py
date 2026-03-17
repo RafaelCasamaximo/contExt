@@ -12,6 +12,7 @@ class MeshGeneration:
     
     def __init__(self) -> None:
 
+        self.simulation = None
         self.filePath = None
         self.txtFilePath = None
         self.txtFileName = None
@@ -62,6 +63,13 @@ class MeshGeneration:
         self.scopeLines  = []
         self.scopeColors = []
         self.scopeThemes = []
+
+    def setSimulation(self, simulation) -> None:
+        self.simulation = simulation
+
+    def notifySimulationChanged(self) -> None:
+        if self.simulation is not None:
+            self.simulation.meshChanged()
 
     def renderFileInfo(self):
         dpg.set_value('contour_file_name_text', strings.fmt("file_name", value=self.txtFileName or ""))
@@ -305,6 +313,7 @@ class MeshGeneration:
         }
 
         dpg.configure_item("editContourPopup", show=False)
+        self.notifySimulationChanged()
 
 
 
@@ -418,6 +427,7 @@ class MeshGeneration:
         self.fullScopeSize = self.fullScope[1] - self.fullScope[0]
         dpg.set_value("subcontoursCount", 1)
         self.createSubcontour()
+        self.notifySimulationChanged()
         #print(self.subcontours.getScopes())
 
     def toggleOrdering(self, sender = None, app_data = None):
@@ -506,8 +516,9 @@ class MeshGeneration:
 
     def updateMesh(self, sender=None, app_data=None):
         tempScopeList = []
-        for i in self.subcontours.getScopes()[:-1]:
-            tempScopeList.append([self.currentX[i[0]], self.currentY[i[0]], self.currentX[i[1]], self.currentY[i[1]]])
+        for lower, upper in self.subcontoursRanges:
+            if 0 <= lower < len(self.currentX) and 0 <= upper < len(self.currentX):
+                tempScopeList.append([self.currentX[lower], self.currentY[lower], self.currentX[upper], self.currentY[upper]])
 
 
         dx = dpg.get_value("dx")
@@ -615,8 +626,12 @@ class MeshGeneration:
         for j in tempScopeList:
             a = Mesh.getIndex(self.currentX, self.currentY, j[0], j[1])
             b = Mesh.getIndex(self.currentX, self.currentY, j[2], j[3])
-            self.subcontours.createScope(a,b)
+            if a != -1 and b != -1 and a != b:
+                lower = min(a, b)
+                upper = max(a, b)
+                self.subcontours.createScope(lower, upper)
         #print(self.subcontours.getScopes())
+        self.notifySimulationChanged()
 
     def plotGrid(self, sender=None, app_data=None):
         if self.toggleGridFlag:

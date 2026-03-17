@@ -9,7 +9,8 @@
         "thresholding": "Limiarizacao",
         "contour_extraction": "Extracao de Contorno",
         "interpolation": "Interpolacao",
-        "mesh_generation": "Geracao de Malha"
+        "mesh_generation": "Geracao de Malha",
+        "simulation": "Simulacao"
       }
     },
     "startup": {
@@ -191,12 +192,63 @@
       "current_mesh": "Malha atual",
       "node_number_tooltip": "Nao inclui os nos das submalhas."
     },
+    "simulation": {
+      "title": "Simulacao por Diferencas Finitas",
+      "description": "Resolve problemas escalares 2D em malha uniforme a partir da malha ativa e dos subcontornos definidos na aba de geracao de malha.",
+      "problem_type": "Tipo de problema",
+      "source_term": "Termo-fonte",
+      "refresh_regions": "Atualizar regioes de fronteira",
+      "boundary_regions": "Regioes de fronteira",
+      "no_regions": "Nenhuma regiao disponivel",
+      "region_label": "Regiao {index} [{lower}, {upper}]",
+      "region_range": "Faixa de indices: [{lower}, {upper}]",
+      "region_range_empty": "Faixa de indices: --",
+      "region_boundary_nodes": "Nos de fronteira: {value}",
+      "boundary_value": "Valor de Dirichlet",
+      "apply_boundary_value": "Aplicar valor a regiao",
+      "solve": "Resolver",
+      "results": "Resultados",
+      "export_solution": "Exportar solucao",
+      "export_solution_csv": "Exportar solucao CSV",
+      "export_visualization_png": "Exportar visualizacao PNG",
+      "plot": "Campo escalar",
+      "color_scale": "Escala de cores",
+      "scale_pending": "Resolva o problema para exibir a escala.",
+      "scale_range": "Faixa: {min} a {max}",
+      "scale_constant": "Campo constante: {value}",
+      "contour": "Contorno ativo",
+      "domain_nodes": "Nos do dominio: {value}",
+      "boundary_nodes": "Nos de fronteira: {value}",
+      "internal_nodes": "Nos internos: {value}",
+      "system_size": "Tamanho do sistema: {value}",
+      "residual": "Residual maximo: {value}",
+      "min_value": "Valor minimo: {value}",
+      "max_value": "Valor maximo: {value}",
+      "mean_value": "Valor medio: {value}",
+      "solve_time": "Tempo de solucao: {value}",
+      "status": {
+        "awaiting_mesh": "Importe ou gere uma malha uniforme na aba de geracao de malha para habilitar a simulacao.",
+        "uniform_only": "A simulacao atual suporta apenas malha uniforme. Desative regioes esparsas/adaptativas para resolver.",
+        "ready": "Dominio discreto pronto. Defina os valores de fronteira e execute a solucao.",
+        "boundary_updated": "Valor de fronteira atualizado para a regiao selecionada.",
+        "analysis_failed": "Nao foi possivel montar o dominio discreto: {error}",
+        "solve_failed": "Nao foi possivel resolver o sistema linear: {error}",
+        "solved": "Solucao concluida com sucesso.",
+        "exported": "Solucao exportada com sucesso.",
+        "csv_exported": "Solucao CSV exportada com sucesso.",
+        "png_exported": "Visualizacao PNG exportada com sucesso."
+      }
+    },
     "options": {
       "approximation_mode": {
         "none": "Nenhum",
         "simple": "Simples",
         "tc89_l1": "TC89_L1",
         "tc89_kcos": "TC89_KCOS"
+      },
+      "simulation_problem": {
+        "laplace": "Laplace",
+        "poisson": "Poisson"
       },
       "theme": {
         "light": "Claro",
@@ -272,7 +324,8 @@
         "thresholding": "Thresholding",
         "contour_extraction": "Contour Extraction",
         "interpolation": "Interpolation",
-        "mesh_generation": "Mesh Generation"
+        "mesh_generation": "Mesh Generation",
+        "simulation": "Simulation"
       }
     },
     "startup": {
@@ -454,12 +507,63 @@
       "current_mesh": "Current Mesh",
       "node_number_tooltip": "Does not include submesh nodes."
     },
+    "simulation": {
+      "title": "Finite Difference Simulation",
+      "description": "Solves 2D scalar problems on the active uniform mesh using the boundary regions defined from the current subcontours.",
+      "problem_type": "Problem type",
+      "source_term": "Source term",
+      "refresh_regions": "Refresh boundary regions",
+      "boundary_regions": "Boundary regions",
+      "no_regions": "No regions available",
+      "region_label": "Region {index} [{lower}, {upper}]",
+      "region_range": "Index range: [{lower}, {upper}]",
+      "region_range_empty": "Index range: --",
+      "region_boundary_nodes": "Boundary nodes: {value}",
+      "boundary_value": "Dirichlet value",
+      "apply_boundary_value": "Apply value to region",
+      "solve": "Solve",
+      "results": "Results",
+      "export_solution": "Export solution",
+      "export_solution_csv": "Export solution CSV",
+      "export_visualization_png": "Export PNG visualization",
+      "plot": "Scalar field",
+      "color_scale": "Color scale",
+      "scale_pending": "Solve the problem to display the scale.",
+      "scale_range": "Range: {min} to {max}",
+      "scale_constant": "Constant field: {value}",
+      "contour": "Active contour",
+      "domain_nodes": "Domain nodes: {value}",
+      "boundary_nodes": "Boundary nodes: {value}",
+      "internal_nodes": "Internal nodes: {value}",
+      "system_size": "System size: {value}",
+      "residual": "Max residual: {value}",
+      "min_value": "Minimum value: {value}",
+      "max_value": "Maximum value: {value}",
+      "mean_value": "Mean value: {value}",
+      "solve_time": "Solve time: {value}",
+      "status": {
+        "awaiting_mesh": "Import or generate a uniform mesh in the Mesh Generation tab to enable simulation.",
+        "uniform_only": "The current solver supports uniform meshes only. Disable sparse/adaptive regions before solving.",
+        "ready": "Discrete domain is ready. Set boundary values and run the solve step.",
+        "boundary_updated": "Boundary value updated for the selected region.",
+        "analysis_failed": "Could not build the discrete domain: {error}",
+        "solve_failed": "Could not solve the linear system: {error}",
+        "solved": "Solution completed successfully.",
+        "exported": "Solution exported successfully.",
+        "csv_exported": "CSV solution exported successfully.",
+        "png_exported": "PNG visualization exported successfully."
+      }
+    },
     "options": {
       "approximation_mode": {
         "none": "None",
         "simple": "Simple",
         "tc89_l1": "TC89_L1",
         "tc89_kcos": "TC89_KCOS"
+      },
+      "simulation_problem": {
+        "laplace": "Laplace",
+        "poisson": "Poisson"
       },
       "theme": {
         "light": "Light",

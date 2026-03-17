@@ -6,6 +6,7 @@ from ._filteringTab import showFiltering
 from ._interpolationTab import showInterpolation
 from ._meshTab import showMeshGeneration
 from ._processingTab import showProcessing
+from ._simulationTab import showSimulation
 from ._theme import DEFAULT_THEME, apply_theme, bind_startup_themes
 from ._thresholdingTab import showThresholding
 
@@ -122,6 +123,8 @@ class Interface:
             showInterpolation(self.callbacks)
         with dpg.tab(tag="meshGenerationTab", label=strings.t("app.tabs.mesh_generation")):
             showMeshGeneration(self.callbacks)
+        with dpg.tab(tag="simulationTab", label=strings.t("app.tabs.simulation")):
+            showSimulation(self.callbacks)
         self.callbacks.imageProcessing.disableAllTags()
 
     def createSaveImageDialog(self):

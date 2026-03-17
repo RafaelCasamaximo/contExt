@@ -256,14 +256,9 @@ class Interpolation:
         nx = round((xmax - xmin)/dx) + 1
         ny = round((ymax - ymin)/dy) + 1
 
-        self.meshGeneration.originalX = [nx, xmin, xmax, dx] + self.currentX
-        self.meshGeneration.originalY = [ny, ymin, ymax, dy] + self.currentY
+        self.meshGeneration.originalX = [nx, xmin, xmax, dx] + self.currentX.copy()
+        self.meshGeneration.originalY = [ny, ymin, ymax, dy] + self.currentY.copy()
         self.meshGeneration.subcontours = ScopeList(0, len(self.currentX))
-
-        f = open("outputInterpToMesh.txt", "a")
-        f.write(' '.join(map(str, self.meshGeneration.originalX)))
-        f.write(' '.join(map(str, self.meshGeneration.originalY)))
-        f.close()
         self.meshGeneration.importContour()
     
 
@@ -301,8 +296,8 @@ class Interpolation:
             pass
 
     def exportContourToFile(self, path):
-        xarray = self.currentX
-        yarray = self.currentY
+        xarray = self.currentX.copy()
+        yarray = self.currentY.copy()
 
         xRes, yRes = self.imageProcessing.getCurrentResolution()
         w, h = self.contourExtraction.getMappingDimensions()

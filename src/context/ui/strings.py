@@ -13,6 +13,7 @@ OPTION_GROUPS = {
     "approximation_mode": ["none", "simple", "tc89_l1", "tc89_kcos"],
     "sobel_axis": ["x_axis", "y_axis", "xy_axis"],
     "interpolation_mode": ["nearest", "bilinear", "bicubic", "quadratic", "spline3"],
+    "simulation_problem": ["laplace", "poisson"],
     "zoom_node_size": ["div2", "div4", "div8", "div16"],
     "theme": ["light", "dark"],
 }
