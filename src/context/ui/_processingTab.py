@@ -51,11 +51,22 @@ def showProcessing(callbacks):
             dpg.add_separator();
             dpg.add_button(tag="processingResetButton", label=strings.t("common.reset"), width=-1, callback=lambda: callbacks.imageProcessing.resetCrop())
             dpg.add_button(tag="processingApplyChangesButton", label=strings.t("common.apply_changes"), width=-1, callback=lambda: callbacks.imageProcessing.executeQuery('crop'))
+            dpg.add_checkbox(
+                tag="showProcessingHistogramToggle",
+                label=strings.t("histogram.show_toggle"),
+                default_value=False,
+                callback=lambda sender, app_data: callbacks.imageProcessing.toggleHistogramPanel("Processing", app_data),
+            )
 
             with dpg.group(tag="exportImageAsFileProcessingGroup", show=False):
                 dpg.add_separator()
                 dpg.add_text(strings.t("common.save_image"), tag="processingSaveImageText")
                 dpg.add_button(tag="exportImageAsFileProcessing", width=-1, label=strings.t("common.export_image_as_file"), callback=lambda sender, app_data: callbacks.imageProcessing.exportImage(sender, app_data, "Processing"))
+
+            with dpg.group(tag="exportHistogramAsFileProcessingGroup", show=False):
+                dpg.add_separator()
+                dpg.add_text(strings.t("common.save_histogram"), tag="processingSaveHistogramText")
+                dpg.add_button(tag="exportHistogramAsFileProcessing", width=-1, label=strings.t("common.export_histogram_as_file"), callback=lambda sender, app_data: callbacks.imageProcessing.exportHistogram(sender, app_data, "Processing"))
 
             with dpg.window(label=strings.t("processing.invalid_crop_title"), modal=True, show=False, tag="incorrectCrop", no_title_bar=False):
                 dpg.add_text(strings.t("processing.invalid_crop_message"), tag="processingInvalidCropText")
@@ -74,10 +85,17 @@ def showProcessing(callbacks):
             pass
 
         with dpg.child_window(tag='ProcessingParent'):
-            with dpg.plot(tag="ProcessingPlotParent", label=strings.t("processing.plot"), height=-1, width=-1, equal_aspects=True):
-                dpg.add_plot_legend()
-                dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("axes.width"), tag="Processing_x_axis")
-                dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("axes.height"), tag="Processing_y_axis")
+            with dpg.group():
+                with dpg.child_window(tag="ProcessingImagePanel", height=-1):
+                    with dpg.plot(tag="ProcessingPlotParent", label=strings.t("processing.plot"), height=-1, width=-1, equal_aspects=True):
+                        dpg.add_plot_legend()
+                        dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("axes.width"), tag="Processing_x_axis")
+                        dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("axes.height"), tag="Processing_y_axis")
+                with dpg.child_window(tag="ProcessingHistogramPanel", height=240, show=False):
+                    with dpg.plot(tag="ProcessingHistogramPlotParent", label=strings.t("histogram.title"), height=-1, width=-1):
+                        dpg.add_plot_legend()
+                        dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("histogram.intensity_axis"), tag="ProcessingHistogram_x_axis")
+                        dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("histogram.count_axis"), tag="ProcessingHistogram_y_axis")
             pass
 
 def wrapperCropInterpolation(sender=None, app_data=None, user_data=None):
@@ -98,8 +116,11 @@ def refreshProcessingTranslations():
     dpg.set_value("processingEndHeightText", strings.t("processing.end_height"))
     dpg.configure_item("processingResetButton", label=strings.t("common.reset"))
     dpg.configure_item("processingApplyChangesButton", label=strings.t("common.apply_changes"))
+    dpg.configure_item("showProcessingHistogramToggle", label=strings.t("histogram.show_toggle"))
     dpg.set_value("processingSaveImageText", strings.t("common.save_image"))
     dpg.configure_item("exportImageAsFileProcessing", label=strings.t("common.export_image_as_file"))
+    dpg.set_value("processingSaveHistogramText", strings.t("common.save_histogram"))
+    dpg.configure_item("exportHistogramAsFileProcessing", label=strings.t("common.export_histogram_as_file"))
     dpg.configure_item("incorrectCrop", label=strings.t("processing.invalid_crop_title"))
     dpg.set_value("processingInvalidCropText", strings.t("processing.invalid_crop_message"))
     dpg.configure_item("processingInvalidCropOk", label=strings.t("common.ok"))
@@ -112,3 +133,6 @@ def refreshProcessingTranslations():
     dpg.configure_item("ProcessingPlotParent", label=strings.t("processing.plot"))
     dpg.configure_item("Processing_x_axis", label=strings.t("axes.width"))
     dpg.configure_item("Processing_y_axis", label=strings.t("axes.height"))
+    dpg.configure_item("ProcessingHistogramPlotParent", label=strings.t("histogram.title"))
+    dpg.configure_item("ProcessingHistogram_x_axis", label=strings.t("histogram.intensity_axis"))
+    dpg.configure_item("ProcessingHistogram_y_axis", label=strings.t("histogram.count_axis"))

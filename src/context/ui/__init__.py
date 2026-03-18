@@ -104,6 +104,7 @@ class Interface:
         with dpg.window(tag="Main"):
             self.showTabBar()
             self.createSaveImageDialog()
+            self.createSaveHistogramDialog()
 
     def showTabBar(self):
         with dpg.tab_bar():
@@ -151,7 +152,6 @@ class Interface:
                 min_size=[400, 300],
                 show=False,
                 tag="exportImageDirectorySelector",
-                id="exportImageDirectorySelector",
                 callback=lambda sender, app_data: self.callbacks.imageProcessing.exportImageSelectDirectory(sender, app_data),
             )
             dpg.add_separator()
@@ -171,6 +171,50 @@ class Interface:
                     callback=lambda: dpg.configure_item("exportImageAsFile", show=False),
                 )
             dpg.add_text(strings.t("common.missing_file_name_or_directory"), tag="exportImageError", show=False)
+
+    def createSaveHistogramDialog(self):
+        with dpg.window(
+            label=strings.t("common.export_histogram_as_file"),
+            modal=False,
+            show=False,
+            tag="exportHistogramAsFile",
+            no_title_bar=False,
+            min_size=[600, 255],
+        ):
+            dpg.add_text(strings.t("common.enter_file_name"), tag="exportHistogramDialogFileNameLabel")
+            dpg.add_input_text(tag="histogramNameExportAsFile")
+            dpg.add_separator()
+            dpg.add_text(strings.t("common.enter_file_name_before_directory"), tag="exportHistogramDialogDirectoryHint")
+            dpg.add_button(
+                tag="exportHistogramDialogSelectDirectory",
+                width=-1,
+                label=strings.t("common.select_directory"),
+                callback=self.callbacks.imageProcessing.exportHistogramDirectorySelector,
+            )
+            dpg.add_file_dialog(
+                directory_selector=True,
+                min_size=[400, 300],
+                show=False,
+                tag="exportHistogramDirectorySelector",
+                callback=lambda sender, app_data: self.callbacks.imageProcessing.exportHistogramSelectDirectory(sender, app_data),
+            )
+            dpg.add_separator()
+            dpg.add_text(strings.fmt("file_name", value=""), tag="exportHistogramFileName")
+            dpg.add_text(strings.fmt("full_path", value=""), tag="exportHistogramFilePath")
+            with dpg.group(horizontal=True):
+                dpg.add_button(
+                    tag="exportHistogramDialogSave",
+                    label=strings.t("common.save"),
+                    width=-1,
+                    callback=self.callbacks.imageProcessing.exportHistogramAsFile,
+                )
+                dpg.add_button(
+                    tag="exportHistogramDialogCancel",
+                    label=strings.t("common.cancel"),
+                    width=-1,
+                    callback=lambda: dpg.configure_item("exportHistogramAsFile", show=False),
+                )
+            dpg.add_text(strings.t("common.missing_file_name_or_directory"), tag="exportHistogramError", show=False)
 
     def changeStartupLocale(self, sender=None, app_data=None):
         self.selected_locale = strings.set_locale(app_data)

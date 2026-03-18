@@ -135,23 +135,24 @@ class Simulation:
         if not self._uiReady():
             return
 
-        dpg.configure_item(
-            "simulationColorScale",
-            min_scale=self.scaleDisplayMin,
-            max_scale=self.scaleDisplayMax,
-            format="%.6g",
-        )
-
         if self.scaleMinValue is None or self.scaleMaxValue is None:
+            min_label = "--"
+            max_label = "--"
             status = strings.t("simulation.scale_pending")
         elif self.scaleIsConstant:
+            min_label = f"{self.scaleMinValue:.6g}"
+            max_label = f"{self.scaleMaxValue:.6g}"
             status = strings.t("simulation.scale_constant", value=f"{self.scaleMinValue:.6g}")
         else:
+            min_label = f"{self.scaleMinValue:.6g}"
+            max_label = f"{self.scaleMaxValue:.6g}"
             status = strings.t(
                 "simulation.scale_range",
                 min=f"{self.scaleMinValue:.6g}",
                 max=f"{self.scaleMaxValue:.6g}",
             )
+        dpg.set_value("simulationColorScaleMinValue", min_label)
+        dpg.set_value("simulationColorScaleMaxValue", max_label)
         dpg.set_value("simulationColorScaleStatus", status)
 
     def _regionLabel(self, region: dict[str, int | str]) -> str:

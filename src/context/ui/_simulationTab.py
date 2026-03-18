@@ -18,8 +18,41 @@ SIMULATION_COLORMAP_COLORS = [
     (220, 79, 56, 255),
 ]
 
+SIMULATION_SCALE_TEXTURE_WIDTH = 512
+SIMULATION_SCALE_TEXTURE_HEIGHT = 22
+
+
+def _sampleSimulationScaleColor(normalized: float) -> tuple[int, int, int, int]:
+    normalized = min(max(float(normalized), 0.0), 1.0)
+    if len(SIMULATION_COLORMAP_COLORS) == 1:
+        return SIMULATION_COLORMAP_COLORS[0]
+    if normalized == 1.0:
+        return SIMULATION_COLORMAP_COLORS[-1]
+
+    position = normalized * (len(SIMULATION_COLORMAP_COLORS) - 1)
+    left_index = int(position)
+    right_index = min(left_index + 1, len(SIMULATION_COLORMAP_COLORS) - 1)
+    blend = position - left_index
+    left_color = SIMULATION_COLORMAP_COLORS[left_index]
+    right_color = SIMULATION_COLORMAP_COLORS[right_index]
+    return tuple(
+        int(round(left_color[channel] + (right_color[channel] - left_color[channel]) * blend))
+        for channel in range(4)
+    )
+
+
+def _buildSimulationScaleTextureData() -> list[float]:
+    texture_data: list[float] = []
+    for _ in range(SIMULATION_SCALE_TEXTURE_HEIGHT):
+        for column in range(SIMULATION_SCALE_TEXTURE_WIDTH):
+            color = _sampleSimulationScaleColor(column / (SIMULATION_SCALE_TEXTURE_WIDTH - 1))
+            texture_data.extend(channel / 255.0 for channel in color)
+    return texture_data
+
 
 def showSimulation(callbacks):
+    if not dpg.does_item_exist("textureRegistry"):
+        dpg.add_texture_registry(show=False, tag="textureRegistry")
     dpg.add_colormap_registry(show=False, tag="simulationColormapRegistry")
     dpg.add_colormap(
         SIMULATION_COLORMAP_COLORS,
@@ -27,6 +60,14 @@ def showSimulation(callbacks):
         tag="simulationColormap",
         parent="simulationColormapRegistry",
     )
+    if not dpg.does_item_exist("simulationScaleTexture"):
+        dpg.add_static_texture(
+            SIMULATION_SCALE_TEXTURE_WIDTH,
+            SIMULATION_SCALE_TEXTURE_HEIGHT,
+            _buildSimulationScaleTextureData(),
+            tag="simulationScaleTexture",
+            parent="textureRegistry",
+        )
 
     with dpg.group(horizontal=True):
         with dpg.child_window(width=320):
@@ -197,21 +238,17 @@ def showSimulation(callbacks):
             dpg.add_text(strings.t("common.missing_file_name_or_directory"), tag="simulationPngExportError", show=False)
 
         with dpg.child_window(tag="SimulationParent"):
-            with dpg.group(horizontal=True):
-                with dpg.child_window(tag="SimulationPlotPanel", width=-1):
-                    with dpg.plot(tag="simulationPlotParent", label=strings.t("simulation.plot"), height=-1 - 20, width=-1, equal_aspects=True):
+            with dpg.group():
+                with dpg.child_window(tag="SimulationPlotPanel", height=-140):
+                    with dpg.plot(tag="simulationPlotParent", label=strings.t("simulation.plot"), height=-1, width=-1, equal_aspects=True):
                         dpg.add_plot_legend()
                         dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("axes.x"), tag="Simulation_x_axis")
                         dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("axes.y"), tag="Simulation_y_axis")
-                with dpg.child_window(tag="SimulationScalePanel", width=130, no_scrollbar=True):
+                with dpg.child_window(tag="SimulationScalePanel", height=120, no_scrollbar=True):
                     dpg.add_text(strings.t("simulation.color_scale"), tag="simulationColorScaleText")
-                    dpg.add_colormap_scale(
-                        tag="simulationColorScale",
-                        colormap="simulationColormap",
-                        width=82,
-                        height=460,
-                        min_scale=0.0,
-                        max_scale=1.0,
-                        format="%.6g",
-                    )
-                    dpg.add_text(strings.t("simulation.scale_pending"), tag="simulationColorScaleStatus", wrap=110)
+                    dpg.add_image("simulationScaleTexture", tag="simulationColorScaleImage", width=SIMULATION_SCALE_TEXTURE_WIDTH, height=22)
+                    with dpg.group(horizontal=True):
+                        dpg.add_text("--", tag="simulationColorScaleMinValue")
+                        dpg.add_spacer(width=24)
+                        dpg.add_text("--", tag="simulationColorScaleMaxValue")
+                    dpg.add_text(strings.t("simulation.scale_pending"), tag="simulationColorScaleStatus", wrap=360)

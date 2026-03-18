@@ -7,16 +7,26 @@ from ._blocks import Blocks
 from ._texture import Texture
 from ..ui import strings
 
+DEFAULT_CLAHE_CLIP_LIMIT = 2.0
+DEFAULT_CLAHE_TILE_GRID_SIZE = 8
+
 class ImageProcessing:
     def __init__(self) -> None:
 
         self.filePath = None
         self.fileName = None
         self.exportImageFilePath = None
+        self.exportHistogramFilePath = None
         self.currentTab = None
+        self.currentHistogramTab = None
         self.resetContours = None
         self.originalResolution = None
         self.currentResolution = None
+        self.histogramPlotState = {
+            "Processing": {"series": [], "themes": []},
+            "Filtering": {"series": [], "themes": []},
+            "Thresholding": {"series": [], "themes": []},
+        }
 
         self.blocks = [
             {
@@ -36,6 +46,13 @@ class ImageProcessing:
             {
                 'method': self.histogramEqualization,
                 'name': self.histogramEqualization.__name__,
+                'status': False,
+                'output': None,
+                'tab': 'Filtering'
+            },
+            {
+                'method': self.claheEqualization,
+                'name': self.claheEqualization.__name__,
                 'status': False,
                 'output': None,
                 'tab': 'Filtering'
@@ -164,10 +181,257 @@ class ImageProcessing:
         dpg.set_value('exportImageFileName', strings.fmt("file_name", value=export_file_name))
         dpg.set_value('exportImageFilePath', strings.fmt("full_path", value=export_full_path))
 
+    def renderHistogramExportState(self):
+        export_file_name = ""
+        export_full_path = ""
+
+        if self.exportHistogramFilePath is not None:
+            export_file_name = os.path.basename(self.exportHistogramFilePath)
+            export_full_path = self.exportHistogramFilePath
+
+        dpg.set_value('exportHistogramFileName', strings.fmt("file_name", value=export_file_name))
+        dpg.set_value('exportHistogramFilePath', strings.fmt("full_path", value=export_full_path))
+
     def refreshTranslations(self):
         self.renderFileInfo()
         self.renderResolutionInfo()
         self.renderExportState()
+        if dpg.does_item_exist('exportHistogramFileName'):
+            self.renderHistogramExportState()
+
+    def _stageMethodByTab(self, tab):
+        return {
+            'Processing': Blocks.histogramEqualization.name,
+            'Filtering': Blocks.grayscale.name,
+            'Thresholding': Blocks.findContour.name,
+        }[tab]
+
+    def _histogramPlotAxes(self, tab):
+        return {
+            'Processing': ("ProcessingHistogram_x_axis", "ProcessingHistogram_y_axis"),
+            'Filtering': ("FilteringHistogram_x_axis", "FilteringHistogram_y_axis"),
+            'Thresholding': ("ThresholdingHistogram_x_axis", "ThresholdingHistogram_y_axis"),
+        }[tab]
+
+    def _histogramPanelTag(self, tab):
+        return {
+            'Processing': "ProcessingHistogramPanel",
+            'Filtering': "FilteringHistogramPanel",
+            'Thresholding': "ThresholdingHistogramPanel",
+        }[tab]
+
+    def _histogramImagePanelTag(self, tab):
+        return {
+            'Processing': "ProcessingImagePanel",
+            'Filtering': "FilteringImagePanel",
+            'Thresholding': "ThresholdingImagePanel",
+        }[tab]
+
+    def _histogramStageTitle(self, tab):
+        return {
+            'Processing': strings.t("app.tabs.processing"),
+            'Filtering': strings.t("app.tabs.filtering"),
+            'Thresholding': strings.t("app.tabs.thresholding"),
+        }[tab]
+
+    def _histogramLegendColor(self, label):
+        colors = {
+            strings.t("histogram.channel_red"): (230, 76, 60, 255),
+            strings.t("histogram.channel_green"): (46, 204, 113, 255),
+            strings.t("histogram.channel_blue"): (52, 152, 219, 255),
+            strings.t("histogram.channel_intensity"): (108, 117, 125, 255),
+        }
+        return colors[label]
+
+    def _isGrayscaleImage(self, image):
+        if image is None:
+            return True
+        if len(image.shape) == 2:
+            return True
+        if image.shape[2] == 1:
+            return True
+        return (
+            np.array_equal(image[:, :, 0], image[:, :, 1])
+            and np.array_equal(image[:, :, 1], image[:, :, 2])
+        )
+
+    def getCurrentOutputForTab(self, tab):
+        method_name = self._stageMethodByTab(tab)
+        return self.blocks[self.getLastActiveBeforeMethod(method_name)]['output']
+
+    def buildHistogramSeries(self, image):
+        bins = list(range(256))
+        if image is None:
+            return []
+
+        if self._isGrayscaleImage(image):
+            grayscale = image if len(image.shape) == 2 else image[:, :, 0]
+            histogram = cv2.calcHist([grayscale], [0], None, [256], [0, 256]).ravel()
+            return [
+                {
+                    "label": strings.t("histogram.channel_intensity"),
+                    "x": bins,
+                    "y": histogram.tolist(),
+                    "color": self._histogramLegendColor(strings.t("histogram.channel_intensity")),
+                }
+            ]
+
+        channel_config = [
+            (2, strings.t("histogram.channel_red")),
+            (1, strings.t("histogram.channel_green")),
+            (0, strings.t("histogram.channel_blue")),
+        ]
+        histogram_series = []
+        for channel_index, label in channel_config:
+            histogram = cv2.calcHist([image], [channel_index], None, [256], [0, 256]).ravel()
+            histogram_series.append(
+                {
+                    "label": label,
+                    "x": bins,
+                    "y": histogram.tolist(),
+                    "color": self._histogramLegendColor(label),
+                }
+            )
+        return histogram_series
+
+    def _clearHistogramPlot(self, tab):
+        state = self.histogramPlotState[tab]
+        for tag in state["series"]:
+            if dpg.does_item_exist(tag):
+                dpg.delete_item(tag)
+        for tag in state["themes"]:
+            if dpg.does_item_exist(tag):
+                dpg.delete_item(tag)
+        state["series"].clear()
+        state["themes"].clear()
+
+    def _createHistogramTheme(self, tag, color):
+        with dpg.theme(tag=tag):
+            with dpg.theme_component(dpg.mvLineSeries):
+                dpg.add_theme_color(dpg.mvPlotCol_Line, color, category=dpg.mvThemeCat_Plots)
+
+    def updateHistogramForTab(self, tab):
+        x_axis_tag, y_axis_tag = self._histogramPlotAxes(tab)
+        if not dpg.does_item_exist(y_axis_tag):
+            return
+
+        self._clearHistogramPlot(tab)
+        image = self.getCurrentOutputForTab(tab)
+        histogram_series = self.buildHistogramSeries(image)
+        if not histogram_series:
+            dpg.set_axis_limits(x_axis_tag, 0, 255)
+            dpg.set_axis_limits(y_axis_tag, 0, 1)
+            return
+
+        max_value = 1.0
+        for index, series in enumerate(histogram_series):
+            series_tag = f"{tab}HistogramSeries{index}"
+            theme_tag = f"{tab}HistogramTheme{index}"
+            self._createHistogramTheme(theme_tag, series["color"])
+            dpg.add_line_series(series["x"], series["y"], label=series["label"], parent=y_axis_tag, tag=series_tag)
+            dpg.bind_item_theme(series_tag, theme_tag)
+            self.histogramPlotState[tab]["series"].append(series_tag)
+            self.histogramPlotState[tab]["themes"].append(theme_tag)
+            max_value = max(max_value, max(series["y"]))
+
+        dpg.set_axis_limits(x_axis_tag, 0, 255)
+        dpg.set_axis_limits(y_axis_tag, 0, max_value * 1.05)
+
+    def updateAllHistograms(self):
+        for tab in self.histogramPlotState.keys():
+            self.updateHistogramForTab(tab)
+
+    def toggleHistogramPanel(self, tab, enabled):
+        panel_tag = self._histogramPanelTag(tab)
+        image_panel_tag = self._histogramImagePanelTag(tab)
+        if dpg.does_item_exist(panel_tag):
+            dpg.configure_item(panel_tag, show=bool(enabled))
+        if dpg.does_item_exist(image_panel_tag):
+            dpg.configure_item(image_panel_tag, height=-260 if enabled else -1)
+        if enabled:
+            self.updateHistogramForTab(tab)
+
+    def _storeBlockOutput(self, block_index, image):
+        self.blocks[block_index]['output'] = image
+        Texture.updateTexture(self.blocks[block_index]['tab'], image)
+        tab = self.blocks[block_index]['tab']
+        if tab in self.histogramPlotState:
+            self.updateHistogramForTab(tab)
+
+    def _rgbToBgr(self, color):
+        return int(color[2]), int(color[1]), int(color[0])
+
+    def _applyLuminanceTransform(self, image, transform):
+        img_yuv = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
+        img_yuv[:, :, 0] = transform(img_yuv[:, :, 0])
+        return cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+
+    def _claheParameters(self):
+        clip_limit = DEFAULT_CLAHE_CLIP_LIMIT
+        tile_grid_size = DEFAULT_CLAHE_TILE_GRID_SIZE
+
+        if dpg.does_item_exist('claheClipLimitSlider'):
+            clip_limit = float(dpg.get_value('claheClipLimitSlider'))
+        if dpg.does_item_exist('claheTileGridSizeSlider'):
+            tile_grid_size = int(dpg.get_value('claheTileGridSizeSlider'))
+
+        return clip_limit, max(1, tile_grid_size)
+
+    def saveHistogramPlotToFile(self, histogram_series, stage_title, path):
+        if not histogram_series:
+            raise ValueError("No histogram data available for export.")
+
+        canvas_width = 1280
+        canvas_height = 780
+        margin_left = 90
+        margin_top = 70
+        margin_bottom = 95
+        margin_right = 180
+        plot_left = margin_left
+        plot_top = margin_top
+        plot_right = canvas_width - margin_right
+        plot_bottom = canvas_height - margin_bottom
+        plot_width = plot_right - plot_left
+        plot_height = plot_bottom - plot_top
+        max_count = max(max(series["y"]) for series in histogram_series) or 1.0
+
+        canvas = np.full((canvas_height, canvas_width, 3), 255, dtype=np.uint8)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        title = f"{stage_title} - {strings.t('histogram.title')}"
+        cv2.putText(canvas, title, (margin_left, 34), font, 0.9, (36, 45, 58), 2, cv2.LINE_AA)
+
+        cv2.rectangle(canvas, (plot_left, plot_top), (plot_right, plot_bottom), (122, 130, 138), 1)
+        cv2.putText(canvas, strings.t("histogram.intensity_axis"), (plot_left + plot_width // 2 - 35, canvas_height - 28), font, 0.55, (36, 45, 58), 1, cv2.LINE_AA)
+        cv2.putText(canvas, strings.t("histogram.count_axis"), (22, plot_top - 14), font, 0.55, (36, 45, 58), 1, cv2.LINE_AA)
+        cv2.putText(canvas, "0", (plot_left - 8, plot_bottom + 24), font, 0.45, (90, 99, 109), 1, cv2.LINE_AA)
+        cv2.putText(canvas, "255", (plot_right - 20, plot_bottom + 24), font, 0.45, (90, 99, 109), 1, cv2.LINE_AA)
+        cv2.putText(canvas, str(int(max_count)), (plot_left - 48, plot_top + 4), font, 0.45, (90, 99, 109), 1, cv2.LINE_AA)
+        cv2.putText(canvas, "0", (plot_left - 18, plot_bottom + 4), font, 0.45, (90, 99, 109), 1, cv2.LINE_AA)
+
+        x_points = np.linspace(plot_left, plot_right, 256)
+        for series in histogram_series:
+            points = []
+            for x_point, value in zip(x_points, series["y"]):
+                y_point = plot_bottom - (value / max_count) * plot_height
+                points.append([int(round(x_point)), int(round(y_point))])
+            point_array = np.array(points, dtype=np.int32).reshape((-1, 1, 2))
+            cv2.polylines(canvas, [point_array], False, self._rgbToBgr(series["color"]), 2, cv2.LINE_AA)
+
+        legend_x = plot_right + 34
+        legend_y = plot_top + 24
+        for index, series in enumerate(histogram_series):
+            y = legend_y + (index * 34)
+            cv2.line(canvas, (legend_x, y), (legend_x + 28, y), self._rgbToBgr(series["color"]), 3, cv2.LINE_AA)
+            cv2.putText(canvas, series["label"], (legend_x + 40, y + 4), font, 0.52, (36, 45, 58), 1, cv2.LINE_AA)
+
+        cv2.imwrite(path, canvas)
+
+    def exportHistogramToFile(self, tab, path):
+        image = self.getCurrentOutputForTab(tab)
+        if image is None:
+            raise ValueError("No image available for histogram export.")
+        histogram_series = self.buildHistogramSeries(image)
+        self.saveHistogramPlotToFile(histogram_series, self._histogramStageTitle(tab), path)
 
 
     def executeQuery(self, methodName):
@@ -217,6 +481,9 @@ class ImageProcessing:
     def retrieveFromLastActive(self, methodName, sender = None, app_data = None):
         self.blocks[self.getIdByMethod(methodName)]['output'] = self.blocks[self.getLastActiveBeforeMethod(methodName)]['output']
         Texture.updateTexture(self.blocks[self.getIdByMethod(methodName)]['tab'], self.blocks[self.getIdByMethod(methodName)]['output'])
+        tab = self.blocks[self.getIdByMethod(methodName)]['tab']
+        if tab in self.histogramPlotState:
+            self.updateHistogramForTab(tab)
 
     def getLastActiveBeforeMethod(self, methodName):
         lastActiveIndex = 0
@@ -259,6 +526,8 @@ class ImageProcessing:
 
         dpg.set_value("brightnessSlider",0)
         dpg.set_value("contrastSlider",1)
+        dpg.set_value("claheClipLimitSlider", DEFAULT_CLAHE_CLIP_LIMIT)
+        dpg.set_value("claheTileGridSizeSlider", DEFAULT_CLAHE_TILE_GRID_SIZE)
         dpg.set_value("averageBlurSlider",1)
         dpg.set_value("gaussianBlurSlider",1)
         dpg.set_value("medianBlurSlider",1)
@@ -292,6 +561,7 @@ class ImageProcessing:
         self.blocks[Blocks.importImage.value]['output'] = self.openImage(self.filePath)
 
         Texture.createAllTextures(self.blocks[Blocks.importImage.value]['output'])
+        self.updateAllHistograms()
 
         # Popula os dados na lateral
         self.renderFileInfo()
@@ -307,6 +577,9 @@ class ImageProcessing:
         dpg.configure_item("exportImageAsFileProcessingGroup", show=True)
         dpg.configure_item("exportImageAsFileFilteringGroup", show=True)
         dpg.configure_item("exportImageAsFileThresholdingGroup", show=True)
+        dpg.configure_item("exportHistogramAsFileProcessingGroup", show=True)
+        dpg.configure_item("exportHistogramAsFileFilteringGroup", show=True)
+        dpg.configure_item("exportHistogramAsFileThresholdingGroup", show=True)
         pass
 
 
@@ -327,6 +600,7 @@ class ImageProcessing:
         dpg.set_value('endY', shape[1])
 
         Texture.createAllTextures(self.blocks[Blocks.importImage.value]['output'])
+        self.updateAllHistograms()
 
         pass
 
@@ -360,14 +634,26 @@ class ImageProcessing:
         dpg.set_value('endY', shape[1])
 
         Texture.createAllTextures(self.blocks[Blocks.crop.value]['output'])
+        self.updateAllHistograms()
 
     def histogramEqualization(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('histogramEqualization')]['output']
+        if image is None:
+            return
 
-        img_yuv = cv2.cvtColor(self.blocks[self.getLastActiveBeforeMethod('histogramEqualization')]['output'], cv2.COLOR_BGR2YUV)
-        img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
-        dst = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-        self.blocks[Blocks.histogramEqualization.value]['output'] = dst
-        Texture.updateTexture(self.blocks[Blocks.histogramEqualization.value]['tab'], dst)
+        dst = self._applyLuminanceTransform(image, cv2.equalizeHist)
+        self._storeBlockOutput(Blocks.histogramEqualization.value, dst)
+        pass
+
+    def claheEqualization(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('claheEqualization')]['output']
+        if image is None:
+            return
+
+        clip_limit, tile_grid_size = self._claheParameters()
+        clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(tile_grid_size, tile_grid_size))
+        dst = self._applyLuminanceTransform(image, clahe.apply)
+        self._storeBlockOutput(Blocks.claheEqualization.value, dst)
         pass
 
     def brightnessAndContrast(self, sender=None, app_data=None):
@@ -377,8 +663,7 @@ class ImageProcessing:
         beta = dpg.get_value('brightnessSlider')
         outputImage = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
 
-        self.blocks[Blocks.brightnessAndContrast.value]['output'] = outputImage
-        Texture.updateTexture(self.blocks[Blocks.brightnessAndContrast.value]['tab'], outputImage)
+        self._storeBlockOutput(Blocks.brightnessAndContrast.value, outputImage)
         pass
 
     def averageBlur(self, sender=None, app_data=None):
@@ -388,8 +673,7 @@ class ImageProcessing:
         kernel = np.ones((kernelSize,kernelSize),np.float32)/(kernelSize*kernelSize)
         dst = cv2.filter2D(image,-1,kernel)
 
-        self.blocks[Blocks.averageBlur.value]['output'] = dst
-        Texture.updateTexture(self.blocks[Blocks.averageBlur.value]['tab'], dst)
+        self._storeBlockOutput(Blocks.averageBlur.value, dst)
         pass
 
     def gaussianBlur(self, sender=None, app_data=None):
@@ -398,8 +682,7 @@ class ImageProcessing:
         kernelSize = (2 * dpg.get_value('gaussianBlurSlider')) - 1
         dst = cv2.GaussianBlur(image, (kernelSize,kernelSize), 0)
 
-        self.blocks[Blocks.gaussianBlur.value]['output'] = dst
-        Texture.updateTexture(self.blocks[Blocks.gaussianBlur.value]['tab'], dst)
+        self._storeBlockOutput(Blocks.gaussianBlur.value, dst)
         pass
 
     def medianBlur(self, sender=None, app_data=None):
@@ -408,8 +691,7 @@ class ImageProcessing:
 
         median = cv2.medianBlur(image, kernel)
 
-        self.blocks[Blocks.medianBlur.value]['output'] = median
-        Texture.updateTexture(self.blocks[Blocks.medianBlur.value]['tab'], median)
+        self._storeBlockOutput(Blocks.medianBlur.value, median)
         pass
 
     def grayscale(self, sender=None, app_data=None):
@@ -437,8 +719,7 @@ class ImageProcessing:
         image[:, :, 1] = grayMask
         image[:, :, 2] = grayMask
 
-        self.blocks[Blocks.grayscale.value]['output'] = image
-        Texture.updateTexture(self.blocks[Blocks.grayscale.value]['tab'], image)
+        self._storeBlockOutput(Blocks.grayscale.value, image)
         pass
 
     def laplacian(self, sender=None, app_data=None):
@@ -447,8 +728,7 @@ class ImageProcessing:
         kernelSize = (2 * dpg.get_value('laplacianSlider')) - 1
         laplacian = cv2.Laplacian(image, cv2.CV_8U, ksize=kernelSize)
                 
-        self.blocks[Blocks.laplacian.value]['output'] = laplacian
-        Texture.updateTexture(self.blocks[Blocks.laplacian.value]['tab'], laplacian)
+        self._storeBlockOutput(Blocks.laplacian.value, laplacian)
         pass
 
     def sobel(self, sender=None, app_data=None):
@@ -464,8 +744,7 @@ class ImageProcessing:
         elif value == 'xy_axis':
             sobel = cv2.bitwise_or(cv2.Sobel(image, cv2.CV_8U, 1, 0, ksize=3), cv2.Sobel(image, cv2.CV_8U, 0, 1, ksize=3))
 
-        self.blocks[Blocks.sobel.value]['output'] = sobel
-        Texture.updateTexture(self.blocks[Blocks.sobel.value]['tab'], sobel)
+        self._storeBlockOutput(Blocks.sobel.value, sobel)
         pass
 
     def globalThresholding(self, sender=None, app_data=None):
@@ -479,8 +758,7 @@ class ImageProcessing:
 
         (T, threshInv) = cv2.threshold(image, threshold, 255, thresholdMode)
 
-        self.blocks[Blocks.globalThresholding.value]['output'] = threshInv
-        Texture.updateTexture(self.blocks[Blocks.globalThresholding.value]['tab'], threshInv)
+        self._storeBlockOutput(Blocks.globalThresholding.value, threshInv)
         pass
 
     def adaptiveMeanThresholding(self, sender=None, app_data=None):
@@ -490,8 +768,7 @@ class ImageProcessing:
         threshInv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,11,2)
         image = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
 
-        self.blocks[Blocks.adaptiveMeanThresholding.value]['output'] = image
-        Texture.updateTexture(self.blocks[Blocks.adaptiveMeanThresholding.value]['tab'], image)
+        self._storeBlockOutput(Blocks.adaptiveMeanThresholding.value, image)
 
         pass
 
@@ -503,8 +780,7 @@ class ImageProcessing:
         threshInv = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
         image = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
 
-        self.blocks[Blocks.adaptiveGaussianThresholding.value]['output'] = image
-        Texture.updateTexture(self.blocks[Blocks.adaptiveGaussianThresholding.value]['tab'], image)
+        self._storeBlockOutput(Blocks.adaptiveGaussianThresholding.value, image)
 
         pass
 
@@ -516,8 +792,7 @@ class ImageProcessing:
         threshInv = cv2.cvtColor(threshInv, cv2.COLOR_GRAY2BGR)
 
 
-        self.blocks[Blocks.otsuBinarization.value]['output'] = threshInv
-        Texture.updateTexture(self.blocks[Blocks.otsuBinarization.value]['tab'], threshInv)
+        self._storeBlockOutput(Blocks.otsuBinarization.value, threshInv)
         pass
 
     def findContour(self, sender=None, app_data=None):
@@ -538,6 +813,14 @@ class ImageProcessing:
         dpg.configure_item('exportImageAsFile', show=True)
         pass
 
+    def exportHistogram(self, sender = None, app_data = None, tab = None):
+        self.exportHistogramFilePath = None
+        self.renderHistogramExportState()
+        dpg.set_value('histogramNameExportAsFile', '')
+        self.currentHistogramTab = tab
+        dpg.configure_item('exportHistogramAsFile', show=True)
+        pass
+
     def exportImageDirectorySelector(self, sender = None, app_data = None):
         imageName = dpg.get_value('imageNameExportAsFile')
         if imageName == '':
@@ -551,6 +834,21 @@ class ImageProcessing:
         exportImageFilePath = app_data['file_path_name']
         self.exportImageFilePath = os.path.join(exportImageFilePath, exportImageFileName + '.jpg')
         self.renderExportState()
+        pass
+
+    def exportHistogramDirectorySelector(self, sender = None, app_data = None):
+        histogram_name = dpg.get_value('histogramNameExportAsFile')
+        if histogram_name == '':
+            return
+        dpg.configure_item('exportHistogramAsFile', show=True)
+        dpg.configure_item('exportHistogramDirectorySelector', show=True)
+        pass
+
+    def exportHistogramSelectDirectory(self, sender = None, app_data = None):
+        histogram_file_name = dpg.get_value('histogramNameExportAsFile')
+        histogram_file_path = app_data['file_path_name']
+        self.exportHistogramFilePath = os.path.join(histogram_file_path, histogram_file_name + '.png')
+        self.renderHistogramExportState()
         pass
 
     def exportImageAsFile(self, sender = None, app_data = None):
@@ -570,16 +868,31 @@ class ImageProcessing:
         cv2.imwrite(path, image)
         dpg.configure_item('exportImageAsFile', show=False)
 
+    def exportHistogramAsFile(self, sender = None, app_data = None):
+        if self.exportHistogramFilePath is None:
+            dpg.configure_item("exportHistogramError", show=True)
+            return
+
+        dpg.configure_item("exportHistogramError", show=False)
+        self.exportHistogramToFile(self.currentHistogramTab, self.exportHistogramFilePath)
+        dpg.configure_item('exportHistogramAsFile', show=False)
+
     def enableAllTags(self):
         checkboxes = [
             'histogramCheckbox',
+            'claheCheckbox',
+            'claheClipLimitSlider',
+            'claheTileGridSizeSlider',
             'brightnessAndContrastCheckbox',
             'averageBlurCheckbox',
             'gaussianBlurCheckbox',
             'medianBlurCheckbox',
+            'showProcessingHistogramToggle',
+            'showFilteringHistogramToggle',
             'excludeBlueChannel',
             'excludeGreenChannel',
             'excludeRedChannel',
+            'showThresholdingHistogramToggle',
             'laplacianCheckbox',
             'sobelCheckbox',
             'globalThresholdingCheckbox',
@@ -592,7 +905,10 @@ class ImageProcessing:
             'updateContourButton',
             'exportImageAsFileProcessing',
             'exportImageAsFileFiltering',
-            'exportImageAsFileThresholding'
+            'exportImageAsFileThresholding',
+            'exportHistogramAsFileProcessing',
+            'exportHistogramAsFileFiltering',
+            'exportHistogramAsFileThresholding'
         ]
         for checkbox in checkboxes:
             dpg.configure_item(checkbox, enabled=True)
@@ -601,13 +917,19 @@ class ImageProcessing:
     def disableAllTags(self):
         checkboxes = [
             'histogramCheckbox',
+            'claheCheckbox',
+            'claheClipLimitSlider',
+            'claheTileGridSizeSlider',
             'brightnessAndContrastCheckbox',
             'averageBlurCheckbox',
             'gaussianBlurCheckbox',
             'medianBlurCheckbox',
+            'showProcessingHistogramToggle',
+            'showFilteringHistogramToggle',
             'excludeBlueChannel',
             'excludeGreenChannel',
             'excludeRedChannel',
+            'showThresholdingHistogramToggle',
             'laplacianCheckbox',
             'sobelCheckbox',
             'globalThresholdingCheckbox',
@@ -620,7 +942,10 @@ class ImageProcessing:
             'updateContourButton',
             'exportImageAsFileProcessing',
             'exportImageAsFileFiltering',
-            'exportImageAsFileThresholding'
+            'exportImageAsFileThresholding',
+            'exportHistogramAsFileProcessing',
+            'exportHistogramAsFileFiltering',
+            'exportHistogramAsFileThresholding'
         ]
         for checkbox in checkboxes:
             dpg.configure_item(checkbox, enabled=False)
@@ -629,13 +954,17 @@ class ImageProcessing:
     def uncheckAllTags(self):
         checkboxes = [
             'histogramCheckbox',
+            'claheCheckbox',
             'brightnessAndContrastCheckbox',
             'averageBlurCheckbox',
             'gaussianBlurCheckbox',
             'medianBlurCheckbox',
+            'showProcessingHistogramToggle',
+            'showFilteringHistogramToggle',
             'excludeBlueChannel',
             'excludeGreenChannel',
             'excludeRedChannel',
+            'showThresholdingHistogramToggle',
             'laplacianCheckbox',
             'sobelCheckbox',
             'globalThresholdingCheckbox',
@@ -643,13 +972,15 @@ class ImageProcessing:
             'adaptiveThresholdingCheckbox',
             'adaptiveGaussianThresholdingCheckbox',
             'otsuBinarization',
-            'matlabModeCheckbox',
-            'extractContourButton',
-            'updateContourButton',
-            'exportImageAsFileProcessing',
-            'exportImageAsFileFiltering',
-            'exportImageAsFileThresholding'
+            'matlabModeCheckbox'
         ]
         for checkbox in checkboxes:
             dpg.set_value(checkbox, False)
+        for tab in self.histogramPlotState.keys():
+            panel_tag = self._histogramPanelTag(tab)
+            if dpg.does_item_exist(panel_tag):
+                dpg.configure_item(panel_tag, show=False)
+            image_panel_tag = self._histogramImagePanelTag(tab)
+            if dpg.does_item_exist(image_panel_tag):
+                dpg.configure_item(image_panel_tag, height=-1)
         pass

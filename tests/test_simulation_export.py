@@ -50,7 +50,9 @@ class SimulationExportTests(unittest.TestCase):
             simulation.solve()
 
             self.assertIsNotNone(simulation.result)
-            self.assertTrue(dpg.does_item_exist("simulationColorScale"))
+            self.assertTrue(dpg.does_item_exist("simulationColorScaleImage"))
+            self.assertTrue(dpg.does_item_exist("simulationColorScaleMinValue"))
+            self.assertTrue(dpg.does_item_exist("simulationColorScaleMaxValue"))
 
             with tempfile.TemporaryDirectory() as temp_dir:
                 output_path = Path(temp_dir) / "field.png"

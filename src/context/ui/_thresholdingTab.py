@@ -46,21 +46,39 @@ def showThresholding(callbacks):
                 dpg.add_checkbox(tag='otsuBinarization', callback=lambda sender, app_data: callbacks.imageProcessing.toggleAndExecuteQuery('otsuBinarization', sender, app_data))
                 dpg.add_text(strings.t("thresholding.otsu_binarization"), tag="thresholdingOtsuText")
             dpg.add_text(strings.t("thresholding.gaussian_blur_hint"), tag="thresholdingHintText")
+            dpg.add_checkbox(
+                tag="showThresholdingHistogramToggle",
+                label=strings.t("histogram.show_toggle"),
+                default_value=False,
+                callback=lambda sender, app_data: callbacks.imageProcessing.toggleHistogramPanel("Thresholding", app_data),
+            )
 
             with dpg.group(tag="exportImageAsFileThresholdingGroup", show=False):
                 dpg.add_separator()
                 dpg.add_text(strings.t("common.save_image"), tag="thresholdingSaveImageText")
                 dpg.add_button(tag="exportImageAsFileThresholding", label=strings.t("common.export_image_as_file"), width=-1, callback=lambda sender, app_data: callbacks.imageProcessing.exportImage(sender, app_data, "Thresholding"))
 
+            with dpg.group(tag="exportHistogramAsFileThresholdingGroup", show=False):
+                dpg.add_separator()
+                dpg.add_text(strings.t("common.save_histogram"), tag="thresholdingSaveHistogramText")
+                dpg.add_button(tag="exportHistogramAsFileThresholding", label=strings.t("common.export_histogram_as_file"), width=-1, callback=lambda sender, app_data: callbacks.imageProcessing.exportHistogram(sender, app_data, "Thresholding"))
+
             dpg.add_separator()
             dpg.add_separator()
 
             pass
         with dpg.child_window(tag='ThresholdingParent'):
-            with dpg.plot(tag="ThresholdingPlotParent", label=strings.t("thresholding.plot"), height=-1, width=-1, equal_aspects=True):
-                dpg.add_plot_legend()
-                dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("axes.width"), tag="Thresholding_x_axis")
-                dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("axes.height"), tag="Thresholding_y_axis")
+            with dpg.group():
+                with dpg.child_window(tag="ThresholdingImagePanel", height=-1):
+                    with dpg.plot(tag="ThresholdingPlotParent", label=strings.t("thresholding.plot"), height=-1, width=-1, equal_aspects=True):
+                        dpg.add_plot_legend()
+                        dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("axes.width"), tag="Thresholding_x_axis")
+                        dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("axes.height"), tag="Thresholding_y_axis")
+                with dpg.child_window(tag="ThresholdingHistogramPanel", height=240, show=False):
+                    with dpg.plot(tag="ThresholdingHistogramPlotParent", label=strings.t("histogram.title"), height=-1, width=-1):
+                        dpg.add_plot_legend()
+                        dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("histogram.intensity_axis"), tag="ThresholdingHistogram_x_axis")
+                        dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("histogram.count_axis"), tag="ThresholdingHistogram_y_axis")
 
 
 def refreshThresholdingTranslations(old_locale=None):
@@ -82,8 +100,14 @@ def refreshThresholdingTranslations(old_locale=None):
     dpg.set_value("thresholdingAdaptiveGaussianText", strings.t("thresholding.adaptive_gaussian_thresholding"))
     dpg.set_value("thresholdingOtsuText", strings.t("thresholding.otsu_binarization"))
     dpg.set_value("thresholdingHintText", strings.t("thresholding.gaussian_blur_hint"))
+    dpg.configure_item("showThresholdingHistogramToggle", label=strings.t("histogram.show_toggle"))
     dpg.set_value("thresholdingSaveImageText", strings.t("common.save_image"))
     dpg.configure_item("exportImageAsFileThresholding", label=strings.t("common.export_image_as_file"))
+    dpg.set_value("thresholdingSaveHistogramText", strings.t("common.save_histogram"))
+    dpg.configure_item("exportHistogramAsFileThresholding", label=strings.t("common.export_histogram_as_file"))
     dpg.configure_item("ThresholdingPlotParent", label=strings.t("thresholding.plot"))
     dpg.configure_item("Thresholding_x_axis", label=strings.t("axes.width"))
     dpg.configure_item("Thresholding_y_axis", label=strings.t("axes.height"))
+    dpg.configure_item("ThresholdingHistogramPlotParent", label=strings.t("histogram.title"))
+    dpg.configure_item("ThresholdingHistogram_x_axis", label=strings.t("histogram.intensity_axis"))
+    dpg.configure_item("ThresholdingHistogram_y_axis", label=strings.t("histogram.count_axis"))

@@ -29,7 +29,9 @@
       "save_file": "Salvar arquivo",
       "save_files": "Salvar arquivos",
       "save_image": "Salvar imagem",
+      "save_histogram": "Salvar histograma",
       "export_image_as_file": "Exportar imagem como arquivo",
+      "export_histogram_as_file": "Exportar histograma como arquivo",
       "enter_file_name": "Digite o nome do arquivo",
       "enter_file_prefix": "Digite o prefixo do arquivo",
       "enter_file_name_before_directory": "Digite um nome de arquivo antes de selecionar um diretorio.",
@@ -67,6 +69,9 @@
     },
     "filtering": {
       "histogram_equalization": "Equalizacao de histograma",
+      "clahe_equalization": "CLAHE",
+      "clahe_clip_limit": "Limite de clipagem",
+      "clahe_tile_grid_size": "Tamanho da grade",
       "brightness_and_contrast": "Brilho e contraste",
       "brightness": "Brilho",
       "contrast": "Contraste",
@@ -91,6 +96,16 @@
       "otsu_binarization": "Binarizacao de Otsu",
       "gaussian_blur_hint": "(Funciona melhor apos desfoque gaussiano)",
       "plot": "Limiarizacao"
+    },
+    "histogram": {
+      "title": "Histograma",
+      "show_toggle": "Mostrar histograma",
+      "intensity_axis": "Intensidade",
+      "count_axis": "Contagem",
+      "channel_red": "Canal vermelho",
+      "channel_green": "Canal verde",
+      "channel_blue": "Canal azul",
+      "channel_intensity": "Intensidade"
     },
     "interpolation": {
       "title": "Interpolacao",
@@ -344,7 +359,9 @@
       "save_file": "Save File",
       "save_files": "Save Files",
       "save_image": "Save Image",
+      "save_histogram": "Save Histogram",
       "export_image_as_file": "Export Image as File",
+      "export_histogram_as_file": "Export Histogram as File",
       "enter_file_name": "Enter File Name",
       "enter_file_prefix": "Enter File Prefix",
       "enter_file_name_before_directory": "Enter a file name before selecting a directory.",
@@ -382,6 +399,9 @@
     },
     "filtering": {
       "histogram_equalization": "Histogram Equalization",
+      "clahe_equalization": "CLAHE",
+      "clahe_clip_limit": "Clip limit",
+      "clahe_tile_grid_size": "Tile grid size",
       "brightness_and_contrast": "Brightness and Contrast",
       "brightness": "Brightness",
       "contrast": "Contrast",
@@ -406,6 +426,16 @@
       "otsu_binarization": "Otsu's Binarization",
       "gaussian_blur_hint": "(Works better after Gaussian Blur)",
       "plot": "Thresholding"
+    },
+    "histogram": {
+      "title": "Histogram",
+      "show_toggle": "Show histogram",
+      "intensity_axis": "Intensity",
+      "count_axis": "Count",
+      "channel_red": "Red channel",
+      "channel_green": "Green channel",
+      "channel_blue": "Blue channel",
+      "channel_intensity": "Intensity"
     },
     "interpolation": {
       "title": "Interpolation",
