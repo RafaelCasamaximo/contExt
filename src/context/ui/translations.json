@@ -6,6 +6,7 @@
       "tabs": {
         "processing": "Processamento",
         "filtering": "Filtragem",
+        "frequency": "Dominio da Frequencia",
         "thresholding": "Limiarizacao",
         "contour_extraction": "Extracao de Contorno",
         "interpolation": "Interpolacao",
@@ -96,6 +97,29 @@
       "otsu_binarization": "Binarizacao de Otsu",
       "gaussian_blur_hint": "(Funciona melhor apos desfoque gaussiano)",
       "plot": "Limiarizacao"
+    },
+    "frequency": {
+      "gabor_filter": "Filtro de Gabor",
+      "gabor_kernel_size": "Tamanho do kernel",
+      "gabor_sigma": "Sigma",
+      "gabor_theta": "Orientacao",
+      "gabor_lambda": "Lambda",
+      "gabor_gamma": "Gamma",
+      "gabor_psi": "Psi",
+      "frequency_filter": "Filtro em frequencia",
+      "filter_mode": "Modo do filtro",
+      "cutoff_radius": "Raio de corte",
+      "band_min_radius": "Raio interno da banda",
+      "band_max_radius": "Raio externo da banda",
+      "manual_mask": "Mascara manual no espectro",
+      "mask_radius": "Raio da mascara",
+      "mask_mode_draw": "Modo: desenhar mascara",
+      "mask_mode_erase": "Modo: apagar mascara",
+      "reset_mask": "Redefinir mascara",
+      "mask_hint": "Clique no espectro para adicionar ou remover mascaras circulares simetricas.",
+      "processed_plot": "Imagem tratada",
+      "spectrum_plot": "Dominio da frequencia",
+      "export_spectrum_as_file": "Exportar espectro como arquivo"
     },
     "histogram": {
       "title": "Histograma",
@@ -274,6 +298,13 @@
         "y_axis": "Eixo Y",
         "xy_axis": "Eixos XY"
       },
+      "frequency_filter_mode": {
+        "none": "Nenhum",
+        "low_pass": "Passa-baixa",
+        "high_pass": "Passa-alta",
+        "band_pass": "Passa-faixa",
+        "band_stop": "Rejeita-faixa"
+      },
       "interpolation_mode": {
         "nearest": "Vizinho mais proximo",
         "bilinear": "Bilinear",
@@ -336,6 +367,7 @@
       "tabs": {
         "processing": "Processing",
         "filtering": "Filtering",
+        "frequency": "Frequency Domain",
         "thresholding": "Thresholding",
         "contour_extraction": "Contour Extraction",
         "interpolation": "Interpolation",
@@ -426,6 +458,29 @@
       "otsu_binarization": "Otsu's Binarization",
       "gaussian_blur_hint": "(Works better after Gaussian Blur)",
       "plot": "Thresholding"
+    },
+    "frequency": {
+      "gabor_filter": "Gabor Filter",
+      "gabor_kernel_size": "Kernel size",
+      "gabor_sigma": "Sigma",
+      "gabor_theta": "Orientation",
+      "gabor_lambda": "Lambda",
+      "gabor_gamma": "Gamma",
+      "gabor_psi": "Psi",
+      "frequency_filter": "Frequency-domain filter",
+      "filter_mode": "Filter mode",
+      "cutoff_radius": "Cutoff radius",
+      "band_min_radius": "Band inner radius",
+      "band_max_radius": "Band outer radius",
+      "manual_mask": "Manual spectrum mask",
+      "mask_radius": "Mask radius",
+      "mask_mode_draw": "Mode: draw mask",
+      "mask_mode_erase": "Mode: erase mask",
+      "reset_mask": "Reset mask",
+      "mask_hint": "Click the spectrum to add or remove symmetric circular masks.",
+      "processed_plot": "Processed image",
+      "spectrum_plot": "Frequency domain",
+      "export_spectrum_as_file": "Export spectrum as file"
     },
     "histogram": {
       "title": "Histogram",
@@ -603,6 +658,13 @@
         "x_axis": "X-Axis",
         "y_axis": "Y-Axis",
         "xy_axis": "XY-Axis"
+      },
+      "frequency_filter_mode": {
+        "none": "None",
+        "low_pass": "Low-pass",
+        "high_pass": "High-pass",
+        "band_pass": "Band-pass",
+        "band_stop": "Band-stop"
       },
       "interpolation_mode": {
         "nearest": "Nearest",

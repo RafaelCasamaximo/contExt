@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from context.core._blocks import Blocks
 from context.core._imageProcessing import ImageProcessing
 from context.ui._filteringTab import showFiltering
+from context.ui._frequencyTab import showFrequency
 from context.ui._processingTab import showProcessing
 from context.ui._thresholdingTab import showThresholding
 
@@ -114,6 +115,7 @@ class HistogramProcessingTests(unittest.TestCase):
                 dpg.add_texture_registry(show=False, tag="textureRegistry")
                 showProcessing(callbacks)
                 showFiltering(callbacks)
+                showFrequency(callbacks)
                 showThresholding(callbacks)
 
             for tag in (
@@ -126,6 +128,11 @@ class HistogramProcessingTests(unittest.TestCase):
                 "claheCheckbox",
                 "claheClipLimitSlider",
                 "claheTileGridSizeSlider",
+                "FrequencyPlotParent",
+                "FrequencySpectrumPlotParent",
+                "FrequencyHistogramPlotParent",
+                "gaborCheckbox",
+                "frequencyDomainCheckbox",
                 "showThresholdingHistogramToggle",
                 "ThresholdingHistogramPanel",
                 "ThresholdingHistogram_x_axis",

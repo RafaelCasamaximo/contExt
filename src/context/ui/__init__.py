@@ -3,6 +3,7 @@ import dearpygui.dearpygui as dpg
 from . import strings
 from ._extractionTab import showContourExtraction
 from ._filteringTab import showFiltering
+from ._frequencyTab import showFrequency
 from ._interpolationTab import showInterpolation
 from ._meshTab import showMeshGeneration
 from ._processingTab import showProcessing
@@ -116,6 +117,8 @@ class Interface:
             showProcessing(self.callbacks)
         with dpg.tab(tag="filteringTab", label=strings.t("app.tabs.filtering")):
             showFiltering(self.callbacks)
+        with dpg.tab(tag="frequencyTab", label=strings.t("app.tabs.frequency")):
+            showFrequency(self.callbacks)
         with dpg.tab(tag="thresholdingTab", label=strings.t("app.tabs.thresholding")):
             showThresholding(self.callbacks)
         with dpg.tab(tag="contourExtractionTab", label=strings.t("app.tabs.contour_extraction")):

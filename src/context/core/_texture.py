@@ -4,11 +4,13 @@ import numpy as np
 import enum
 
 class Tabs(enum.Enum):
-    __order__ = 'Processing Filtering Thresholding ContourExtraction'
+    __order__ = 'Processing Filtering Frequency FrequencySpectrum Thresholding ContourExtraction'
     Processing = 0
     Filtering = 1
-    Thresholding = 2
-    ContourExtraction = 3
+    Frequency = 2
+    FrequencySpectrum = 3
+    Thresholding = 4
+    ContourExtraction = 5
 
 class Texture:
 

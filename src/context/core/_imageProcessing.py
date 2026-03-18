@@ -9,6 +9,16 @@ from ..ui import strings
 
 DEFAULT_CLAHE_CLIP_LIMIT = 2.0
 DEFAULT_CLAHE_TILE_GRID_SIZE = 8
+DEFAULT_GABOR_KERNEL_SIZE = 11
+DEFAULT_GABOR_SIGMA = 4.0
+DEFAULT_GABOR_THETA = 0.0
+DEFAULT_GABOR_LAMBDA = 10.0
+DEFAULT_GABOR_GAMMA = 0.5
+DEFAULT_GABOR_PSI = 0.0
+DEFAULT_FREQUENCY_CUTOFF = 24
+DEFAULT_FREQUENCY_BAND_MIN = 12
+DEFAULT_FREQUENCY_BAND_MAX = 48
+DEFAULT_FREQUENCY_MASK_RADIUS = 8
 
 class ImageProcessing:
     def __init__(self) -> None:
@@ -25,8 +35,13 @@ class ImageProcessing:
         self.histogramPlotState = {
             "Processing": {"series": [], "themes": []},
             "Filtering": {"series": [], "themes": []},
+            "Frequency": {"series": [], "themes": []},
             "Thresholding": {"series": [], "themes": []},
         }
+        self.frequencyMask = None
+        self.frequencyMaskShape = None
+        self.frequencyMaskMode = "draw"
+        self.frequencySpectrumPreview = None
 
         self.blocks = [
             {
@@ -84,6 +99,20 @@ class ImageProcessing:
                 'status': False,
                 'output': None,
                 'tab': 'Filtering'
+            },
+            {
+                'method': self.gaborFilter,
+                'name': self.gaborFilter.__name__,
+                'status': False,
+                'output': None,
+                'tab': 'Frequency'
+            },
+            {
+                'method': self.frequencyDomainFilter,
+                'name': self.frequencyDomainFilter.__name__,
+                'status': False,
+                'output': None,
+                'tab': 'Frequency'
             },
             {
                 'method': self.grayscale,
@@ -202,7 +231,8 @@ class ImageProcessing:
     def _stageMethodByTab(self, tab):
         return {
             'Processing': Blocks.histogramEqualization.name,
-            'Filtering': Blocks.grayscale.name,
+            'Filtering': Blocks.gaborFilter.name,
+            'Frequency': Blocks.grayscale.name,
             'Thresholding': Blocks.findContour.name,
         }[tab]
 
@@ -210,6 +240,7 @@ class ImageProcessing:
         return {
             'Processing': ("ProcessingHistogram_x_axis", "ProcessingHistogram_y_axis"),
             'Filtering': ("FilteringHistogram_x_axis", "FilteringHistogram_y_axis"),
+            'Frequency': ("FrequencyHistogram_x_axis", "FrequencyHistogram_y_axis"),
             'Thresholding': ("ThresholdingHistogram_x_axis", "ThresholdingHistogram_y_axis"),
         }[tab]
 
@@ -217,6 +248,7 @@ class ImageProcessing:
         return {
             'Processing': "ProcessingHistogramPanel",
             'Filtering': "FilteringHistogramPanel",
+            'Frequency': "FrequencyHistogramPanel",
             'Thresholding': "ThresholdingHistogramPanel",
         }[tab]
 
@@ -224,6 +256,7 @@ class ImageProcessing:
         return {
             'Processing': "ProcessingImagePanel",
             'Filtering': "FilteringImagePanel",
+            'Frequency': "FrequencyParent",
             'Thresholding': "ThresholdingImagePanel",
         }[tab]
 
@@ -231,6 +264,7 @@ class ImageProcessing:
         return {
             'Processing': strings.t("app.tabs.processing"),
             'Filtering': strings.t("app.tabs.filtering"),
+            'Frequency': strings.t("app.tabs.frequency"),
             'Thresholding': strings.t("app.tabs.thresholding"),
         }[tab]
 
@@ -353,13 +387,25 @@ class ImageProcessing:
 
     def _storeBlockOutput(self, block_index, image):
         self.blocks[block_index]['output'] = image
-        Texture.updateTexture(self.blocks[block_index]['tab'], image)
+        if dpg.does_item_exist(self.blocks[block_index]['tab']):
+            Texture.updateTexture(self.blocks[block_index]['tab'], image)
         tab = self.blocks[block_index]['tab']
         if tab in self.histogramPlotState:
             self.updateHistogramForTab(tab)
+        if block_index <= Blocks.frequencyDomainFilter.value:
+            self.updateFrequencyPreview()
 
     def _rgbToBgr(self, color):
         return int(color[2]), int(color[1]), int(color[0])
+
+    def _grayscaleImage(self, image):
+        if image is None:
+            return None
+        if len(image.shape) == 2:
+            return image.copy()
+        if image.shape[2] == 1:
+            return image[:, :, 0].copy()
+        return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     def _applyLuminanceTransform(self, image, transform):
         img_yuv = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
@@ -376,6 +422,185 @@ class ImageProcessing:
             tile_grid_size = int(dpg.get_value('claheTileGridSizeSlider'))
 
         return clip_limit, max(1, tile_grid_size)
+
+    def _gaborParameters(self):
+        kernel_size = DEFAULT_GABOR_KERNEL_SIZE
+        sigma = DEFAULT_GABOR_SIGMA
+        theta = DEFAULT_GABOR_THETA
+        lambd = DEFAULT_GABOR_LAMBDA
+        gamma = DEFAULT_GABOR_GAMMA
+        psi = DEFAULT_GABOR_PSI
+
+        if dpg.does_item_exist('gaborKernelSlider'):
+            kernel_size = int(dpg.get_value('gaborKernelSlider'))
+        if dpg.does_item_exist('gaborSigmaSlider'):
+            sigma = float(dpg.get_value('gaborSigmaSlider'))
+        if dpg.does_item_exist('gaborThetaSlider'):
+            theta = float(dpg.get_value('gaborThetaSlider'))
+        if dpg.does_item_exist('gaborLambdaSlider'):
+            lambd = float(dpg.get_value('gaborLambdaSlider'))
+        if dpg.does_item_exist('gaborGammaSlider'):
+            gamma = float(dpg.get_value('gaborGammaSlider'))
+        if dpg.does_item_exist('gaborPsiSlider'):
+            psi = float(dpg.get_value('gaborPsiSlider'))
+
+        if kernel_size % 2 == 0:
+            kernel_size += 1
+        return kernel_size, sigma, np.deg2rad(theta), lambd, gamma, np.deg2rad(psi)
+
+    def _frequencyFilterMode(self):
+        if dpg.does_item_exist('frequencyFilterModeListbox'):
+            return strings.option_key("frequency_filter_mode", dpg.get_value('frequencyFilterModeListbox'))
+        return "none"
+
+    def _frequencyFilterParameters(self):
+        cutoff = DEFAULT_FREQUENCY_CUTOFF
+        band_min = DEFAULT_FREQUENCY_BAND_MIN
+        band_max = DEFAULT_FREQUENCY_BAND_MAX
+
+        if dpg.does_item_exist('frequencyCutoffSlider'):
+            cutoff = int(dpg.get_value('frequencyCutoffSlider'))
+        if dpg.does_item_exist('frequencyBandMinSlider'):
+            band_min = int(dpg.get_value('frequencyBandMinSlider'))
+        if dpg.does_item_exist('frequencyBandMaxSlider'):
+            band_max = int(dpg.get_value('frequencyBandMaxSlider'))
+        if band_min > band_max:
+            band_min, band_max = band_max, band_min
+
+        return max(1, cutoff), max(1, band_min), max(1, band_max)
+
+    def _frequencyMaskRadius(self):
+        if dpg.does_item_exist('frequencyMaskRadiusSlider'):
+            return max(1, int(dpg.get_value('frequencyMaskRadiusSlider')))
+        return DEFAULT_FREQUENCY_MASK_RADIUS
+
+    def _frequencySourceImage(self):
+        return self.blocks[self.getLastActiveBeforeMethod('frequencyDomainFilter')]['output']
+
+    def _frequencySpatialOutput(self):
+        return self.blocks[self.getLastActiveBeforeMethod('grayscale')]['output']
+
+    def _resetFrequencyState(self):
+        self.frequencyMask = None
+        self.frequencyMaskShape = None
+        self.frequencySpectrumPreview = None
+        self.frequencyMaskMode = "draw"
+        if dpg.does_item_exist("frequencyMaskModeButton"):
+            dpg.configure_item("frequencyMaskModeButton", label=strings.t("frequency.mask_mode_draw"))
+
+    def _ensureFrequencyMask(self, shape):
+        if self.frequencyMask is None or self.frequencyMaskShape != shape:
+            self.frequencyMask = np.zeros(shape, dtype=bool)
+            self.frequencyMaskShape = shape
+
+    def _frequencySpectrumPreviewImage(self, shifted_spectrum):
+        magnitude = np.log1p(np.abs(shifted_spectrum))
+        normalized = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX)
+        preview = normalized.astype(np.uint8)
+        return cv2.cvtColor(preview, cv2.COLOR_GRAY2BGR)
+
+    def _frequencyBaseMask(self, shape):
+        mode = self._frequencyFilterMode()
+        cutoff, band_min, band_max = self._frequencyFilterParameters()
+        rows, cols = shape
+        center_y = rows // 2
+        center_x = cols // 2
+        yy, xx = np.ogrid[:rows, :cols]
+        distance = np.sqrt((yy - center_y) ** 2 + (xx - center_x) ** 2)
+        mask = np.ones((rows, cols), dtype=np.float32)
+
+        if mode == "low_pass":
+            mask = (distance <= cutoff).astype(np.float32)
+        elif mode == "high_pass":
+            mask = (distance >= cutoff).astype(np.float32)
+        elif mode == "band_pass":
+            mask = ((distance >= band_min) & (distance <= band_max)).astype(np.float32)
+        elif mode == "band_stop":
+            mask = ((distance < band_min) | (distance > band_max)).astype(np.float32)
+
+        return mask
+
+    def _combinedFrequencyMask(self, shape):
+        self._ensureFrequencyMask(shape)
+        mask = self._frequencyBaseMask(shape)
+        mask[self.frequencyMask] = 0.0
+        return mask
+
+    def _updateFrequencySpectrumTexture(self, preview_image):
+        self.frequencySpectrumPreview = preview_image
+        if dpg.does_item_exist("FrequencySpectrum"):
+            Texture.updateTexture("FrequencySpectrum", preview_image)
+
+    def updateFrequencyPreview(self):
+        source_image = self._frequencySourceImage()
+        if source_image is None:
+            return
+
+        grayscale = self._grayscaleImage(source_image)
+        self._ensureFrequencyMask(grayscale.shape)
+        shifted = np.fft.fftshift(np.fft.fft2(grayscale.astype(np.float32)))
+        if self.blocks[Blocks.frequencyDomainFilter.value]['status']:
+            shifted = shifted * self._combinedFrequencyMask(grayscale.shape)
+        self._updateFrequencySpectrumTexture(self._frequencySpectrumPreviewImage(shifted))
+
+    def handleFrequencyControlChange(self, sender=None, app_data=None):
+        if self._frequencyFilterMode() != "none":
+            self.blocks[Blocks.frequencyDomainFilter.value]['status'] = True
+            if dpg.does_item_exist("frequencyDomainCheckbox"):
+                dpg.set_value("frequencyDomainCheckbox", True)
+
+        if self.blocks[Blocks.frequencyDomainFilter.value]['status']:
+            self.executeQuery('frequencyDomainFilter')
+        else:
+            self.updateFrequencyPreview()
+
+    def toggleFrequencyMaskMode(self, sender=None, app_data=None):
+        self.frequencyMaskMode = "erase" if self.frequencyMaskMode == "draw" else "draw"
+        if dpg.does_item_exist("frequencyMaskModeButton"):
+            label_key = "frequency.mask_mode_erase" if self.frequencyMaskMode == "erase" else "frequency.mask_mode_draw"
+            dpg.configure_item("frequencyMaskModeButton", label=strings.t(label_key))
+
+    def resetFrequencyMask(self, sender=None, app_data=None):
+        if self.frequencyMask is not None:
+            self.frequencyMask.fill(False)
+
+        if self.blocks[Blocks.frequencyDomainFilter.value]['status']:
+            self.executeQuery('frequencyDomainFilter')
+        else:
+            self.updateFrequencyPreview()
+
+    def _applyFrequencyMaskCircle(self, row, col, radius, erase=False):
+        if self.frequencyMask is None:
+            return
+
+        rows, cols = self.frequencyMask.shape
+        yy, xx = np.ogrid[:rows, :cols]
+        mirrored_points = {
+            (int(row), int(col)),
+            (rows - 1 - int(row), cols - 1 - int(col)),
+        }
+        for center_row, center_col in mirrored_points:
+            circle = (yy - center_row) ** 2 + (xx - center_col) ** 2 <= radius ** 2
+            self.frequencyMask[circle] = not erase
+
+    def handleFrequencySpectrumClick(self, sender=None, app_data=None):
+        source_image = self._frequencySourceImage()
+        if source_image is None:
+            return
+
+        grayscale = self._grayscaleImage(source_image)
+        self._ensureFrequencyMask(grayscale.shape)
+        mouse_x, mouse_y = dpg.get_plot_mouse_pos()
+        col = int(round(mouse_x))
+        row = int(round(mouse_y))
+        if row < 0 or col < 0 or row >= grayscale.shape[0] or col >= grayscale.shape[1]:
+            return
+
+        self._applyFrequencyMaskCircle(row, col, self._frequencyMaskRadius(), erase=self.frequencyMaskMode == "erase")
+        self.blocks[Blocks.frequencyDomainFilter.value]['status'] = True
+        if dpg.does_item_exist("frequencyDomainCheckbox"):
+            dpg.set_value("frequencyDomainCheckbox", True)
+        self.executeQuery('frequencyDomainFilter')
 
     def saveHistogramPlotToFile(self, histogram_series, stage_title, path):
         if not histogram_series:
@@ -480,10 +705,14 @@ class ImageProcessing:
 
     def retrieveFromLastActive(self, methodName, sender = None, app_data = None):
         self.blocks[self.getIdByMethod(methodName)]['output'] = self.blocks[self.getLastActiveBeforeMethod(methodName)]['output']
-        Texture.updateTexture(self.blocks[self.getIdByMethod(methodName)]['tab'], self.blocks[self.getIdByMethod(methodName)]['output'])
+        texture_tag = self.blocks[self.getIdByMethod(methodName)]['tab']
+        if dpg.does_item_exist(texture_tag):
+            Texture.updateTexture(texture_tag, self.blocks[self.getIdByMethod(methodName)]['output'])
         tab = self.blocks[self.getIdByMethod(methodName)]['tab']
         if tab in self.histogramPlotState:
             self.updateHistogramForTab(tab)
+        if self.getIdByMethod(methodName) <= Blocks.frequencyDomainFilter.value:
+            self.updateFrequencyPreview()
 
     def getLastActiveBeforeMethod(self, methodName):
         lastActiveIndex = 0
@@ -528,6 +757,17 @@ class ImageProcessing:
         dpg.set_value("contrastSlider",1)
         dpg.set_value("claheClipLimitSlider", DEFAULT_CLAHE_CLIP_LIMIT)
         dpg.set_value("claheTileGridSizeSlider", DEFAULT_CLAHE_TILE_GRID_SIZE)
+        dpg.set_value("gaborKernelSlider", DEFAULT_GABOR_KERNEL_SIZE)
+        dpg.set_value("gaborSigmaSlider", DEFAULT_GABOR_SIGMA)
+        dpg.set_value("gaborThetaSlider", DEFAULT_GABOR_THETA)
+        dpg.set_value("gaborLambdaSlider", DEFAULT_GABOR_LAMBDA)
+        dpg.set_value("gaborGammaSlider", DEFAULT_GABOR_GAMMA)
+        dpg.set_value("gaborPsiSlider", DEFAULT_GABOR_PSI)
+        dpg.set_value("frequencyCutoffSlider", DEFAULT_FREQUENCY_CUTOFF)
+        dpg.set_value("frequencyBandMinSlider", DEFAULT_FREQUENCY_BAND_MIN)
+        dpg.set_value("frequencyBandMaxSlider", DEFAULT_FREQUENCY_BAND_MAX)
+        dpg.set_value("frequencyMaskRadiusSlider", DEFAULT_FREQUENCY_MASK_RADIUS)
+        dpg.set_value("frequencyFilterModeListbox", strings.option_label("frequency_filter_mode", "none"))
         dpg.set_value("averageBlurSlider",1)
         dpg.set_value("gaussianBlurSlider",1)
         dpg.set_value("medianBlurSlider",1)
@@ -539,6 +779,7 @@ class ImageProcessing:
         except:
             pass
         self.uncheckAllTags()
+        self._resetFrequencyState()
         for entry in self.blocks[1:-1]:
             if entry['name'] != self.grayscale.__name__ and entry['name'] != self.crop.__name__:
                 entry['status'] = False
@@ -562,6 +803,7 @@ class ImageProcessing:
 
         Texture.createAllTextures(self.blocks[Blocks.importImage.value]['output'])
         self.updateAllHistograms()
+        self.updateFrequencyPreview()
 
         # Popula os dados na lateral
         self.renderFileInfo()
@@ -576,9 +818,11 @@ class ImageProcessing:
         dpg.set_value('endY', shape[1])
         dpg.configure_item("exportImageAsFileProcessingGroup", show=True)
         dpg.configure_item("exportImageAsFileFilteringGroup", show=True)
+        dpg.configure_item("exportImageAsFileFrequencyGroup", show=True)
         dpg.configure_item("exportImageAsFileThresholdingGroup", show=True)
         dpg.configure_item("exportHistogramAsFileProcessingGroup", show=True)
         dpg.configure_item("exportHistogramAsFileFilteringGroup", show=True)
+        dpg.configure_item("exportHistogramAsFileFrequencyGroup", show=True)
         dpg.configure_item("exportHistogramAsFileThresholdingGroup", show=True)
         pass
 
@@ -601,6 +845,7 @@ class ImageProcessing:
 
         Texture.createAllTextures(self.blocks[Blocks.importImage.value]['output'])
         self.updateAllHistograms()
+        self.updateFrequencyPreview()
 
         pass
 
@@ -635,6 +880,8 @@ class ImageProcessing:
 
         Texture.createAllTextures(self.blocks[Blocks.crop.value]['output'])
         self.updateAllHistograms()
+        self._resetFrequencyState()
+        self.updateFrequencyPreview()
 
     def histogramEqualization(self, sender=None, app_data=None):
         image = self.blocks[self.getLastActiveBeforeMethod('histogramEqualization')]['output']
@@ -692,6 +939,37 @@ class ImageProcessing:
         median = cv2.medianBlur(image, kernel)
 
         self._storeBlockOutput(Blocks.medianBlur.value, median)
+        pass
+
+    def gaborFilter(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('gaborFilter')]['output']
+        if image is None:
+            return
+
+        grayscale = self._grayscaleImage(image)
+        kernel_size, sigma, theta, lambd, gamma, psi = self._gaborParameters()
+        kernel = cv2.getGaborKernel((kernel_size, kernel_size), sigma, theta, lambd, gamma, psi, ktype=cv2.CV_32F)
+        filtered = cv2.filter2D(grayscale.astype(np.float32), cv2.CV_32F, kernel)
+        normalized = cv2.normalize(np.abs(filtered), None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        output_image = cv2.cvtColor(normalized, cv2.COLOR_GRAY2BGR)
+
+        self._storeBlockOutput(Blocks.gaborFilter.value, output_image)
+        pass
+
+    def frequencyDomainFilter(self, sender=None, app_data=None):
+        image = self.blocks[self.getLastActiveBeforeMethod('frequencyDomainFilter')]['output']
+        if image is None:
+            return
+
+        grayscale = self._grayscaleImage(image).astype(np.float32)
+        shifted = np.fft.fftshift(np.fft.fft2(grayscale))
+        masked_shifted = shifted * self._combinedFrequencyMask(grayscale.shape)
+        reconstructed = np.fft.ifft2(np.fft.ifftshift(masked_shifted))
+        reconstructed = np.clip(np.real(reconstructed), 0, 255).astype(np.uint8)
+        output_image = cv2.cvtColor(reconstructed, cv2.COLOR_GRAY2BGR)
+
+        self._updateFrequencySpectrumTexture(self._frequencySpectrumPreviewImage(masked_shifted))
+        self._storeBlockOutput(Blocks.frequencyDomainFilter.value, output_image)
         pass
 
     def grayscale(self, sender=None, app_data=None):
@@ -860,11 +1138,18 @@ class ImageProcessing:
 
         lastTabIndex = {
             'Processing': Blocks.histogramEqualization.name,
-            'Filtering': Blocks.grayscale.name,
+            'Filtering': Blocks.gaborFilter.name,
+            'Frequency': Blocks.grayscale.name,
             'Thresholding': Blocks.findContour.name,
         }
         path = self.exportImageFilePath
-        image = self.blocks[self.getLastActiveBeforeMethod(lastTabIndex[self.currentTab])]['output']
+        if self.currentTab == 'FrequencySpectrum':
+            image = self.frequencySpectrumPreview
+        else:
+            image = self.blocks[self.getLastActiveBeforeMethod(lastTabIndex[self.currentTab])]['output']
+        if image is None:
+            dpg.configure_item("exportImageError", show=True)
+            return
         cv2.imwrite(path, image)
         dpg.configure_item('exportImageAsFile', show=False)
 
@@ -887,6 +1172,21 @@ class ImageProcessing:
             'averageBlurCheckbox',
             'gaussianBlurCheckbox',
             'medianBlurCheckbox',
+            'gaborCheckbox',
+            'gaborKernelSlider',
+            'gaborSigmaSlider',
+            'gaborThetaSlider',
+            'gaborLambdaSlider',
+            'gaborGammaSlider',
+            'gaborPsiSlider',
+            'frequencyDomainCheckbox',
+            'frequencyFilterModeListbox',
+            'frequencyCutoffSlider',
+            'frequencyBandMinSlider',
+            'frequencyBandMaxSlider',
+            'frequencyMaskRadiusSlider',
+            'frequencyMaskModeButton',
+            'frequencyResetMaskButton',
             'showProcessingHistogramToggle',
             'showFilteringHistogramToggle',
             'excludeBlueChannel',
@@ -905,9 +1205,12 @@ class ImageProcessing:
             'updateContourButton',
             'exportImageAsFileProcessing',
             'exportImageAsFileFiltering',
+            'exportImageAsFileFrequency',
+            'exportSpectrumAsFileFrequency',
             'exportImageAsFileThresholding',
             'exportHistogramAsFileProcessing',
             'exportHistogramAsFileFiltering',
+            'exportHistogramAsFileFrequency',
             'exportHistogramAsFileThresholding'
         ]
         for checkbox in checkboxes:
@@ -924,6 +1227,21 @@ class ImageProcessing:
             'averageBlurCheckbox',
             'gaussianBlurCheckbox',
             'medianBlurCheckbox',
+            'gaborCheckbox',
+            'gaborKernelSlider',
+            'gaborSigmaSlider',
+            'gaborThetaSlider',
+            'gaborLambdaSlider',
+            'gaborGammaSlider',
+            'gaborPsiSlider',
+            'frequencyDomainCheckbox',
+            'frequencyFilterModeListbox',
+            'frequencyCutoffSlider',
+            'frequencyBandMinSlider',
+            'frequencyBandMaxSlider',
+            'frequencyMaskRadiusSlider',
+            'frequencyMaskModeButton',
+            'frequencyResetMaskButton',
             'showProcessingHistogramToggle',
             'showFilteringHistogramToggle',
             'excludeBlueChannel',
@@ -942,9 +1260,12 @@ class ImageProcessing:
             'updateContourButton',
             'exportImageAsFileProcessing',
             'exportImageAsFileFiltering',
+            'exportImageAsFileFrequency',
+            'exportSpectrumAsFileFrequency',
             'exportImageAsFileThresholding',
             'exportHistogramAsFileProcessing',
             'exportHistogramAsFileFiltering',
+            'exportHistogramAsFileFrequency',
             'exportHistogramAsFileThresholding'
         ]
         for checkbox in checkboxes:
@@ -959,6 +1280,8 @@ class ImageProcessing:
             'averageBlurCheckbox',
             'gaussianBlurCheckbox',
             'medianBlurCheckbox',
+            'gaborCheckbox',
+            'frequencyDomainCheckbox',
             'showProcessingHistogramToggle',
             'showFilteringHistogramToggle',
             'excludeBlueChannel',
@@ -976,7 +1299,7 @@ class ImageProcessing:
         ]
         for checkbox in checkboxes:
             dpg.set_value(checkbox, False)
-        for tab in self.histogramPlotState.keys():
+        for tab in [tab for tab in self.histogramPlotState.keys() if tab != "Frequency"]:
             panel_tag = self._histogramPanelTag(tab)
             if dpg.does_item_exist(panel_tag):
                 dpg.configure_item(panel_tag, show=False)

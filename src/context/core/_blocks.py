@@ -1,7 +1,7 @@
 import enum
 
 class Blocks(enum.Enum):
-    __order__ = 'importImage crop histogramEqualization claheEqualization brightnessAndContrast averageBlur gaussianBlur medianBlur grayscale laplacian sobel globalThresholding adaptiveMeanThresholding adaptiveGaussianThresholding otsuBinarization findContour'
+    __order__ = 'importImage crop histogramEqualization claheEqualization brightnessAndContrast averageBlur gaussianBlur medianBlur gaborFilter frequencyDomainFilter grayscale laplacian sobel globalThresholding adaptiveMeanThresholding adaptiveGaussianThresholding otsuBinarization findContour'
     importImage = 0
     crop = 1
     histogramEqualization = 2
@@ -10,11 +10,13 @@ class Blocks(enum.Enum):
     averageBlur = 5
     gaussianBlur = 6
     medianBlur = 7
-    grayscale = 8
-    laplacian = 9
-    sobel = 10
-    globalThresholding = 11
-    adaptiveMeanThresholding = 12
-    adaptiveGaussianThresholding = 13
-    otsuBinarization = 14
-    findContour = 15
+    gaborFilter = 8
+    frequencyDomainFilter = 9
+    grayscale = 10
+    laplacian = 11
+    sobel = 12
+    globalThresholding = 13
+    adaptiveMeanThresholding = 14
+    adaptiveGaussianThresholding = 15
+    otsuBinarization = 16
+    findContour = 17
