@@ -163,35 +163,36 @@ def showFrequency(callbacks):
 
         with dpg.child_window(tag="FrequencyParent"):
             with dpg.group():
-                with dpg.table(
-                    tag="FrequencyTopTable",
-                    header_row=False,
-                    policy=dpg.mvTable_SizingStretchProp,
-                    borders_innerV=True,
-                    borders_outerV=False,
-                    borders_innerH=False,
-                    borders_outerH=False,
-                    resizable=False,
-                ):
-                    dpg.add_table_column(init_width_or_weight=1.0)
-                    dpg.add_table_column(init_width_or_weight=1.0)
-                    with dpg.table_row():
-                        with dpg.table_cell():
-                            with dpg.plot(tag="FrequencyPlotParent", label=strings.t("frequency.processed_plot"), height=260, width=-1, equal_aspects=True):
-                                dpg.add_plot_legend()
-                                dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("axes.width"), tag="Frequency_x_axis")
-                                dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("axes.height"), tag="Frequency_y_axis")
-                        with dpg.table_cell():
-                            with dpg.plot(tag="FrequencySpectrumPlotParent", label=strings.t("frequency.spectrum_plot"), height=260, width=-1, equal_aspects=True):
-                                dpg.add_plot_legend()
-                                dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("axes.width"), tag="FrequencySpectrum_x_axis")
-                                dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("axes.height"), tag="FrequencySpectrum_y_axis")
+                with dpg.child_window(tag="FrequencyImagePanel", height=-180):
+                    with dpg.table(
+                        tag="FrequencyTopTable",
+                        header_row=False,
+                        policy=dpg.mvTable_SizingStretchProp,
+                        borders_innerV=True,
+                        borders_outerV=False,
+                        borders_innerH=False,
+                        borders_outerH=False,
+                        resizable=False,
+                    ):
+                        dpg.add_table_column(init_width_or_weight=1.0)
+                        dpg.add_table_column(init_width_or_weight=1.0)
+                        with dpg.table_row():
+                            with dpg.table_cell():
+                                with dpg.plot(tag="FrequencyPlotParent", label=strings.t("frequency.processed_plot"), height=-1, width=-1, equal_aspects=True):
+                                    dpg.add_plot_legend()
+                                    dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("axes.width"), tag="Frequency_x_axis")
+                                    dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("axes.height"), tag="Frequency_y_axis")
+                            with dpg.table_cell():
+                                with dpg.plot(tag="FrequencySpectrumPlotParent", label=strings.t("frequency.spectrum_plot"), height=-1, width=-1, equal_aspects=True):
+                                    dpg.add_plot_legend()
+                                    dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("axes.width"), tag="FrequencySpectrum_x_axis")
+                                    dpg.add_plot_axis(dpg.mvYAxis, label=strings.t("axes.height"), tag="FrequencySpectrum_y_axis")
 
                 with dpg.item_handler_registry(tag="FrequencySpectrumHandlers"):
                     dpg.add_item_clicked_handler(callback=callbacks.imageProcessing.handleFrequencySpectrumClick)
                 dpg.bind_item_handler_registry("FrequencySpectrumPlotParent", "FrequencySpectrumHandlers")
 
-                with dpg.child_window(tag="FrequencyHistogramPanel", height=-1):
+                with dpg.child_window(tag="FrequencyHistogramPanel", height=160):
                     with dpg.plot(tag="FrequencyHistogramPlotParent", label=strings.t("histogram.title"), height=-1, width=-1):
                         dpg.add_plot_legend()
                         dpg.add_plot_axis(dpg.mvXAxis, label=strings.t("histogram.intensity_axis"), tag="FrequencyHistogram_x_axis")
