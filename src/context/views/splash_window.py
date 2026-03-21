@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import QSignalBlocker, QTimer, Qt, pyqtSignal
+from PyQt6.QtCore import QSignalBlocker, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QComboBox,
     QDialog,
-    QFormLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QProgressBar,
     QVBoxLayout,
     QWidget,
 )
@@ -18,35 +16,35 @@ from context.views.theme import ThemeController
 
 
 class SplashWindow(QDialog):
-    continueRequested = pyqtSignal()
+    newProjectRequested = pyqtSignal()
+    openProjectRequested = pyqtSignal()
+    quitRequested = pyqtSignal()
     themeSelected = pyqtSignal(str)
     localeSelected = pyqtSignal(str)
-    userInteracted = pyqtSignal()
 
     def __init__(
         self,
         theme_controller: ThemeController,
         localization_controller: LocalizationController,
-        auto_continue_ms: int = 1200,
+        version_text: str,
         parent=None,
     ) -> None:
         super().__init__(parent)
         self._theme_controller = theme_controller
         self._localization = localization_controller
-        self._auto_continue_ms = auto_continue_ms
-        self._boot_complete = False
-        self._user_interacted = False
-        self._current_status_key = "startup.wait"
+        self._version_text = version_text
 
         self.setModal(False)
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
         self.setWindowFlag(Qt.WindowType.Dialog, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setObjectName("splashSurface")
-        self.setFixedSize(560, 420)
+        self.setFixedSize(840, 520)
 
-        self._auto_continue_timer = QTimer(self)
-        self._auto_continue_timer.setSingleShot(True)
-        self._auto_continue_timer.timeout.connect(self.continueRequested.emit)
+        self._logo_label = QLabel("CX")
+        self._logo_label.setObjectName("logoBadge")
+        self._logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._logo_label.setFixedSize(120, 120)
 
         self._title_label = QLabel()
         self._title_label.setObjectName("heroTitle")
@@ -56,48 +54,68 @@ class SplashWindow(QDialog):
         self._subtitle_label.setObjectName("heroSubtitle")
         self._subtitle_label.setWordWrap(True)
 
-        self._progress_label = QLabel()
-        self._progress_label.setObjectName("secondaryLabel")
+        self._version_label = QLabel()
+        self._version_label.setObjectName("versionPill")
 
-        self._hint_label = QLabel()
-        self._hint_label.setObjectName("secondaryLabel")
-        self._hint_label.setWordWrap(True)
+        self._new_project_button = QPushButton()
+        self._new_project_button.setObjectName("startPrimaryButton")
+        self._new_project_button.clicked.connect(self.newProjectRequested.emit)
 
-        self._progress_bar = QProgressBar()
-        self._progress_bar.setRange(0, 100)
-        self._progress_bar.setValue(0)
-        self._progress_bar.setTextVisible(False)
+        self._open_project_button = QPushButton()
+        self._open_project_button.setObjectName("startSecondaryButton")
+        self._open_project_button.clicked.connect(self.openProjectRequested.emit)
+
+        self._quit_button = QPushButton()
+        self._quit_button.setObjectName("startCloseButton")
+        self._quit_button.clicked.connect(self.quitRequested.emit)
 
         self._theme_combo = QComboBox()
+        self._theme_combo.setObjectName("startupCombo")
+        self._theme_combo.setMinimumWidth(240)
         self._locale_combo = QComboBox()
-        self._continue_button = QPushButton()
-        self._continue_button.setEnabled(False)
-        self._continue_button.clicked.connect(self.continueRequested.emit)
-        self._theme_caption_label = self._build_label()
-        self._locale_caption_label = self._build_label()
+        self._locale_combo.setObjectName("startupCombo")
+        self._locale_combo.setMinimumWidth(240)
+        self._theme_caption_label = self._build_secondary_label()
+        self._locale_caption_label = self._build_secondary_label()
 
-        selectors_card = QWidget()
-        selectors_card.setObjectName("splashCard")
-        form = QFormLayout(selectors_card)
-        form.setContentsMargins(18, 18, 18, 18)
-        form.setSpacing(14)
-        form.addRow(self._theme_caption_label, self._theme_combo)
-        form.addRow(self._locale_caption_label, self._locale_combo)
+        brand_card = QWidget()
+        brand_card.setObjectName("splashBrandCard")
+        brand_layout = QVBoxLayout(brand_card)
+        brand_layout.setContentsMargins(28, 28, 28, 28)
+        brand_layout.setSpacing(18)
+        brand_layout.addWidget(self._logo_label, alignment=Qt.AlignmentFlag.AlignLeft)
+        brand_layout.addWidget(self._title_label)
+        brand_layout.addWidget(self._subtitle_label)
+        brand_layout.addStretch(1)
+        brand_layout.addWidget(self._version_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        button_row = QHBoxLayout()
-        button_row.addStretch(1)
-        button_row.addWidget(self._continue_button)
+        action_card = QWidget()
+        action_card.setObjectName("splashCard")
+        action_card.setMinimumWidth(340)
+        action_layout = QVBoxLayout(action_card)
+        action_layout.setContentsMargins(26, 26, 26, 26)
+        action_layout.setSpacing(18)
+        action_layout.addWidget(self._new_project_button)
+        action_layout.addWidget(self._open_project_button)
 
-        layout = QVBoxLayout(self)
+        settings_card = QWidget()
+        settings_card.setObjectName("startSettingsCard")
+        settings_layout = QVBoxLayout(settings_card)
+        settings_layout.setContentsMargins(16, 16, 16, 16)
+        settings_layout.setSpacing(12)
+        settings_layout.addWidget(self._theme_caption_label)
+        settings_layout.addWidget(self._theme_combo)
+        settings_layout.addWidget(self._locale_caption_label)
+        settings_layout.addWidget(self._locale_combo)
+        action_layout.addWidget(settings_card)
+        action_layout.addStretch(1)
+        action_layout.addWidget(self._quit_button, alignment=Qt.AlignmentFlag.AlignRight)
+
+        layout = QHBoxLayout(self)
         layout.setContentsMargins(28, 28, 28, 28)
-        layout.setSpacing(16)
-        layout.addWidget(self._title_label)
-        layout.addWidget(self._subtitle_label)
-        layout.addWidget(self._progress_bar)
-        layout.addWidget(self._progress_label)
-        layout.addWidget(selectors_card)
-        layout.addWidget(self._hint_label)
-        layout.addLayout(button_row)
+        layout.setSpacing(18)
+        layout.addWidget(brand_card, 7)
+        layout.addWidget(action_card, 6)
 
         self._theme_combo.currentIndexChanged.connect(self._on_theme_combo_changed)
         self._locale_combo.currentIndexChanged.connect(self._on_locale_combo_changed)
@@ -111,45 +129,20 @@ class SplashWindow(QDialog):
         self._retranslate_ui()
 
     @property
-    def theme_code(self) -> str:
-        return str(self._theme_combo.currentData())
+    def new_project_button(self) -> QPushButton:
+        return self._new_project_button
 
     @property
-    def locale_code(self) -> str:
-        return str(self._locale_combo.currentData())
+    def open_project_button(self) -> QPushButton:
+        return self._open_project_button
 
     @property
-    def is_ready(self) -> bool:
-        return self._boot_complete
+    def quit_button(self) -> QPushButton:
+        return self._quit_button
 
     @property
-    def continue_button(self) -> QPushButton:
-        return self._continue_button
-
-    def set_progress(self, completed_steps: int, total_steps: int, status_key: str) -> None:
-        percent = int((completed_steps / total_steps) * 100)
-        self._current_status_key = status_key
-        self._progress_bar.setValue(percent)
-        self._progress_label.setText(self._localization.tr(status_key))
-        if not self._boot_complete:
-            self._hint_label.setText(self._localization.tr("startup.wait"))
-
-    def mark_ready(self) -> None:
-        self._boot_complete = True
-        self._current_status_key = "startup.ready"
-        self._progress_bar.setValue(100)
-        self._progress_label.setText(self._localization.tr("startup.ready"))
-        self._continue_button.setEnabled(True)
-        if self._user_interacted:
-            self._hint_label.setText(self._localization.tr("startup.click_continue"))
-        else:
-            self._hint_label.setText(self._localization.tr("startup.auto_continue"))
-            self._auto_continue_timer.start(self._auto_continue_ms)
-
-    def cancel_auto_continue(self) -> None:
-        self._auto_continue_timer.stop()
-        if self._boot_complete:
-            self._hint_label.setText(self._localization.tr("startup.click_continue"))
+    def version_label(self) -> QLabel:
+        return self._version_label
 
     def set_theme_selection(self, theme_name: str) -> None:
         index = self._theme_combo.findData(theme_name)
@@ -161,7 +154,7 @@ class SplashWindow(QDialog):
         if index >= 0:
             self._locale_combo.setCurrentIndex(index)
 
-    def _build_label(self) -> QLabel:
+    def _build_secondary_label(self) -> QLabel:
         label = QLabel()
         label.setObjectName("secondaryLabel")
         return label
@@ -202,7 +195,6 @@ class SplashWindow(QDialog):
     def _on_theme_combo_changed(self, index: int) -> None:
         if index < 0:
             return
-        self._register_interaction()
         theme_name = str(self._theme_combo.currentData())
         if theme_name != self._theme_controller.theme_name:
             self.themeSelected.emit(theme_name)
@@ -210,7 +202,6 @@ class SplashWindow(QDialog):
     def _on_locale_combo_changed(self, index: int) -> None:
         if index < 0:
             return
-        self._register_interaction()
         locale_code = str(self._locale_combo.currentData())
         if locale_code != self._localization.locale:
             self.localeSelected.emit(locale_code)
@@ -220,22 +211,13 @@ class SplashWindow(QDialog):
         self._populate_locale_combo()
         self._retranslate_ui()
 
-    def _register_interaction(self) -> None:
-        self._user_interacted = True
-        self.cancel_auto_continue()
-        self.userInteracted.emit()
-
     def _retranslate_ui(self) -> None:
         self.setWindowTitle(self._localization.tr("app.name"))
         self._title_label.setText(self._localization.tr("startup.title"))
         self._subtitle_label.setText(self._localization.tr("startup.subtitle"))
+        self._new_project_button.setText(self._localization.tr("startup.new_project"))
+        self._open_project_button.setText(self._localization.tr("startup.open_project"))
+        self._quit_button.setText(self._localization.tr("startup.close"))
         self._theme_caption_label.setText(self._localization.tr("startup.select_theme"))
         self._locale_caption_label.setText(self._localization.tr("startup.select_language"))
-        self._continue_button.setText(self._localization.tr("startup.continue"))
-        self._progress_label.setText(self._localization.tr(self._current_status_key))
-        if self._boot_complete:
-            self._hint_label.setText(
-                self._localization.tr("startup.click_continue" if self._user_interacted else "startup.auto_continue")
-            )
-        else:
-            self._hint_label.setText(self._localization.tr("startup.wait"))
+        self._version_label.setText(self._localization.tr("startup.version", version=self._version_text))

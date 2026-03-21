@@ -3,10 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
-from PyQt6.QtCore import QTimer
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QFileDialog
 
 from .localization import LocalizationController
+from .meta import APP_NAME, APP_VERSION
 from .preferences import PreferencesController
 from .viewmodels import GraphViewModel
 from .views.main_window import MainWindow
@@ -21,9 +21,10 @@ class App:
         bootstrap_interval_ms: int = 90,
         auto_continue_ms: int = 1200,
     ) -> None:
+        del bootstrap_interval_ms, auto_continue_ms
         self.qt_app = QApplication.instance() or QApplication(sys.argv)
-        self.qt_app.setApplicationName("ContExt")
-        self.qt_app.setOrganizationName("ContExt")
+        self.qt_app.setApplicationName(APP_NAME)
+        self.qt_app.setOrganizationName(APP_NAME)
 
         self.preferences = PreferencesController(path_override=preferences_path)
         loaded_preferences = self.preferences.load()
@@ -35,19 +36,10 @@ class App:
         self.splash = SplashWindow(
             self.theme_controller,
             self.localization_controller,
-            auto_continue_ms=auto_continue_ms,
+            version_text=APP_VERSION,
         )
 
-        self._bootstrap_interval_ms = bootstrap_interval_ms
-        self._startup_index = 0
         self._has_started = False
-        self._entered_main_window = False
-        self._startup_steps = [
-            ("startup.step.preferences", self._noop_step),
-            ("startup.step.theme", self._noop_step),
-            ("startup.step.locale", self._noop_step),
-            ("startup.step.workspace", self._build_main_window),
-        ]
 
         self.theme_controller.themeChanged.connect(self._apply_stylesheet)
         self.theme_controller.themeChanged.connect(lambda theme: self.preferences.set_theme(theme.name))
@@ -55,7 +47,9 @@ class App:
 
         self.splash.themeSelected.connect(self.theme_controller.set_theme)
         self.splash.localeSelected.connect(self.localization_controller.set_locale)
-        self.splash.continueRequested.connect(self._enter_main_window)
+        self.splash.newProjectRequested.connect(self._start_new_project)
+        self.splash.openProjectRequested.connect(self._open_project_from_splash)
+        self.splash.quitRequested.connect(self.qt_app.quit)
 
         self._apply_stylesheet(self.theme_controller.theme)
 
@@ -64,7 +58,6 @@ class App:
             return
         self._has_started = True
         self.splash.show()
-        QTimer.singleShot(0, self._run_next_startup_step)
 
     def exec(self) -> int:
         self.start()
@@ -73,46 +66,62 @@ class App:
     def shutdown(self) -> None:
         if self.window is not None:
             self.window.close()
+            self.window = None
+        self.graph_viewmodel = None
         self.splash.close()
 
-    def _run_next_startup_step(self) -> None:
-        if self._startup_index >= len(self._startup_steps):
-            self.splash.mark_ready()
+    def _start_new_project(self) -> None:
+        self._replace_main_window(bootstrap_default_graph=True)
+        self._show_main_window()
+
+    def _open_project_from_splash(self) -> None:
+        file_path, _ = QFileDialog.getOpenFileName(
+            self.splash,
+            self.localization_controller.tr("dialog.open_pipeline.title"),
+            "",
+            self.localization_controller.tr("dialog.open_pipeline.filter"),
+        )
+        if not file_path:
             return
 
-        status_key, callback = self._startup_steps[self._startup_index]
-        self._startup_index += 1
-        self.splash.set_progress(self._startup_index, len(self._startup_steps), status_key)
-        callback()
-        QTimer.singleShot(self._bootstrap_interval_ms, self._run_next_startup_step)
-
-    def _build_main_window(self) -> None:
-        if self.window is not None:
+        window = self._build_main_window(bootstrap_default_graph=False)
+        if not window.load_pipeline_from_path(file_path):
+            window.close()
+            self.window = None
+            self.graph_viewmodel = None
             return
-        self.graph_viewmodel = GraphViewModel(localization_controller=self.localization_controller)
+
+        self._show_main_window()
+
+    def _build_main_window(self, *, bootstrap_default_graph: bool) -> MainWindow:
+        self.graph_viewmodel = GraphViewModel(
+            localization_controller=self.localization_controller,
+            bootstrap_default_graph=bootstrap_default_graph,
+        )
         self.window = MainWindow(
             theme_controller=self.theme_controller,
             localization_controller=self.localization_controller,
             graph_viewmodel=self.graph_viewmodel,
         )
+        return self.window
 
-    def _enter_main_window(self) -> None:
-        if self._entered_main_window:
-            return
+    def _replace_main_window(self, *, bootstrap_default_graph: bool) -> MainWindow:
+        if self.window is not None:
+            self.window.close()
+        self.window = None
+        self.graph_viewmodel = None
+        return self._build_main_window(bootstrap_default_graph=bootstrap_default_graph)
+
+    def _show_main_window(self) -> None:
         if self.window is None:
             return
-        self._entered_main_window = True
         self.splash.close()
         self.window.show()
         self.window.raise_()
         self.window.activateWindow()
 
-    def _apply_stylesheet(self, theme) -> None:
+    def _apply_stylesheet(self, _theme) -> None:
         self.qt_app.setStyleSheet(self.theme_controller.stylesheet())
-
-    @staticmethod
-    def _noop_step() -> None:
-        return None
 
 
 def run() -> int:

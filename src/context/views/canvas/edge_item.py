@@ -22,9 +22,10 @@ class EdgeItem(QGraphicsPathItem):
         self.target_port = target_port
         self.connection = connection
         self._target_point = QPointF()
+        self._disposed = False
         self.setFlag(self.GraphicsItemFlag.ItemIsSelectable, True)
         self.setZValue(-1)
-        self._theme_controller.themeChanged.connect(lambda _: self.update_path())
+        self._theme_controller.themeChanged.connect(self._on_theme_changed)
         self.update_path()
 
     def set_target_point(self, point: QPointF) -> None:
@@ -58,3 +59,16 @@ class EdgeItem(QGraphicsPathItem):
         if change == self.GraphicsItemChange.ItemSelectedHasChanged:
             self.update_path()
         return super().itemChange(change, value)
+
+    def dispose(self) -> None:
+        if self._disposed:
+            return
+        self._disposed = True
+        try:
+            self._theme_controller.themeChanged.disconnect(self._on_theme_changed)
+        except (TypeError, RuntimeError):
+            pass
+
+    def _on_theme_changed(self, _theme) -> None:
+        if not self._disposed:
+            self.update_path()

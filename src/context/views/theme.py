@@ -144,14 +144,39 @@ QMainWindow, QWidget#appRoot {{
     background-color: {theme.window_bg};
 }}
 QDialog#splashSurface {{
-    background-color: {theme.window_bg};
+    background-color: transparent;
+    border: none;
+}}
+QWidget#splashBrandCard {{
+    background-color: {theme.surface};
     border: 1px solid {theme.border_soft};
-    border-radius: 28px;
+    border-radius: 26px;
 }}
 QWidget#splashCard {{
     background-color: {theme.surface};
     border: 1px solid {theme.border_soft};
     border-radius: 22px;
+}}
+QWidget#startSettingsCard {{
+    background-color: {theme.surface_raised};
+    border: 1px solid {theme.border_soft};
+    border-radius: 18px;
+}}
+QLabel#logoBadge {{
+    background-color: {theme.surface_alt};
+    color: {theme.selection};
+    border: 1px solid {theme.border_soft};
+    border-radius: 28px;
+    font-size: 40px;
+    font-weight: 800;
+}}
+QLabel#versionPill {{
+    background-color: {theme.surface_alt};
+    color: {theme.text_secondary};
+    border: 1px solid {theme.border_soft};
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-weight: 600;
 }}
 QLabel#heroTitle {{
     color: {theme.text_primary};
@@ -223,12 +248,24 @@ QPushButton:disabled {{
     background-color: {theme.border_soft};
     color: {theme.text_secondary};
 }}
+QPushButton#startSecondaryButton, QPushButton#startCloseButton {{
+    background-color: {theme.surface_raised};
+    color: {theme.text_primary};
+    border: 1px solid {theme.border_soft};
+}}
+QPushButton#startSecondaryButton:hover, QPushButton#startCloseButton:hover {{
+    border-color: {theme.selection};
+}}
 QComboBox {{
     background-color: {theme.surface_raised};
     color: {theme.text_primary};
     border: 1px solid {theme.border_soft};
     border-radius: 12px;
     padding: 8px 12px;
+}}
+QComboBox#startupCombo {{
+    min-height: 42px;
+    padding: 10px 14px;
 }}
 QComboBox::drop-down {{
     border: none;
@@ -264,10 +301,17 @@ QDockWidget::title {{
     padding: 10px 14px;
     text-align: left;
 }}
-QWidget#propertiesSurface, QWidget#previewSurface {{
+QWidget#propertiesSurface, QWidget#previewSurface, QWidget#histogramSurface {{
     background-color: {theme.surface};
     border: 1px solid {theme.border_soft};
     border-radius: 22px;
+}}
+QLabel#previewEmptyState, QLabel#histogramEmptyState {{
+    background-color: {theme.surface_raised};
+    color: {theme.text_secondary};
+    border: 1px solid {theme.border_soft};
+    border-radius: 18px;
+    padding: 18px;
 }}
 QScrollArea {{
     background: transparent;
@@ -291,6 +335,47 @@ QWidget#nodeControlCard {{
     background-color: {theme.surface_raised};
     border: 1px solid {theme.border_soft};
     border-radius: 16px;
+}}
+QGraphicsView#previewCanvasView {{
+    background-color: {theme.surface_raised};
+    border: 1px solid {theme.border_soft};
+    border-radius: 18px;
+}}
+QLabel#histogramLegendRed, QLabel#histogramLegendGreen, QLabel#histogramLegendBlue {{
+    background-color: {theme.surface_raised};
+    border: 1px solid {theme.border_soft};
+    border-radius: 11px;
+    padding: 4px 10px;
+    font-weight: 700;
+}}
+QLabel#histogramLegendLuma {{
+    background-color: {theme.surface_raised};
+    border: 1px solid {theme.border_soft};
+    border-radius: 11px;
+    padding: 4px 10px;
+    font-weight: 700;
+}}
+QLabel#histogramLegendRed {{
+    color: #ef4444;
+}}
+QLabel#histogramLegendGreen {{
+    color: #22c55e;
+}}
+QLabel#histogramLegendBlue {{
+    color: #3b82f6;
+}}
+QLabel#histogramLegendLuma {{
+    color: #facc15;
+}}
+QPushButton#histogramExportButton {{
+    background-color: {theme.surface_raised};
+    color: {theme.text_primary};
+    border: 1px solid {theme.border_soft};
+    border-radius: 12px;
+    padding: 8px 12px;
+}}
+QPushButton#histogramExportButton:hover {{
+    border-color: {theme.selection};
 }}
 QSpinBox, QDoubleSpinBox {{
     background-color: {theme.surface_raised};

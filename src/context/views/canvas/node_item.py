@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+from pathlib import Path
 
+from PIL import Image
+from PyQt6 import sip
 from PyQt6.QtCore import QRectF, QSignalBlocker, Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QImage, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
@@ -14,7 +18,9 @@ from PyQt6.QtWidgets import (
     QGraphicsObject,
     QGraphicsProxyWidget,
     QHBoxLayout,
+    QFileDialog,
     QLabel,
+    QPushButton,
     QSlider,
     QSpinBox,
     QVBoxLayout,
@@ -76,7 +82,9 @@ class NodeItem(QGraphicsObject):
         self._frequency_preview_title: QLabel | None = None
         self._frequency_preview_label: QLabel | None = None
         self._frequency_preview_pixmap: QPixmap | None = None
+        self._action_button: QPushButton | None = None
         self._shadow = QGraphicsDropShadowEffect()
+        self._disposed = False
 
         self.setFlags(
             QGraphicsItem.GraphicsItemFlag.ItemIsMovable
@@ -191,6 +199,9 @@ class NodeItem(QGraphicsObject):
     def has_frequency_preview(self) -> bool:
         return self._frequency_preview_pixmap is not None
 
+    def embedded_action_button(self) -> QPushButton | None:
+        return self._action_button
+
     @property
     def theme_name(self) -> str:
         return self._theme_controller.theme_name
@@ -200,10 +211,71 @@ class NodeItem(QGraphicsObject):
         self.update()
 
     def refresh_from_model(self) -> None:
+        if self._disposed:
+            return
         self._sync_embedded_controls()
         self._sync_frequency_preview()
         self._sync_frequency_control_states()
         self.update()
+
+    def dispose(self) -> None:
+        if self._disposed:
+            return
+        self._disposed = True
+        self.hide()
+        self.setEnabled(False)
+        if self.isSelected():
+            self.setSelected(False)
+        if self.graphicsEffect() is not None:
+            self.setGraphicsEffect(None)
+        try:
+            self.node_vm.positionChanged.disconnect(self._sync_position_from_viewmodel)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            self.node_vm.updated.disconnect(self._handle_node_updated)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            self._theme_controller.themeChanged.disconnect(self._on_theme_changed)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            self._localization.localeChanged.disconnect(self._on_locale_changed)
+        except (TypeError, RuntimeError):
+            pass
+        for port in self._input_ports.values():
+            port.dispose()
+        for port in self._output_ports.values():
+            port.dispose()
+        proxy = self._content_proxy
+        container = self._content_container
+        self._content_proxy = None
+        self._content_container = None
+        self._controls.clear()
+        self._action_button = None
+        self._frequency_preview_title = None
+        self._frequency_preview_label = None
+        self._frequency_preview_pixmap = None
+        if proxy is not None:
+            proxy.hide()
+            proxy.setEnabled(False)
+            widget = proxy.widget()
+            if widget is not None:
+                proxy.setWidget(None)
+                widget.hide()
+                widget.setParent(None)
+                if not sip.isdeleted(widget):
+                    sip.delete(widget)
+            if proxy.scene() is not None:
+                proxy.scene().removeItem(proxy)
+            proxy.setParentItem(None)
+            if not sip.isdeleted(proxy):
+                sip.delete(proxy)
+        if container is not None and not sip.isdeleted(container):
+            container.hide()
+            container.setParent(None)
+            sip.delete(container)
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged:
@@ -237,7 +309,11 @@ class NodeItem(QGraphicsObject):
                 self._output_ports[port_name].setPos(self.WIDTH, step * index)
 
     def _build_embedded_content(self) -> None:
-        has_controls = bool(self._definition.params) or self.node_vm.node_type == "frequency_domain_filter"
+        has_controls = (
+            bool(self._definition.params)
+            or self.node_vm.node_type == "frequency_domain_filter"
+            or self.node_vm.node_type in {"source", "preview"}
+        )
         if not has_controls:
             return
 
@@ -250,6 +326,9 @@ class NodeItem(QGraphicsObject):
         for param_definition in self._definition.params:
             control_widget = self._build_param_control(param_definition)
             layout.addWidget(control_widget)
+
+        if self.node_vm.node_type in {"source", "preview"}:
+            layout.addWidget(self._build_action_card())
 
         if self.node_vm.node_type == "frequency_domain_filter":
             layout.addWidget(self._build_frequency_preview_card())
@@ -365,6 +444,25 @@ class NodeItem(QGraphicsObject):
         self._frequency_preview_label = preview
         return card
 
+    def _build_action_card(self) -> QWidget:
+        card = QWidget()
+        card.setObjectName("nodeControlCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(8)
+
+        button = QPushButton()
+        button.setObjectName("nodeActionButton")
+        button.setMinimumHeight(56)
+        if self.node_vm.node_type == "source":
+            button.clicked.connect(self._open_image_dialog_from_node)
+        else:
+            button.clicked.connect(self._save_preview_from_node)
+
+        self._action_button = button
+        layout.addWidget(button)
+        return card
+
     def _sync_position_from_viewmodel(self, node_id: str, x: float, y: float) -> None:
         if node_id != self.node_vm.node_id:
             return
@@ -401,6 +499,7 @@ class NodeItem(QGraphicsObject):
                     del blocker
             elif param_definition.kind == "enum" and control.combo_box is not None:
                 self._sync_combo_control(control, value)
+        self._sync_action_button()
 
     def _sync_numeric_control(self, control: _EmbeddedControl, value: object) -> None:
         minimum, maximum = self._param_bounds(control.definition)
@@ -612,15 +711,71 @@ class NodeItem(QGraphicsObject):
             self.geometryChanged.emit(self.node_vm.node_id)
 
     def _on_theme_changed(self, _theme) -> None:
+        if self._disposed:
+            return
         self._apply_theme_to_shadow()
         self.update()
 
     def _on_locale_changed(self, _locale_code: str) -> None:
+        if self._disposed:
+            return
         for control in self._controls.values():
             if control.definition.kind == "bool" and control.check_box is not None:
                 control.check_box.setText(self._tr(control.definition.label_key))
         self.refresh_from_model()
         self._update_height_from_content()
+
+    def _sync_action_button(self) -> None:
+        if self._action_button is None:
+            return
+        if self.node_vm.node_type == "source":
+            self._action_button.setText(self._tr("action.open_image"))
+            self._action_button.setEnabled(True)
+            return
+        if self.node_vm.node_type == "preview":
+            self._action_button.setText(self._tr("node.preview.action.save"))
+            self._action_button.setEnabled(self._graph_vm.current_preview() is not None)
+
+    def _open_image_dialog_from_node(self) -> None:
+        parent = self._dialog_parent()
+        file_path, _ = QFileDialog.getOpenFileName(
+            parent,
+            self._tr("dialog.open_image.title"),
+            "",
+            self._tr("dialog.open_image.filter"),
+        )
+        if file_path:
+            self._graph_vm.load_image(file_path)
+
+    def _save_preview_from_node(self) -> None:
+        preview = self._graph_vm.current_preview()
+        if preview is None:
+            self._graph_vm.errorRaised.emit(self._tr("preview.export.unavailable"))
+            return
+        parent = self._dialog_parent()
+        file_path, _ = QFileDialog.getSaveFileName(
+            parent,
+            self._tr("dialog.save_preview.title"),
+            "",
+            self._tr("dialog.save_preview.filter"),
+        )
+        if not file_path:
+            return
+        normalized_path = self._ensure_suffix(file_path, ".png")
+        Image.fromarray(preview, "RGB").save(normalized_path, format="PNG")
+
+    def _dialog_parent(self) -> QWidget | None:
+        scene = self.scene()
+        if scene is not None and scene.views():
+            return scene.views()[0]
+        return QApplication.activeWindow()
+
+    @staticmethod
+    def _ensure_suffix(file_path: str, suffix: str) -> str:
+        path = Path(file_path)
+        if path.suffix:
+            return str(path)
+        return str(path.with_suffix(suffix))
 
     def _apply_theme_to_shadow(self) -> None:
         self._shadow.setColor(QColor(self._theme_controller.theme.shadow))

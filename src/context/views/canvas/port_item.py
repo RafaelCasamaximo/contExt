@@ -24,10 +24,11 @@ class PortItem(QGraphicsObject):
         self.direction = direction
         self._theme_controller = theme_controller
         self._snap_highlighted = False
+        self._disposed = False
         self.setAcceptedMouseButtons(Qt.MouseButton.LeftButton)
         self.setCursor(Qt.CursorShape.CrossCursor)
         self.setAcceptHoverEvents(True)
-        self._theme_controller.themeChanged.connect(lambda _: self.update())
+        self._theme_controller.themeChanged.connect(self._on_theme_changed)
 
     def boundingRect(self) -> QRectF:
         diameter = self.RADIUS * 2
@@ -67,5 +68,18 @@ class PortItem(QGraphicsObject):
         self._snap_highlighted = highlighted
         self.update()
 
+    def dispose(self) -> None:
+        if self._disposed:
+            return
+        self._disposed = True
+        try:
+            self._theme_controller.themeChanged.disconnect(self._on_theme_changed)
+        except (TypeError, RuntimeError):
+            pass
+
     def scene_center(self):
         return self.mapToScene(self.boundingRect().center())
+
+    def _on_theme_changed(self, _theme) -> None:
+        if not self._disposed:
+            self.update()

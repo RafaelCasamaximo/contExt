@@ -64,6 +64,11 @@ class GraphSceneSnapTests(unittest.TestCase):
 
         self.assertTrue(self.graph_vm.connect_nodes(self.source_vm.node_id, "image", self.blur_vm.node_id, "image"))
 
+        blur_item = self.scene.node_item(self.blur_vm.node_id)
+        preview_item = self.scene.node_item(self.preview_vm.node_id)
+        assert blur_item is not None
+        assert preview_item is not None
+
         preview_source = blur_item.output_port("image")
         occupied_target = blur_item.input_port("image")
         free_target = preview_item.input_port("image")

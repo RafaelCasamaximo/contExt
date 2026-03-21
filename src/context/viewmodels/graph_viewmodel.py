@@ -228,6 +228,8 @@ class GraphViewModel(QObject):
         return self.graph.nodes[node_id]
 
     def set_selected_node(self, node_id: str | None) -> None:
+        if node_id is not None and node_id not in self.node_viewmodels:
+            node_id = None
         if self._selected_node_id == node_id:
             return
         self._selected_node_id = node_id
@@ -267,6 +269,12 @@ class GraphViewModel(QObject):
         if self._preview_node_id is None:
             return None
         return self._results.get(self._preview_node_id)
+
+    def node_result(self, node_id: str) -> np.ndarray | None:
+        result = self._results.get(node_id)
+        if result is None:
+            return None
+        return result.copy()
 
     def node_visual(self, node_id: str, key: str) -> np.ndarray | None:
         visuals = self._node_visuals.get(node_id)

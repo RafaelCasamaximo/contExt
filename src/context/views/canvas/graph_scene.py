@@ -34,22 +34,21 @@ class GraphScene(QGraphicsScene):
         self._drag_source_port: PortItem | None = None
         self._temporary_edge: EdgeItem | None = None
         self._snap_target_port: PortItem | None = None
+        self._disposed = False
+        self._rebuilding = False
         self.setSceneRect(-1600.0, -1200.0, 3200.0, 2400.0)
 
-        self._graph_vm.nodeAdded.connect(self._add_node_item)
-        self._graph_vm.nodeRemoved.connect(self._remove_node_item)
+        self._graph_vm.nodeAdded.connect(self._rebuild_from_viewmodel)
+        self._graph_vm.nodeRemoved.connect(self._rebuild_from_viewmodel)
         self._graph_vm.nodeChanged.connect(self._refresh_node_item)
-        self._graph_vm.connectionAdded.connect(self._add_edge_item)
-        self._graph_vm.connectionRemoved.connect(self._remove_edge_item)
+        self._graph_vm.connectionAdded.connect(self._rebuild_from_viewmodel)
+        self._graph_vm.connectionRemoved.connect(self._rebuild_from_viewmodel)
         self._graph_vm.nodeResultUpdated.connect(self._set_result_state)
         self.selectionChanged.connect(self._handle_selection_changed)
         self._theme_controller.themeChanged.connect(self._on_theme_changed)
         self._localization.localeChanged.connect(self._on_locale_changed)
 
-        for node_vm in self._graph_vm.list_nodes():
-            self._add_node_item(node_vm)
-        for connection in self._graph_vm.graph.list_connections():
-            self._add_edge_item(connection)
+        self._rebuild_from_viewmodel()
 
     @property
     def theme_name(self) -> str:
@@ -73,18 +72,26 @@ class GraphScene(QGraphicsScene):
 
     def delete_selected_items(self) -> None:
         selected_items = list(self.selectedItems())
+        selected_connections: list[Connection] = []
+        selected_node_ids: list[str] = []
+
         for item in selected_items:
             if isinstance(item, EdgeItem) and item.connection is not None:
-                connection = item.connection
-                self._graph_vm.disconnect_nodes(
-                    connection.source_node_id,
-                    connection.source_port,
-                    connection.target_node_id,
-                    connection.target_port,
-                )
-        for item in selected_items:
-            if isinstance(item, NodeItem):
-                self._graph_vm.remove_node(item.node_vm.node_id)
+                selected_connections.append(item.connection)
+            elif isinstance(item, NodeItem):
+                selected_node_ids.append(item.node_vm.node_id)
+
+        self.clearSelection()
+
+        for connection in selected_connections:
+            self._graph_vm.disconnect_nodes(
+                connection.source_node_id,
+                connection.source_port,
+                connection.target_node_id,
+                connection.target_port,
+            )
+        for node_id in selected_node_ids:
+            self._graph_vm.remove_node(node_id)
 
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         if self._temporary_edge is not None:
@@ -135,19 +142,13 @@ class GraphScene(QGraphicsScene):
             self.delete_selected_items()
         event.accept()
 
-    def _add_node_item(self, node_vm: NodeViewModel) -> None:
+    def _create_node_item(self, node_vm: NodeViewModel) -> None:
         item = NodeItem(node_vm, self._graph_vm, self._theme_controller, self._localization)
         item.geometryChanged.connect(self._update_edges_for_node)
         self._node_items[node_vm.node_id] = item
         self.addItem(item)
 
-    def _remove_node_item(self, node_id: str) -> None:
-        item = self._node_items.pop(node_id, None)
-        if item is None:
-            return
-        self.removeItem(item)
-
-    def _add_edge_item(self, connection: Connection) -> None:
+    def _create_edge_item(self, connection: Connection) -> None:
         source_item = self._node_items[connection.source_node_id]
         target_item = self._node_items[connection.target_node_id]
         edge = EdgeItem(
@@ -159,11 +160,6 @@ class GraphScene(QGraphicsScene):
         key = self._edge_key(connection)
         self._edge_items[key] = edge
         self.addItem(edge)
-
-    def _remove_edge_item(self, connection: Connection) -> None:
-        edge = self._edge_items.pop(self._edge_key(connection), None)
-        if edge is not None:
-            self.removeItem(edge)
 
     def _refresh_node_item(self, node_id: str) -> None:
         item = self._node_items.get(node_id)
@@ -182,19 +178,68 @@ class GraphScene(QGraphicsScene):
                 edge.update_path()
 
     def _handle_selection_changed(self) -> None:
+        if self._rebuilding:
+            return
         node_id = None
         for item in self.selectedItems():
-            if isinstance(item, NodeItem):
+            if isinstance(item, NodeItem) and item.node_vm.node_id in self._node_items:
                 node_id = item.node_vm.node_id
                 break
         self._graph_vm.set_selected_node(node_id)
 
     def _clear_temporary_edge(self) -> None:
         if self._temporary_edge is not None:
+            self._temporary_edge.dispose()
             self.removeItem(self._temporary_edge)
         self._set_snap_target(None)
         self._drag_source_port = None
         self._temporary_edge = None
+
+    def dispose(self) -> None:
+        if self._disposed:
+            return
+        self._disposed = True
+        try:
+            self._graph_vm.nodeAdded.disconnect(self._rebuild_from_viewmodel)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            self._graph_vm.nodeRemoved.disconnect(self._rebuild_from_viewmodel)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            self._graph_vm.nodeChanged.disconnect(self._refresh_node_item)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            self._graph_vm.connectionAdded.disconnect(self._rebuild_from_viewmodel)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            self._graph_vm.connectionRemoved.disconnect(self._rebuild_from_viewmodel)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            self._graph_vm.nodeResultUpdated.disconnect(self._set_result_state)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            self.selectionChanged.disconnect(self._handle_selection_changed)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            self._theme_controller.themeChanged.disconnect(self._on_theme_changed)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            self._localization.localeChanged.disconnect(self._on_locale_changed)
+        except (TypeError, RuntimeError):
+            pass
+
+        self._clear_temporary_edge()
+        self._node_items.clear()
+        self._edge_items.clear()
+        self.clear()
 
     def _on_theme_changed(self, _theme) -> None:
         for node_item in self._node_items.values():
@@ -212,6 +257,40 @@ class GraphScene(QGraphicsScene):
             node_item.update()
         for view in self.views():
             view.viewport().update()
+
+    def _rebuild_from_viewmodel(self, *_args) -> None:
+        if self._disposed:
+            return
+
+        selected_node_id = None
+        for item in self.selectedItems():
+            if isinstance(item, NodeItem):
+                selected_node_id = item.node_vm.node_id
+                break
+
+        self._rebuilding = True
+        try:
+            self._clear_temporary_edge()
+            self._node_items.clear()
+            self._edge_items.clear()
+            self.clear()
+
+            for node_vm in self._graph_vm.list_nodes():
+                self._create_node_item(node_vm)
+            for connection in self._graph_vm.graph.list_connections():
+                self._create_edge_item(connection)
+
+            for node_id, item in self._node_items.items():
+                item.set_result_state(self._graph_vm.node_result(node_id) is not None)
+                item.refresh_from_model()
+
+            if selected_node_id is not None and selected_node_id in self._node_items:
+                self._node_items[selected_node_id].setSelected(True)
+                self._graph_vm.set_selected_node(selected_node_id)
+            else:
+                self._graph_vm.set_selected_node(None)
+        finally:
+            self._rebuilding = False
 
     @staticmethod
     def _draw_grid(painter: QPainter, rect, spacing: int, color: QColor, width: float) -> None:
