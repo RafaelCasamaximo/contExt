@@ -8,7 +8,12 @@ import cv2
 import dearpygui.dearpygui as dpg
 import numpy as np
 
-from ._fdm import build_uniform_domain, solve_dirichlet_problem
+from ._fdm import (
+    build_sparse_composite_domain,
+    build_structured_domain,
+    build_uniform_domain,
+    solve_dirichlet_problem,
+)
 from ..ui import strings
 
 
@@ -382,6 +387,41 @@ class Simulation:
         mesh_info = getattr(self.meshGeneration, "currentMeshInfo", {})
         return bool(self.meshGeneration.currentX) and mesh_info.get("nx") is not None
 
+    def _buildDomainForCurrentMesh(self):
+        if self.meshGeneration is None:
+            raise ValueError("Mesh generation state is unavailable.")
+
+        contour_x = self.meshGeneration.currentX
+        contour_y = self.meshGeneration.currentY
+        subcontours_ranges = getattr(self.meshGeneration, "subcontoursRanges", None)
+        sparse_handler = self.meshGeneration.sparseMeshHandler
+
+        if sparse_handler is None:
+            return build_uniform_domain(
+                contour_x,
+                contour_y,
+                self.meshGeneration.currentMeshInfo,
+                subcontours_ranges,
+            )
+
+        if self.meshGeneration.toggleZoomFlag:
+            return build_sparse_composite_domain(
+                contour_x,
+                contour_y,
+                sparse_handler,
+                subcontours_ranges,
+            )
+
+        sparse_handler.setIntervals()
+        return build_structured_domain(
+            contour_x,
+            contour_y,
+            sparse_handler.dx,
+            sparse_handler.dy,
+            subcontours_ranges,
+            mesh_kind="adaptive",
+        )
+
     def syncWithMesh(self, sender=None, app_data=None) -> None:
         previous_values = self.region_values.copy()
         self.regions = self._collectRegions()
@@ -409,21 +449,8 @@ class Simulation:
             self._plotContour()
             return
 
-        if self.meshGeneration.sparseMeshHandler is not None:
-            self._setStatus("simulation.status.uniform_only")
-            self._renderRegionState()
-            self._renderStats()
-            self._renderExportState()
-            self._plotContour()
-            return
-
         try:
-            self.domain = build_uniform_domain(
-                self.meshGeneration.currentX,
-                self.meshGeneration.currentY,
-                self.meshGeneration.currentMeshInfo,
-                getattr(self.meshGeneration, "subcontoursRanges", None),
-            )
+            self.domain = self._buildDomainForCurrentMesh()
             self.region_counts = self.domain.boundary_counts.copy()
             self._setStatus("simulation.status.ready")
         except ValueError as error:
