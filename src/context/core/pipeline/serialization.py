@@ -18,7 +18,10 @@ from .node import Node
 PIPELINE_FORMAT = "context.pipeline"
 PIPELINE_VERSION = 1
 PIPELINE_EXTENSION = ".ctxp"
-SUPPORTED_NODE_TYPES = ("source", "blur", "preview")
+def _supported_node_types() -> tuple[str, ...]:
+    from ..nodes.registry import supported_node_types
+
+    return supported_node_types()
 
 
 class PipelineSerializationError(ValueError):
@@ -147,7 +150,7 @@ def _load_node_entry(raw_node: object) -> LoadedPipelineNode:
 
     if not isinstance(node_id, str) or not node_id:
         raise PipelineSerializationError("Every node must have a non-empty 'id'.")
-    if node_type not in SUPPORTED_NODE_TYPES:
+    if node_type not in _supported_node_types():
         raise PipelineSerializationError(f"Unsupported node type: {node_type!r}.")
     if not isinstance(params, dict):
         raise PipelineSerializationError(f"Node '{node_id}' has invalid params.")
@@ -177,9 +180,9 @@ def _load_connection_entry(raw_connection: object) -> Connection:
 
 def _instantiate_node(node_id: str, node_type: str, params: dict[str, Any], state: object) -> Node:
     if node_type == "source":
-        from ..nodes.source_node import SourceNode
+        from ..nodes.registry import create_node
 
-        node = SourceNode(node_id)
+        node = create_node(node_type, node_id, params)
         if state is not None and not isinstance(state, dict):
             raise PipelineSerializationError(f"Node '{node_id}' has invalid state data.")
         if isinstance(state, dict) and "image_png_base64" in state:
@@ -192,26 +195,13 @@ def _instantiate_node(node_id: str, node_type: str, params: dict[str, Any], stat
             node.set_image(_decode_image(encoded_image), image_name or "source.png")
         return node
 
-    if node_type == "blur":
-        from ..nodes.blur_node import BlurNode
+    if node_type in _supported_node_types():
+        from ..nodes.registry import create_node
 
-        kernel_size = params.get("kernel_size", 5)
         try:
-            node = BlurNode(node_id, int(kernel_size))
+            node = create_node(node_type, node_id, params)
         except (TypeError, ValueError) as exc:
-            raise PipelineSerializationError(f"Node '{node_id}' has an invalid kernel size.") from exc
-        for key, value in params.items():
-            if key == "kernel_size":
-                continue
-            node.set_param(key, value)
-        return node
-
-    if node_type == "preview":
-        from ..nodes.preview_node import PreviewNode
-
-        node = PreviewNode(node_id)
-        for key, value in params.items():
-            node.set_param(key, value)
+            raise PipelineSerializationError(f"Node '{node_id}' has invalid params.") from exc
         return node
 
     raise PipelineSerializationError(f"Unsupported node type: {node_type!r}.")

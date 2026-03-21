@@ -292,14 +292,28 @@ QWidget#nodeControlCard {{
     border: 1px solid {theme.border_soft};
     border-radius: 16px;
 }}
-QSpinBox {{
+QSpinBox, QDoubleSpinBox {{
     background-color: {theme.surface_raised};
     color: {theme.text_primary};
     border: 1px solid {theme.border_soft};
     border-radius: 12px;
     padding: 7px 10px;
 }}
-QSpinBox:focus {{
+QSpinBox:focus, QDoubleSpinBox:focus {{
+    border-color: {theme.selection};
+}}
+QCheckBox {{
+    spacing: 8px;
+}}
+QCheckBox::indicator {{
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    border: 1px solid {theme.border};
+    background: {theme.surface_raised};
+}}
+QCheckBox::indicator:checked {{
+    background: {theme.selection};
     border-color: {theme.selection};
 }}
 QSlider::groove:horizontal {{

@@ -114,9 +114,14 @@ class GraphScene(QGraphicsScene):
 
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:
         menu = QMenu()
-        add_source = menu.addAction(self._localization.tr("graph.menu.add_source"))
-        add_blur = menu.addAction(self._localization.tr("graph.menu.add_blur"))
-        add_preview = menu.addAction(self._localization.tr("graph.menu.add_preview"))
+        add_actions: dict[object, str] = {}
+        for category, definitions in self._graph_vm.grouped_menu_definitions().items():
+            submenu = menu.addMenu(self._localization.tr(f"menu.node_category.{category}"))
+            for definition in definitions:
+                action = submenu.addAction(self._localization.tr(definition.title_key))
+                if definition.singleton and self._graph_vm.graph.find_node_by_type(definition.type_name) is not None:
+                    action.setEnabled(False)
+                add_actions[action] = definition.type_name
         delete_selected = None
         if self.selectedItems():
             menu.addSeparator()
@@ -124,12 +129,8 @@ class GraphScene(QGraphicsScene):
 
         chosen = menu.exec(event.screenPos())
         scene_pos = event.scenePos()
-        if chosen == add_source:
-            self._graph_vm.add_node("source", (scene_pos.x(), scene_pos.y()))
-        elif chosen == add_blur:
-            self._graph_vm.add_node("blur", (scene_pos.x(), scene_pos.y()))
-        elif chosen == add_preview:
-            self._graph_vm.add_node("preview", (scene_pos.x(), scene_pos.y()))
+        if chosen in add_actions:
+            self._graph_vm.add_node(add_actions[chosen], (scene_pos.x(), scene_pos.y()))
         elif chosen == delete_selected:
             self.delete_selected_items()
         event.accept()
@@ -167,12 +168,13 @@ class GraphScene(QGraphicsScene):
     def _refresh_node_item(self, node_id: str) -> None:
         item = self._node_items.get(node_id)
         if item is not None:
-            item.update()
+            item.refresh_from_model()
 
     def _set_result_state(self, node_id: str, result) -> None:
         item = self._node_items.get(node_id)
         if item is not None:
             item.set_result_state(result is not None)
+            item.refresh_from_model()
 
     def _update_edges_for_node(self, node_id: str) -> None:
         for key, edge in self._edge_items.items():

@@ -3,19 +3,26 @@ from __future__ import annotations
 from collections import defaultdict
 from pathlib import Path
 import re
-from typing import Callable
+from typing import Any
 
 import numpy as np
 from PIL import Image
 from PyQt6.QtCore import QObject, QRunnable, QThread, QThreadPool, QTimer, pyqtSignal
 
-from context.core.nodes import BlurNode, PreviewNode, SourceNode
+from context.core.nodes import (
+    SourceNode,
+    available_node_definitions,
+    create_node as create_registered_node,
+    get_node_definition,
+    grouped_menu_definitions,
+)
 from context.localization import LocalizationController, translate
 from context.core.pipeline import (
     Connection,
     ExecutionResult,
     Executor,
     Graph,
+    ImageArray,
     PipelineSerializationError,
     export_pipeline_payload,
     load_pipeline_payload,
@@ -36,12 +43,14 @@ class _ExecutionRunnable(QRunnable):
         generation: int,
         graph_snapshot: Graph,
         cached_results: dict[str, np.ndarray | None],
+        cached_visuals: dict[str, dict[str, np.ndarray | None]],
         invalidated: set[str],
     ) -> None:
         super().__init__()
         self._generation = generation
         self._graph_snapshot = graph_snapshot
         self._cached_results = cached_results
+        self._cached_visuals = cached_visuals
         self._invalidated = invalidated
         self.signals = _ExecutionSignals()
 
@@ -52,6 +61,7 @@ class _ExecutionRunnable(QRunnable):
                 self._cached_results,
                 self._invalidated,
                 generation=self._generation,
+                cached_visuals=self._cached_visuals,
             )
         except Exception as exc:  # pragma: no cover - emitted to the UI layer
             self.signals.failed.emit(self._generation, str(exc))
@@ -84,6 +94,7 @@ class GraphViewModel(QObject):
         self.node_viewmodels: dict[str, NodeViewModel] = {}
         self._node_counters: defaultdict[str, int] = defaultdict(int)
         self._results: dict[str, np.ndarray | None] = {}
+        self._node_visuals: dict[str, dict[str, np.ndarray | None]] = {}
         self._selected_node_id: str | None = None
         self._pending_invalidated: set[str] = set()
         self._active_generations: set[int] = set()
@@ -111,25 +122,19 @@ class GraphViewModel(QObject):
         node_id: str | None = None,
         params: dict[str, object] | None = None,
     ) -> NodeViewModel:
-        factory: dict[str, Callable[[str], object]] = {
-            "source": SourceNode,
-            "blur": BlurNode,
-            "preview": PreviewNode,
-        }
-        if node_type not in factory:
-            raise ValueError(f"Unsupported node type '{node_type}'.")
-
         resolved_node_id = node_id or self._next_node_id(node_type)
-        node = self._build_node(factory, node_type, resolved_node_id, params)
+        node = create_registered_node(node_type, resolved_node_id, params)
+        self._sync_counter_from_id(node_type, resolved_node_id)
         self.graph.add_node(node)
 
         node_vm = NodeViewModel(node, *position)
         node_vm.positionChanged.connect(self._on_node_position_changed)
         self.node_viewmodels[resolved_node_id] = node_vm
 
-        if node_type == "source":
+        definition = get_node_definition(node_type)
+        if definition.singleton and node_type == "source":
             self._source_node_id = resolved_node_id
-        elif node_type == "preview":
+        elif definition.singleton and node_type == "preview":
             self._preview_node_id = resolved_node_id
 
         self.nodeAdded.emit(node_vm)
@@ -154,12 +159,23 @@ class GraphViewModel(QObject):
     def add_node(self, node_type: str, position: tuple[float, float]) -> NodeViewModel | None:
         if node_type == "source":
             return self.add_source_node(position)
-        if node_type == "blur":
-            return self.add_blur_node(position)
         if node_type == "preview":
             return self.add_preview_node(position)
-        self.errorRaised.emit(self._tr("graph.error.unsupported_node_type", type_name=node_type))
-        return None
+        try:
+            definition = get_node_definition(node_type)
+        except ValueError:
+            self.errorRaised.emit(self._tr("graph.error.unsupported_node_type", type_name=node_type))
+            return None
+
+        if definition.singleton and self.graph.find_node_by_type(node_type) is not None:
+            if node_type == "source":
+                self.errorRaised.emit(self._tr("graph.error.only_one_source"))
+            elif node_type == "preview":
+                self.errorRaised.emit(self._tr("graph.error.only_one_preview"))
+            else:
+                self.errorRaised.emit(self._tr("graph.error.only_one_singleton", title=self._tr(definition.title_key)))
+            return None
+        return self.create_node(node_type, position)
 
     def remove_node(self, node_id: str) -> None:
         node = self.graph.nodes.get(node_id)
@@ -169,6 +185,7 @@ class GraphViewModel(QObject):
         removed_connections = self.graph.remove_node(node_id)
         self.node_viewmodels.pop(node_id, None)
         self._results.pop(node_id, None)
+        self._node_visuals.pop(node_id, None)
 
         if node.type_name == "source":
             self._source_node_id = None
@@ -216,7 +233,7 @@ class GraphViewModel(QObject):
         self._selected_node_id = node_id
         self.selectedNodeChanged.emit(None if node_id is None else self.node_viewmodels[node_id])
 
-    def set_node_param(self, node_id: str, key: str, value: int) -> None:
+    def set_node_param(self, node_id: str, key: str, value: Any) -> None:
         node = self.graph.nodes[node_id]
         previous_value = node.params.get(key)
         node.set_param(key, value)
@@ -250,6 +267,30 @@ class GraphViewModel(QObject):
         if self._preview_node_id is None:
             return None
         return self._results.get(self._preview_node_id)
+
+    def node_visual(self, node_id: str, key: str) -> np.ndarray | None:
+        visuals = self._node_visuals.get(node_id)
+        if visuals is None:
+            return None
+        image = visuals.get(key)
+        if image is None:
+            return None
+        return image.copy()
+
+    def node_input_image(self, node_id: str, port_name: str = "image") -> ImageArray | None:
+        connection = self.graph.get_input_connection(node_id, port_name)
+        if connection is None:
+            return None
+        return self._results.get(connection.source_node_id)
+
+    def node_definition(self, node_type: str):
+        return get_node_definition(node_type)
+
+    def available_node_definitions(self, *, menu_only: bool = False):
+        return available_node_definitions(menu_only=menu_only)
+
+    def grouped_menu_definitions(self):
+        return grouped_menu_definitions()
 
     def export_pipeline_payload(self) -> dict[str, object]:
         positions = {
@@ -307,7 +348,13 @@ class GraphViewModel(QObject):
 
         self._latest_requested_generation += 1
         generation = self._latest_requested_generation
-        runnable = _ExecutionRunnable(generation, self.graph.clone(), dict(self._results), invalidated)
+        runnable = _ExecutionRunnable(
+            generation,
+            self.graph.clone(),
+            dict(self._results),
+            {node_id: dict(visuals) for node_id, visuals in self._node_visuals.items()},
+            invalidated,
+        )
         runnable.signals.finished.connect(self._on_execution_finished)
         runnable.signals.failed.connect(self._on_execution_failed)
 
@@ -321,6 +368,7 @@ class GraphViewModel(QObject):
         if result.generation >= self._latest_requested_generation and result.generation >= self._latest_completed_generation:
             self._latest_completed_generation = result.generation
             self._results = result.results
+            self._node_visuals = result.visuals
             for node_id in result.impacted_order:
                 self.nodeResultUpdated.emit(node_id, self._results.get(node_id))
             preview_node_id = self._preview_node_id
@@ -342,29 +390,6 @@ class GraphViewModel(QObject):
     def _next_node_id(self, node_type: str) -> str:
         self._node_counters[node_type] += 1
         return f"{node_type}-{self._node_counters[node_type]}"
-
-    def _build_node(
-        self,
-        factory: dict[str, Callable[[str], object]],
-        node_type: str,
-        node_id: str,
-        params: dict[str, object] | None,
-    ):
-        if node_type == "blur":
-            kernel_size = 5 if params is None else int(params.get("kernel_size", 5))
-            node = factory[node_type](node_id, kernel_size)
-            if params is not None:
-                for key, value in params.items():
-                    if key == "kernel_size":
-                        continue
-                    node.set_param(key, value)
-        else:
-            node = factory[node_type](node_id)
-            if params is not None:
-                for key, value in params.items():
-                    node.set_param(key, value)
-        self._sync_counter_from_id(node_type, node_id)
-        return node
 
     def _get_or_create_source(self) -> SourceNode:
         if self._source_node_id is None:
@@ -439,6 +464,7 @@ class GraphViewModel(QObject):
         self.node_viewmodels = {}
         self._node_counters = defaultdict(int)
         self._results = {}
+        self._node_visuals = {}
         self._source_node_id = None
         self._preview_node_id = None
         self._selected_node_id = None

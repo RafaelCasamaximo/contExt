@@ -129,6 +129,31 @@ class GraphViewModelTests(unittest.TestCase):
         self.assertEqual(set(self.graph_vm.graph.nodes), previous_node_ids)
         self.assertEqual(self.graph_vm.graph.list_connections(), previous_connections)
 
+    def test_frequency_node_exposes_spectrum_visual(self) -> None:
+        graph_vm = GraphViewModel(bootstrap_default_graph=False, debounce_ms=0)
+        source = graph_vm.add_source_node((0.0, 0.0))
+        frequency = graph_vm.add_node("frequency_domain_filter", (220.0, 0.0))
+        preview = graph_vm.add_preview_node((440.0, 0.0))
+        assert source is not None
+        assert frequency is not None
+        assert preview is not None
+
+        graph_vm.connect_nodes(source.node_id, "image", frequency.node_id, "image")
+        graph_vm.connect_nodes(frequency.node_id, "image", preview.node_id, "image")
+        graph_vm.set_node_param(frequency.node_id, "mode", "low_pass")
+        graph_vm.set_source_image(self._sample_image())
+
+        self._wait_until(lambda: graph_vm.current_preview() is not None)
+        self._wait_until(lambda: graph_vm.node_visual(frequency.node_id, "frequency_spectrum") is not None)
+
+        spectrum = graph_vm.node_visual(frequency.node_id, "frequency_spectrum")
+        spatial = graph_vm.current_preview()
+        self.assertIsNotNone(spectrum)
+        self.assertIsNotNone(spatial)
+        self.assertEqual(spectrum.shape[2], 3)
+        self.assertEqual(spectrum.dtype, np.uint8)
+        self.assertFalse(np.array_equal(spectrum, spatial))
+
     def _wait_until(self, predicate, timeout_ms: int = 3000) -> None:
         deadline = time.monotonic() + (timeout_ms / 1000)
         while time.monotonic() < deadline:

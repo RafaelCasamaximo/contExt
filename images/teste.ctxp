@@ -3,11 +3,52 @@
   "version": 1,
   "nodes": [
     {
+      "id": "crop-1",
+      "type": "crop",
+      "position": {
+        "x": -192.0,
+        "y": -140.0
+      },
+      "params": {
+        "start_x": 10,
+        "start_y": 0,
+        "end_x": 0,
+        "end_y": 0
+      }
+    },
+    {
+      "id": "gabor_filter-1",
+      "type": "gabor_filter",
+      "position": {
+        "x": 46.428571428571374,
+        "y": 162.49999999999994
+      },
+      "params": {
+        "kernel_size": 1,
+        "sigma": 4.0,
+        "theta_deg": 0.0,
+        "lambda_value": 10.0,
+        "gamma": 0.5,
+        "psi_deg": 0.0
+      }
+    },
+    {
+      "id": "median_blur-1",
+      "type": "median_blur",
+      "position": {
+        "x": -255.23621887999997,
+        "y": 53.08657673142855
+      },
+      "params": {
+        "kernel_size": 15
+      }
+    },
+    {
       "id": "preview-1",
       "type": "preview",
       "position": {
-        "x": 126.0,
-        "y": 82.0
+        "x": 347.67857142857144,
+        "y": 147.6785714285714
       },
       "params": {}
     },
@@ -15,8 +56,8 @@
       "id": "source-1",
       "type": "source",
       "position": {
-        "x": -295.0,
-        "y": -173.0
+        "x": -430.7142857142858,
+        "y": -337.0
       },
       "params": {},
       "state": {
@@ -27,9 +68,27 @@
   ],
   "connections": [
     {
-      "source_node_id": "source-1",
+      "source_node_id": "crop-1",
+      "source_port": "image",
+      "target_node_id": "median_blur-1",
+      "target_port": "image"
+    },
+    {
+      "source_node_id": "gabor_filter-1",
       "source_port": "image",
       "target_node_id": "preview-1",
+      "target_port": "image"
+    },
+    {
+      "source_node_id": "median_blur-1",
+      "source_port": "image",
+      "target_node_id": "gabor_filter-1",
+      "target_port": "image"
+    },
+    {
+      "source_node_id": "source-1",
+      "source_port": "image",
+      "target_node_id": "crop-1",
       "target_port": "image"
     }
   ]

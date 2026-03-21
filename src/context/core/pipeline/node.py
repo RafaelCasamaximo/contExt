@@ -8,6 +8,7 @@ import copy
 import numpy as np
 
 ImageArray = np.ndarray
+NodeVisuals = dict[str, ImageArray | None]
 
 
 @dataclass
@@ -24,6 +25,21 @@ class Node(ABC):
 
     def set_param(self, key: str, value: Any) -> None:
         self.params[key] = value
+
+    def process_with_visuals(
+        self,
+        inputs: Mapping[str, ImageArray | None],
+    ) -> tuple[ImageArray | None, NodeVisuals]:
+        result = self.process(inputs)
+        return result, self.visual_outputs(inputs, result)
+
+    def visual_outputs(
+        self,
+        inputs: Mapping[str, ImageArray | None],
+        result: ImageArray | None,
+    ) -> NodeVisuals:
+        del inputs, result
+        return {}
 
     @abstractmethod
     def process(self, inputs: Mapping[str, ImageArray | None]) -> ImageArray | None:
