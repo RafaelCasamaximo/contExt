@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from context.localization import LocalizationController
 from context.viewmodels import GraphViewModel, NodeViewModel
 from context.views.theme import ThemeController
 
@@ -28,11 +29,18 @@ class NodeItem(QGraphicsObject):
     BLUR_HEIGHT = 176.0
     TITLE_HEIGHT = 42.0
 
-    def __init__(self, node_vm: NodeViewModel, graph_vm: GraphViewModel, theme_controller: ThemeController) -> None:
+    def __init__(
+        self,
+        node_vm: NodeViewModel,
+        graph_vm: GraphViewModel,
+        theme_controller: ThemeController,
+        localization_controller: LocalizationController,
+    ) -> None:
         super().__init__()
         self.node_vm = node_vm
         self._graph_vm = graph_vm
         self._theme_controller = theme_controller
+        self._localization = localization_controller
         self._has_result = False
         self._syncing_position = False
         self._input_ports: dict[str, PortItem] = {}
@@ -40,6 +48,7 @@ class NodeItem(QGraphicsObject):
         self._height = self.BLUR_HEIGHT if self.node_vm.node_type == "blur" else self.BASE_HEIGHT
         self._slider_proxy: QGraphicsProxyWidget | None = None
         self._kernel_slider: QSlider | None = None
+        self._kernel_label: QLabel | None = None
         self._kernel_value_label: QLabel | None = None
         self._shadow = QGraphicsDropShadowEffect()
 
@@ -55,6 +64,7 @@ class NodeItem(QGraphicsObject):
         self.node_vm.positionChanged.connect(self._sync_position_from_viewmodel)
         self.node_vm.updated.connect(self._handle_node_updated)
         self._theme_controller.themeChanged.connect(self._on_theme_changed)
+        self._localization.localeChanged.connect(self._on_locale_changed)
 
         self._build_ports()
         self._build_embedded_controls()
@@ -91,7 +101,7 @@ class NodeItem(QGraphicsObject):
         painter.drawText(
             QRectF(18.0, 0.0, self.WIDTH - 36.0, self.TITLE_HEIGHT),
             Qt.AlignmentFlag.AlignVCenter,
-            self.node_vm.title,
+            self._tr(f"node.{self.node_vm.node_type}.title"),
         )
 
         painter.setPen(QColor(theme.text_primary))
@@ -113,7 +123,11 @@ class NodeItem(QGraphicsObject):
         status_font.setPointSize(8)
         status_font.setBold(True)
         painter.setFont(status_font)
-        painter.drawText(chip_rect, Qt.AlignmentFlag.AlignCenter, "READY" if self._has_result else "WAIT")
+        painter.drawText(
+            chip_rect,
+            Qt.AlignmentFlag.AlignCenter,
+            self._tr("node.status.ready" if self._has_result else "node.status.wait"),
+        )
 
     def input_port(self, port_name: str) -> PortItem:
         return self._input_ports[port_name]
@@ -169,7 +183,7 @@ class NodeItem(QGraphicsObject):
         top_row = QHBoxLayout()
         top_row.setContentsMargins(0, 0, 0, 0)
 
-        label = QLabel("Kernel")
+        label = QLabel()
         label.setObjectName("secondaryLabel")
         value_label = QLabel()
         value_label.setObjectName("nodeChipLabel")
@@ -195,8 +209,10 @@ class NodeItem(QGraphicsObject):
 
         self._slider_proxy = proxy
         self._kernel_slider = slider
+        self._kernel_label = label
         self._kernel_value_label = value_label
         self._sync_embedded_controls()
+        self._retranslate_controls()
 
     def _sync_position_from_viewmodel(self, node_id: str, x: float, y: float) -> None:
         if node_id != self.node_vm.node_id:
@@ -215,25 +231,31 @@ class NodeItem(QGraphicsObject):
     def _body_label(self) -> str:
         if self.node_vm.node_type == "source":
             node = self._graph_vm.get_node(self.node_vm.node_id)
-            return "Image ready" if getattr(node, "image", None) is not None else "Load an image"
+            return self._tr("node.source.body.ready" if getattr(node, "image", None) is not None else "node.source.body.empty")
         if self.node_vm.node_type == "blur":
-            return "Gaussian blur"
-        return "Canvas output"
+            return self._tr("node.blur.body")
+        return self._tr("node.preview.body")
 
     def _sync_embedded_controls(self) -> None:
         if self._kernel_slider is None or self._kernel_value_label is None:
             return
         kernel_size = int(self.node_vm.params.get("kernel_size", 5))
-        with QSignalBlocker(self._kernel_slider):
+        blocker = QSignalBlocker(self._kernel_slider)
+        try:
             self._kernel_slider.setValue(kernel_size)
+        finally:
+            del blocker
         self._kernel_value_label.setText(str(kernel_size))
 
     def _on_kernel_slider_changed(self, value: int) -> None:
         if value % 2 == 0:
             value = value + 1 if value < 31 else value - 1
             if self._kernel_slider is not None:
-                with QSignalBlocker(self._kernel_slider):
+                blocker = QSignalBlocker(self._kernel_slider)
+                try:
                     self._kernel_slider.setValue(value)
+                finally:
+                    del blocker
         if self._kernel_value_label is not None:
             self._kernel_value_label.setText(str(value))
         self._graph_vm.set_node_param(self.node_vm.node_id, "kernel_size", value)
@@ -242,5 +264,16 @@ class NodeItem(QGraphicsObject):
         self._apply_theme_to_shadow()
         self.update()
 
+    def _on_locale_changed(self, _locale_code: str) -> None:
+        self._retranslate_controls()
+        self.update()
+
     def _apply_theme_to_shadow(self) -> None:
         self._shadow.setColor(QColor(self._theme_controller.theme.shadow))
+
+    def _retranslate_controls(self) -> None:
+        if self._kernel_label is not None:
+            self._kernel_label.setText(self._tr("node.blur.kernel"))
+
+    def _tr(self, key: str, **kwargs) -> str:
+        return self._localization.tr(key, **kwargs)

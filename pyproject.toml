@@ -21,9 +21,6 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools.package-data]
-context = ["ui/translations.json"]
-
 [project.urls]
 Homepage = "https://github.com/RafaelCasamaximo/contExt/"
 Repository = "https://github.com/RafaelCasamaximo/contExt.git"

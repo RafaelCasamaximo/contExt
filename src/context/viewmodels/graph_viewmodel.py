@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
+import re
 from typing import Callable
 
 import numpy as np
@@ -9,7 +10,18 @@ from PIL import Image
 from PyQt6.QtCore import QObject, QRunnable, QThread, QThreadPool, QTimer, pyqtSignal
 
 from context.core.nodes import BlurNode, PreviewNode, SourceNode
-from context.core.pipeline import Connection, ExecutionResult, Executor, Graph
+from context.localization import LocalizationController, translate
+from context.core.pipeline import (
+    Connection,
+    ExecutionResult,
+    Executor,
+    Graph,
+    PipelineSerializationError,
+    export_pipeline_payload,
+    load_pipeline_payload,
+    read_pipeline_file,
+    write_pipeline_file,
+)
 from context.viewmodels.node_viewmodel import NodeViewModel
 
 
@@ -60,8 +72,14 @@ class GraphViewModel(QObject):
     errorRaised = pyqtSignal(str)
     imageLoaded = pyqtSignal(str)
 
-    def __init__(self, bootstrap_default_graph: bool = True, debounce_ms: int = 120) -> None:
+    def __init__(
+        self,
+        localization_controller: LocalizationController | None = None,
+        bootstrap_default_graph: bool = True,
+        debounce_ms: int = 120,
+    ) -> None:
         super().__init__()
+        self._localization = localization_controller
         self.graph = Graph()
         self.node_viewmodels: dict[str, NodeViewModel] = {}
         self._node_counters: defaultdict[str, int] = defaultdict(int)
@@ -86,7 +104,13 @@ class GraphViewModel(QObject):
             self.add_source_node((60.0, 120.0))
             self.add_preview_node((420.0, 120.0))
 
-    def create_node(self, node_type: str, position: tuple[float, float]) -> NodeViewModel:
+    def create_node(
+        self,
+        node_type: str,
+        position: tuple[float, float],
+        node_id: str | None = None,
+        params: dict[str, object] | None = None,
+    ) -> NodeViewModel:
         factory: dict[str, Callable[[str], object]] = {
             "source": SourceNode,
             "blur": BlurNode,
@@ -95,27 +119,26 @@ class GraphViewModel(QObject):
         if node_type not in factory:
             raise ValueError(f"Unsupported node type '{node_type}'.")
 
-        self._node_counters[node_type] += 1
-        node_id = f"{node_type}-{self._node_counters[node_type]}"
-        node = factory[node_type](node_id)
+        resolved_node_id = node_id or self._next_node_id(node_type)
+        node = self._build_node(factory, node_type, resolved_node_id, params)
         self.graph.add_node(node)
 
         node_vm = NodeViewModel(node, *position)
         node_vm.positionChanged.connect(self._on_node_position_changed)
-        self.node_viewmodels[node_id] = node_vm
+        self.node_viewmodels[resolved_node_id] = node_vm
 
         if node_type == "source":
-            self._source_node_id = node_id
+            self._source_node_id = resolved_node_id
         elif node_type == "preview":
-            self._preview_node_id = node_id
+            self._preview_node_id = resolved_node_id
 
         self.nodeAdded.emit(node_vm)
-        self.nodeChanged.emit(node_id)
+        self.nodeChanged.emit(resolved_node_id)
         return node_vm
 
     def add_source_node(self, position: tuple[float, float]) -> NodeViewModel | None:
         if self.graph.find_node_by_type("source") is not None:
-            self.errorRaised.emit("Only one Source node is allowed.")
+            self.errorRaised.emit(self._tr("graph.error.only_one_source"))
             return None
         return self.create_node("source", position)
 
@@ -124,7 +147,7 @@ class GraphViewModel(QObject):
 
     def add_preview_node(self, position: tuple[float, float]) -> NodeViewModel | None:
         if self.graph.find_node_by_type("preview") is not None:
-            self.errorRaised.emit("Only one Preview node is allowed.")
+            self.errorRaised.emit(self._tr("graph.error.only_one_preview"))
             return None
         return self.create_node("preview", position)
 
@@ -135,7 +158,7 @@ class GraphViewModel(QObject):
             return self.add_blur_node(position)
         if node_type == "preview":
             return self.add_preview_node(position)
-        self.errorRaised.emit(f"Unsupported node type '{node_type}'.")
+        self.errorRaised.emit(self._tr("graph.error.unsupported_node_type", type_name=node_type))
         return None
 
     def remove_node(self, node_id: str) -> None:
@@ -169,7 +192,7 @@ class GraphViewModel(QObject):
         try:
             connection = self.graph.connect(source_node_id, source_port, target_node_id, target_port)
         except (KeyError, ValueError) as exc:
-            self.errorRaised.emit(str(exc))
+            self.errorRaised.emit(self._localize_connection_error(str(exc)))
             return False
         self.connectionAdded.emit(connection)
         self.schedule_reprocess({target_node_id})
@@ -228,6 +251,43 @@ class GraphViewModel(QObject):
             return None
         return self._results.get(self._preview_node_id)
 
+    def export_pipeline_payload(self) -> dict[str, object]:
+        positions = {
+            node_id: node_vm.position
+            for node_id, node_vm in self.node_viewmodels.items()
+        }
+        return export_pipeline_payload(self.graph, positions)
+
+    def save_pipeline(self, file_path: str) -> bool:
+        try:
+            write_pipeline_file(
+                file_path,
+                self.graph,
+                {node_id: node_vm.position for node_id, node_vm in self.node_viewmodels.items()},
+            )
+        except PipelineSerializationError as exc:
+            self.errorRaised.emit(self._tr("graph.error.pipeline_save_failed", message=str(exc)))
+            return False
+        return True
+
+    def load_pipeline(self, file_path: str) -> bool:
+        try:
+            document = read_pipeline_file(file_path)
+        except PipelineSerializationError as exc:
+            self.errorRaised.emit(self._tr("graph.error.pipeline_load_failed", message=str(exc)))
+            return False
+        self._apply_loaded_pipeline(document)
+        return True
+
+    def load_pipeline_payload(self, payload: object) -> bool:
+        try:
+            document = load_pipeline_payload(payload)
+        except PipelineSerializationError as exc:
+            self.errorRaised.emit(self._tr("graph.error.pipeline_load_failed", message=str(exc)))
+            return False
+        self._apply_loaded_pipeline(document)
+        return True
+
     def schedule_reprocess(self, invalidated: set[str]) -> None:
         self._pending_invalidated.update(node_id for node_id in invalidated if node_id in self.graph.nodes)
         if not self._pending_invalidated:
@@ -279,6 +339,33 @@ class GraphViewModel(QObject):
     def _on_node_position_changed(self, node_id: str, x: float, y: float) -> None:
         del node_id, x, y
 
+    def _next_node_id(self, node_type: str) -> str:
+        self._node_counters[node_type] += 1
+        return f"{node_type}-{self._node_counters[node_type]}"
+
+    def _build_node(
+        self,
+        factory: dict[str, Callable[[str], object]],
+        node_type: str,
+        node_id: str,
+        params: dict[str, object] | None,
+    ):
+        if node_type == "blur":
+            kernel_size = 5 if params is None else int(params.get("kernel_size", 5))
+            node = factory[node_type](node_id, kernel_size)
+            if params is not None:
+                for key, value in params.items():
+                    if key == "kernel_size":
+                        continue
+                    node.set_param(key, value)
+        else:
+            node = factory[node_type](node_id)
+            if params is not None:
+                for key, value in params.items():
+                    node.set_param(key, value)
+        self._sync_counter_from_id(node_type, node_id)
+        return node
+
     def _get_or_create_source(self) -> SourceNode:
         if self._source_node_id is None:
             node_vm = self.add_source_node((60.0, 120.0))
@@ -289,3 +376,84 @@ class GraphViewModel(QObject):
         if not isinstance(source_node, SourceNode):
             raise TypeError("Source node has an invalid type.")
         return source_node
+
+    def _tr(self, key: str, **kwargs) -> str:
+        if self._localization is not None:
+            return self._localization.tr(key, **kwargs)
+        return translate("en", key, **kwargs)
+
+    def _localize_connection_error(self, raw_message: str) -> str:
+        if raw_message == "Self connections are not allowed.":
+            return self._tr("graph.error.connection_self")
+        if raw_message == "Connection would create a cycle.":
+            return self._tr("graph.error.connection_cycle")
+        if "already has a connection" in raw_message:
+            return self._tr("graph.error.connection_input_occupied")
+        if raw_message.startswith("Unknown node"):
+            return self._tr("graph.error.connection_unknown_node")
+        if "has no input port" in raw_message or "has no output port" in raw_message:
+            return self._tr("graph.error.connection_invalid_port")
+        return self._tr("graph.error.connection_rejected")
+
+    def _apply_loaded_pipeline(self, document) -> None:
+        self._clear_graph_state()
+
+        for loaded_node in document.nodes:
+            node = loaded_node.node.clone()
+            node_vm = NodeViewModel(node, *loaded_node.position)
+            node_vm.positionChanged.connect(self._on_node_position_changed)
+            self.node_viewmodels[node.id] = node_vm
+            self.graph.add_node(node)
+            self._sync_counter_from_id(node.type_name, node.id)
+
+            if node.type_name == "source":
+                self._source_node_id = node.id
+            elif node.type_name == "preview":
+                self._preview_node_id = node.id
+
+            self.nodeAdded.emit(node_vm)
+            self.nodeChanged.emit(node.id)
+
+        for connection in document.connections:
+            self.graph.connect(
+                connection.source_node_id,
+                connection.source_port,
+                connection.target_node_id,
+                connection.target_port,
+            )
+            self.connectionAdded.emit(connection)
+
+        impacted = set(self.graph.nodes)
+        if impacted:
+            self.force_reprocess(impacted)
+        else:
+            self.previewUpdated.emit(None)
+
+    def _clear_graph_state(self) -> None:
+        existing_connections = self.graph.list_connections()
+        existing_node_ids = list(self.node_viewmodels)
+
+        self._debounce_timer.stop()
+        self._latest_requested_generation += 1
+        self.graph = Graph()
+        self.node_viewmodels = {}
+        self._node_counters = defaultdict(int)
+        self._results = {}
+        self._source_node_id = None
+        self._preview_node_id = None
+        self._selected_node_id = None
+        self._pending_invalidated.clear()
+
+        for connection in existing_connections:
+            self.connectionRemoved.emit(connection)
+        for node_id in existing_node_ids:
+            self.nodeRemoved.emit(node_id)
+
+        self.selectedNodeChanged.emit(None)
+        self.previewUpdated.emit(None)
+
+    def _sync_counter_from_id(self, node_type: str, node_id: str) -> None:
+        match = re.fullmatch(rf"{re.escape(node_type)}-(\d+)", node_id)
+        if match is None:
+            return
+        self._node_counters[node_type] = max(self._node_counters[node_type], int(match.group(1)))

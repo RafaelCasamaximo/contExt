@@ -4,8 +4,12 @@ PyQt6 rewrite of ContExt as a node-based image processing desktop application.
 
 ## Current MVP
 
+- Startup splash screen with theme and language selection
+- Persisted preferences for theme and locale
+- Localized UI in `pt-BR` and `en`
 - Directed graph editor built on `QGraphicsScene` / `QGraphicsView`
 - Default `Source` and `Preview` nodes, plus add/remove support for `Blur` nodes
+- Dark canvas with quad grid in the dark theme
 - Drag-to-connect edges between ports
 - Background graph execution with `QThreadPool`
 - Lazy descendant invalidation with latest-generation-wins result handling

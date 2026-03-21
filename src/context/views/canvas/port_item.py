@@ -23,6 +23,7 @@ class PortItem(QGraphicsObject):
         self.port_name = port_name
         self.direction = direction
         self._theme_controller = theme_controller
+        self._snap_highlighted = False
         self.setAcceptedMouseButtons(Qt.MouseButton.LeftButton)
         self.setCursor(Qt.CursorShape.CrossCursor)
         self.setAcceptHoverEvents(True)
@@ -36,8 +37,15 @@ class PortItem(QGraphicsObject):
         del option, widget
         theme = self._theme_controller.theme
         color = QColor(theme.output_port if self.direction == "output" else theme.input_port)
-        painter.setPen(QPen(QColor(theme.surface), 2.0))
-        painter.setBrush(QBrush(color))
+        border_color = QColor(theme.surface)
+        border_width = 2.0
+        brush_color = color
+        if self._snap_highlighted:
+            border_color = QColor(theme.selection)
+            border_width = 3.0
+            brush_color = QColor(theme.selection)
+        painter.setPen(QPen(border_color, border_width))
+        painter.setBrush(QBrush(brush_color))
         painter.drawEllipse(self.boundingRect())
         inner_rect = self.boundingRect().adjusted(4.0, 4.0, -4.0, -4.0)
         painter.setPen(Qt.PenStyle.NoPen)
@@ -52,6 +60,12 @@ class PortItem(QGraphicsObject):
             event.accept()
             return
         super().mousePressEvent(event)
+
+    def set_snap_highlighted(self, highlighted: bool) -> None:
+        if self._snap_highlighted == highlighted:
+            return
+        self._snap_highlighted = highlighted
+        self.update()
 
     def scene_center(self):
         return self.mapToScene(self.boundingRect().center())

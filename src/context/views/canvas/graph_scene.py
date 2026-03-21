@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from math import floor
 
-from PyQt6.QtCore import QPointF, Qt
+from PyQt6.QtCore import QPointF, QRectF, Qt
 from PyQt6.QtGui import QColor, QPainter, QPen, QTransform
 from PyQt6.QtWidgets import QGraphicsScene, QGraphicsSceneContextMenuEvent, QGraphicsSceneMouseEvent, QMenu
 
 from context.core.pipeline import Connection
+from context.localization import LocalizationController
 from context.viewmodels import GraphViewModel, NodeViewModel
 from context.views.theme import ThemeController
 
@@ -16,14 +17,23 @@ from .port_item import PortItem
 
 
 class GraphScene(QGraphicsScene):
-    def __init__(self, graph_vm: GraphViewModel, theme_controller: ThemeController) -> None:
+    SNAP_RADIUS = 28.0
+
+    def __init__(
+        self,
+        graph_vm: GraphViewModel,
+        theme_controller: ThemeController,
+        localization_controller: LocalizationController,
+    ) -> None:
         super().__init__()
         self._graph_vm = graph_vm
         self._theme_controller = theme_controller
+        self._localization = localization_controller
         self._node_items: dict[str, NodeItem] = {}
         self._edge_items: dict[tuple[str, str, str, str], EdgeItem] = {}
         self._drag_source_port: PortItem | None = None
         self._temporary_edge: EdgeItem | None = None
+        self._snap_target_port: PortItem | None = None
         self.setSceneRect(-1600.0, -1200.0, 3200.0, 2400.0)
 
         self._graph_vm.nodeAdded.connect(self._add_node_item)
@@ -34,6 +44,7 @@ class GraphScene(QGraphicsScene):
         self._graph_vm.nodeResultUpdated.connect(self._set_result_state)
         self.selectionChanged.connect(self._handle_selection_changed)
         self._theme_controller.themeChanged.connect(self._on_theme_changed)
+        self._localization.localeChanged.connect(self._on_locale_changed)
 
         for node_vm in self._graph_vm.list_nodes():
             self._add_node_item(node_vm)
@@ -77,12 +88,20 @@ class GraphScene(QGraphicsScene):
 
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         if self._temporary_edge is not None:
-            self._temporary_edge.set_target_point(event.scenePos())
+            snap_target = self._find_snap_target(event.scenePos())
+            self._set_snap_target(snap_target)
+            if snap_target is not None:
+                self._temporary_edge.set_target_point(snap_target.scene_center())
+            else:
+                self._temporary_edge.set_target_point(event.scenePos())
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         if self._drag_source_port is not None and self._temporary_edge is not None:
-            target = self._port_at(event.scenePos())
+            release_snap_target = self._find_snap_target(event.scenePos())
+            if release_snap_target is not None:
+                self._set_snap_target(release_snap_target)
+            target = self._snap_target_port or self._port_at(event.scenePos())
             if self._is_valid_target(self._drag_source_port, target):
                 self._graph_vm.connect_nodes(
                     self._drag_source_port.node_id,
@@ -95,13 +114,13 @@ class GraphScene(QGraphicsScene):
 
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:
         menu = QMenu()
-        add_source = menu.addAction("Add Source")
-        add_blur = menu.addAction("Add Blur")
-        add_preview = menu.addAction("Add Preview")
+        add_source = menu.addAction(self._localization.tr("graph.menu.add_source"))
+        add_blur = menu.addAction(self._localization.tr("graph.menu.add_blur"))
+        add_preview = menu.addAction(self._localization.tr("graph.menu.add_preview"))
         delete_selected = None
         if self.selectedItems():
             menu.addSeparator()
-            delete_selected = menu.addAction("Delete Selected")
+            delete_selected = menu.addAction(self._localization.tr("graph.menu.delete_selected"))
 
         chosen = menu.exec(event.screenPos())
         scene_pos = event.scenePos()
@@ -116,7 +135,7 @@ class GraphScene(QGraphicsScene):
         event.accept()
 
     def _add_node_item(self, node_vm: NodeViewModel) -> None:
-        item = NodeItem(node_vm, self._graph_vm, self._theme_controller)
+        item = NodeItem(node_vm, self._graph_vm, self._theme_controller, self._localization)
         item.geometryChanged.connect(self._update_edges_for_node)
         self._node_items[node_vm.node_id] = item
         self.addItem(item)
@@ -171,6 +190,7 @@ class GraphScene(QGraphicsScene):
     def _clear_temporary_edge(self) -> None:
         if self._temporary_edge is not None:
             self.removeItem(self._temporary_edge)
+        self._set_snap_target(None)
         self._drag_source_port = None
         self._temporary_edge = None
 
@@ -182,6 +202,12 @@ class GraphScene(QGraphicsScene):
         if self._temporary_edge is not None:
             self._temporary_edge.update_path()
         self.update(self.sceneRect())
+        for view in self.views():
+            view.viewport().update()
+
+    def _on_locale_changed(self, _locale_code: str) -> None:
+        for node_item in self._node_items.values():
+            node_item.update()
         for view in self.views():
             view.viewport().update()
 
@@ -207,13 +233,52 @@ class GraphScene(QGraphicsScene):
         item = self.itemAt(scene_pos, QTransform())
         return item if isinstance(item, PortItem) else None
 
-    @staticmethod
-    def _is_valid_target(source_port: PortItem, target_port: PortItem | None) -> bool:
+    def _find_snap_target(self, scene_pos: QPointF) -> PortItem | None:
+        if self._drag_source_port is None:
+            return None
+
+        radius = self.SNAP_RADIUS
+        search_rect = QRectF(scene_pos.x() - radius, scene_pos.y() - radius, radius * 2, radius * 2)
+        best_target: PortItem | None = None
+        best_distance_sq: float | None = None
+
+        for item in self.items(search_rect, Qt.ItemSelectionMode.IntersectsItemShape):
+            if not isinstance(item, PortItem):
+                continue
+            if not self._is_valid_target(self._drag_source_port, item):
+                continue
+            center = item.scene_center()
+            dx = center.x() - scene_pos.x()
+            dy = center.y() - scene_pos.y()
+            distance_sq = (dx * dx) + (dy * dy)
+            if distance_sq > radius * radius:
+                continue
+            if best_distance_sq is None or distance_sq < best_distance_sq:
+                best_distance_sq = distance_sq
+                best_target = item
+        return best_target
+
+    def _set_snap_target(self, port_item: PortItem | None) -> None:
+        if self._snap_target_port is port_item:
+            return
+        if self._snap_target_port is not None:
+            self._snap_target_port.set_snap_highlighted(False)
+        self._snap_target_port = port_item
+        if self._snap_target_port is not None:
+            self._snap_target_port.set_snap_highlighted(True)
+
+    def _is_valid_target(self, source_port: PortItem, target_port: PortItem | None) -> bool:
         if target_port is None:
             return False
         if source_port.node_id == target_port.node_id:
             return False
-        return source_port.direction == "output" and target_port.direction == "input"
+        if source_port.direction != "output" or target_port.direction != "input":
+            return False
+        if self._graph_vm.graph.get_input_connection(target_port.node_id, target_port.port_name) is not None:
+            return False
+        if self._graph_vm.graph.has_path(target_port.node_id, source_port.node_id):
+            return False
+        return True
 
     @staticmethod
     def _edge_key(connection: Connection) -> tuple[str, str, str, str]:

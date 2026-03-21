@@ -7,6 +7,7 @@ import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+import json
 
 import numpy as np
 from PIL import Image
@@ -83,6 +84,50 @@ class GraphViewModelTests(unittest.TestCase):
         preview = self.graph_vm.current_preview()
         self.assertIsNotNone(preview)
         self.assertEqual(int(preview[0, 0, 0]), 9)
+
+    def test_pipeline_roundtrip_restores_positions_connections_and_preview(self) -> None:
+        self.graph_vm.set_node_param(self.blur_id, "kernel_size", 11)
+        self.graph_vm.set_source_image(self._sample_image(), "embedded-source.png")
+        self._wait_until(lambda: self.graph_vm.current_preview() is not None)
+        original_preview = self.graph_vm.current_preview()
+        self.assertIsNotNone(original_preview)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "roundtrip.ctxp"
+            self.assertTrue(self.graph_vm.save_pipeline(str(path)))
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["format"], "context.pipeline")
+            self.assertEqual(payload["version"], 1)
+            source_entry = next(entry for entry in payload["nodes"] if entry["type"] == "source")
+            self.assertIn("image_png_base64", source_entry["state"])
+
+            restored = GraphViewModel(bootstrap_default_graph=False, debounce_ms=0)
+            self.assertTrue(restored.load_pipeline(str(path)))
+
+            self._wait_until(lambda: restored.current_preview() is not None)
+            self.assertEqual(set(restored.graph.nodes), {self.source_id, self.blur_id, self.preview_id})
+            self.assertEqual(restored.node_viewmodels[self.source_id].position, (0.0, 0.0))
+            self.assertEqual(restored.node_viewmodels[self.blur_id].position, (220.0, 0.0))
+            self.assertEqual(restored.node_viewmodels[self.preview_id].position, (440.0, 0.0))
+            self.assertEqual(restored.get_node(self.blur_id).params["kernel_size"], 11)
+            self.assertEqual(len(restored.graph.list_connections()), 2)
+            self.assertTrue(np.array_equal(restored.current_preview(), original_preview))
+            restored_source = restored.get_node(self.source_id)
+            self.assertEqual(restored_source.image_path, "embedded-source.png")
+
+    def test_invalid_pipeline_payload_is_rejected_without_mutating_graph(self) -> None:
+        previous_node_ids = set(self.graph_vm.graph.nodes)
+        previous_connections = list(self.graph_vm.graph.list_connections())
+        payload = {
+            "format": "context.pipeline",
+            "version": 999,
+            "nodes": [],
+            "connections": [],
+        }
+
+        self.assertFalse(self.graph_vm.load_pipeline_payload(payload))
+        self.assertEqual(set(self.graph_vm.graph.nodes), previous_node_ids)
+        self.assertEqual(self.graph_vm.graph.list_connections(), previous_connections)
 
     def _wait_until(self, predicate, timeout_ms: int = 3000) -> None:
         deadline = time.monotonic() + (timeout_ms / 1000)

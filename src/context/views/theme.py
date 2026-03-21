@@ -120,6 +120,9 @@ class ThemeController(QObject):
     def theme(self) -> MaterialTheme:
         return self._theme
 
+    def available_themes(self) -> tuple[str, ...]:
+        return tuple(THEMES)
+
     def set_theme(self, theme_name: str) -> None:
         if theme_name not in THEMES:
             raise ValueError(f"Unknown theme '{theme_name}'.")
@@ -139,6 +142,25 @@ QWidget {{
 }}
 QMainWindow, QWidget#appRoot {{
     background-color: {theme.window_bg};
+}}
+QDialog#splashSurface {{
+    background-color: {theme.window_bg};
+    border: 1px solid {theme.border_soft};
+    border-radius: 28px;
+}}
+QWidget#splashCard {{
+    background-color: {theme.surface};
+    border: 1px solid {theme.border_soft};
+    border-radius: 22px;
+}}
+QLabel#heroTitle {{
+    color: {theme.text_primary};
+    font-size: 28px;
+    font-weight: 700;
+}}
+QLabel#heroSubtitle {{
+    color: {theme.text_secondary};
+    font-size: 14px;
 }}
 QMenuBar {{
     background-color: {theme.surface};
@@ -188,6 +210,44 @@ QToolButton:checked {{
     background-color: {theme.selection};
     color: {theme.text_inverse};
     border-color: {theme.selection};
+}}
+QPushButton {{
+    background-color: {theme.selection};
+    color: {theme.text_inverse};
+    border: none;
+    border-radius: 14px;
+    padding: 10px 18px;
+    font-weight: 600;
+}}
+QPushButton:disabled {{
+    background-color: {theme.border_soft};
+    color: {theme.text_secondary};
+}}
+QComboBox {{
+    background-color: {theme.surface_raised};
+    color: {theme.text_primary};
+    border: 1px solid {theme.border_soft};
+    border-radius: 12px;
+    padding: 8px 12px;
+}}
+QComboBox::drop-down {{
+    border: none;
+}}
+QComboBox QAbstractItemView {{
+    background-color: {theme.surface};
+    color: {theme.text_primary};
+    border: 1px solid {theme.border_soft};
+    selection-background-color: {theme.surface_alt};
+}}
+QProgressBar {{
+    background-color: {theme.surface};
+    border: 1px solid {theme.border_soft};
+    border-radius: 10px;
+    min-height: 12px;
+}}
+QProgressBar::chunk {{
+    background-color: {theme.selection};
+    border-radius: 9px;
 }}
 QStatusBar {{
     background-color: {theme.surface};

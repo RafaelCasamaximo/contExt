@@ -30,6 +30,12 @@ class UiSmokeTests(unittest.TestCase):
         window.show()
         try:
             self.assertEqual(window.theme_name, "material_dark")
+            self.assertEqual(window.locale_code, "pt-BR")
+            self.assertNotEqual(window.theme_controller.theme.canvas_bg.lower(), "#ffffff")
+            self.assertNotEqual(window.graph_view.backgroundBrush().color().name().lower(), "#ffffff")
+            window.set_locale("en")
+            self.assertEqual(window.locale_code, "en")
+            self.assertEqual(window._file_menu.title(), "File")
             window.set_theme("material_light")
             self.assertEqual(window.theme_name, "material_light")
             self.assertEqual(window.graph_scene.theme_name, "material_light")
@@ -41,6 +47,8 @@ class UiSmokeTests(unittest.TestCase):
             assert source_vm is not None
             assert preview_vm is not None
 
+            blur_item = window.graph_scene.node_item(blur_vm.node_id)
+            self.assertIsNotNone(blur_item)
             self.assertTrue(
                 window.graph_viewmodel.connect_nodes(source_vm.id, "image", blur_vm.node_id, "image")
             )
@@ -56,9 +64,10 @@ class UiSmokeTests(unittest.TestCase):
             self._wait_until(lambda: window.preview_panel.has_image())
             first_preview = window.graph_viewmodel.current_preview()
             self.assertIsNotNone(first_preview)
+            self.assertTrue(window._save_preview_action.isEnabled())
+            self.assertEqual(window._open_pipeline_action.text(), "Open Pipeline...")
+            self.assertEqual(window.preview_panel._save_button.text(), "Save Preview as PNG...")
 
-            blur_item = window.graph_scene.node_item(blur_vm.node_id)
-            self.assertIsNotNone(blur_item)
             slider = blur_item.embedded_slider()
             self.assertIsNotNone(slider)
             self.assertEqual(slider.value(), 5)
@@ -75,8 +84,31 @@ class UiSmokeTests(unittest.TestCase):
             self.assertEqual(window.theme_name, "material_dark")
             self.assertEqual(blur_item.theme_name, "material_dark")
             self.assertTrue(window.preview_panel.has_image())
-            self.assertEqual(len(window.graph_viewmodel.graph.nodes), 3)
-            self.assertEqual(len(window.graph_viewmodel.graph.list_connections()), 2)
+            with tempfile.TemporaryDirectory() as tmpdir:
+                preview_path = Path(tmpdir) / "preview-output"
+                pipeline_path = Path(tmpdir) / "graph-state"
+                self.assertTrue(window.save_preview_to_path(str(preview_path)))
+                self.assertTrue((Path(tmpdir) / "preview-output.png").exists())
+                saved_preview = np.array(Image.open(Path(tmpdir) / "preview-output.png").convert("RGB"))
+                self.assertEqual(saved_preview.shape, first_preview.shape)
+
+                self.assertTrue(window.save_pipeline_to_path(str(pipeline_path)))
+                saved_pipeline = Path(tmpdir) / "graph-state.ctxp"
+                self.assertTrue(saved_pipeline.exists())
+
+                restored = MainWindow()
+                restored.show()
+                try:
+                    self.assertTrue(restored.load_pipeline_from_path(str(saved_pipeline)))
+                    self._wait_until(lambda: restored.preview_panel.has_image())
+                    self.assertEqual(len(restored.graph_viewmodel.graph.nodes), 3)
+                    self.assertEqual(len(restored.graph_viewmodel.graph.list_connections()), 2)
+                    self.assertEqual(
+                        restored.graph_viewmodel.get_node(blur_vm.node_id).params["kernel_size"],
+                        9,
+                    )
+                finally:
+                    restored.close()
         finally:
             window.close()
 
