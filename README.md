@@ -77,7 +77,7 @@ in a single reproducible tool with a graphical interface.
 
 ContExt is not a standalone utility: it is the software materialization of a research line developed at
 the **Universidade Estadual de Londrina (UEL)**, within the Graduate Program in Applied and Computational
-Mathematics (PGMAC) and the Sanitation Laboratory (LabSan). Each major capability of the software maps
+Mathematics (PGMAC) and the Laboratório de Simulação e Análise Numérica (LabSan). Each major capability of the software maps
 to a peer-reviewed contribution:
 
 | Capability | Origin |
