@@ -375,7 +375,7 @@ Beyond the publications above, ContExt is registered as a computer program with 
 **INPI — Instituto Nacional da Propriedade Industrial**
 ([National Institute of Industrial Property](https://www.gov.br/inpi/pt-br)).
 
-> ℹ️ *Registration number: `<add the INPI process/registration number here>`.*
+> ℹ️ *Registration number: BR512025005492-0.*
 
 ---
 
