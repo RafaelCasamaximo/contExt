@@ -1,0 +1,116 @@
+name: Build and release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install application
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
+
+      - name: Run test suite
+        run: python -m unittest discover -s tests -v
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: Linux x64
+            runner: ubuntu-latest
+            build_command: bash ./build.sh
+            artifact_name: release-linux-x64
+            artifact_file: release/ContExt-linux-x64.tar.gz
+          - platform: Windows x64
+            runner: windows-latest
+            build_command: .\build.cmd
+            artifact_name: release-windows-x64
+            artifact_file: release/ContExt-windows-x64.zip
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
+
+      - name: Build application
+        run: ${{ matrix.build_command }}
+
+      - name: Upload packaged application
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_file }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish commit release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download packaged applications
+        uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          path: release
+          merge-multiple: true
+
+      - name: Validate assets and create checksums
+        run: |
+          test -f release/ContExt-linux-x64.tar.gz
+          test -f release/ContExt-windows-x64.zip
+          cd release
+          sha256sum ContExt-linux-x64.tar.gz ContExt-windows-x64.zip > SHA256SUMS.txt
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: main-${{ github.sha }}
+        run: |
+          short_sha="${GITHUB_SHA:0:7}"
+          release_title="ContExt main ${short_sha}"
+          notes="Build automático do commit [${short_sha}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}) na branch main."
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release/* --clobber
+          else
+            gh release create "$RELEASE_TAG" release/* \
+              --target "$GITHUB_SHA" \
+              --title "$release_title" \
+              --notes "$notes" \
+              --prerelease \
+              --latest=false
+          fi

@@ -11,6 +11,7 @@
 <p align="center">
   <a href="https://doi.org/10.1016/j.compbiomed.2025.110591"><img alt="DOI" src="https://img.shields.io/badge/DOI-10.1016%2Fj.compbiomed.2025.110591-blue"></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-green"></a>
+  <a href="https://github.com/RafaelCasamaximo/contExt/actions/workflows/build-release.yml"><img alt="Build and release" src="https://github.com/RafaelCasamaximo/contExt/actions/workflows/build-release.yml/badge.svg?branch=main"></a>
   <img alt="Python" src="https://img.shields.io/badge/python-3.x-blue">
   <img alt="Platforms" src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey">
 </p>
@@ -261,11 +262,14 @@ Creates `release/ContExt-linux-x64.tar.gz`.
 ## Download
 
 Binaries for each operating system are available on the [Releases tab](https://github.com/RafaelCasamaximo/contExt/releases).
-Tagged releases publish the following artifacts:
+Every commit pushed to `main` runs the automated test suite, builds Linux and Windows packages, and
+publishes a prerelease tagged as `main-<commit-sha>`. Each automated release contains:
 
-- `ContExt-macos-<arch>.app.zip`
 - `ContExt-windows-x64.zip`
 - `ContExt-linux-x64.tar.gz`
+- `SHA256SUMS.txt`
+
+The macOS package can still be created locally with `build-macos.sh` and attached to a versioned release.
 
 ---
 
