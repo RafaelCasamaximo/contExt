@@ -13,7 +13,7 @@ def showFiltering(callbacks):
                 dpg.add_checkbox(tag='claheCheckbox', callback=lambda sender, app_data: callbacks.imageProcessing.toggleAndExecuteQuery('claheEqualization', sender, app_data))
                 dpg.add_text(strings.t("filtering.clahe_equalization"), tag="filteringClaheText")
             dpg.add_text(strings.t("filtering.clahe_clip_limit"), tag="filteringClaheClipLimitText")
-            dpg.add_slider_float(default_value=2.0, min_value=0.1, max_value=10.0, width=-1, tag='claheClipLimitSlider', callback=lambda: callbacks.imageProcessing.executeQuery('claheEqualization'))
+            dpg.add_slider_double(default_value=2.0, min_value=0.1, max_value=10.0, width=-1, tag='claheClipLimitSlider', callback=lambda: callbacks.imageProcessing.executeQuery('claheEqualization'))
             dpg.add_text(strings.t("filtering.clahe_tile_grid_size"), tag="filteringClaheTileGridSizeText")
             dpg.add_slider_int(default_value=8, min_value=1, max_value=32, width=-1, tag='claheTileGridSizeSlider', callback=lambda: callbacks.imageProcessing.executeQuery('claheEqualization'))
             dpg.add_separator()
@@ -24,7 +24,7 @@ def showFiltering(callbacks):
             dpg.add_text(strings.t("filtering.brightness"), tag="filteringBrightnessText")
             dpg.add_slider_int(default_value=0, min_value=-100, max_value=100, width=-1, tag='brightnessSlider', callback=lambda: callbacks.imageProcessing.executeQuery('brightnessAndContrast'))
             dpg.add_text(strings.t("filtering.contrast"), tag="filteringContrastText")
-            dpg.add_slider_float(default_value=1.0, min_value=0.0, max_value=3.0, width=-1, tag='contrastSlider', callback=lambda: callbacks.imageProcessing.executeQuery('brightnessAndContrast'))
+            dpg.add_slider_double(default_value=1.0, min_value=0.0, max_value=3.0, width=-1, tag='contrastSlider', callback=lambda: callbacks.imageProcessing.executeQuery('brightnessAndContrast'))
             dpg.add_separator()
                 
             with dpg.group(horizontal=True):

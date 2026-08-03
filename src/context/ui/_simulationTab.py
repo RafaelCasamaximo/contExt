@@ -85,7 +85,7 @@ def showSimulation(callbacks):
             )
 
             dpg.add_text(strings.t("simulation.source_term"), tag="simulationSourceText")
-            dpg.add_input_float(tag="simulationSourceTerm", width=-1, default_value=0.0, enabled=False)
+            dpg.add_input_double(tag="simulationSourceTerm", width=-1, default_value=0.0, enabled=False, format="%.15g")
             dpg.add_button(
                 tag="simulationRefreshButton",
                 width=-1,
@@ -106,7 +106,7 @@ def showSimulation(callbacks):
             dpg.add_text(strings.t("simulation.region_range_empty"), tag="simulationRegionRange")
             dpg.add_text(strings.t("simulation.region_boundary_nodes", value="--"), tag="simulationRegionNodeCount")
             dpg.add_text(strings.t("simulation.boundary_value"), tag="simulationBoundaryValueText")
-            dpg.add_input_float(tag="simulationBoundaryValue", width=-1, default_value=0.0)
+            dpg.add_input_double(tag="simulationBoundaryValue", width=-1, default_value=0.0, format="%.15g")
             dpg.add_button(
                 tag="simulationApplyBoundaryButton",
                 width=-1,

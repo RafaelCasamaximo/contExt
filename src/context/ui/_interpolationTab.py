@@ -17,7 +17,7 @@ def showInterpolation(callbacks):
             dpg.add_text(strings.t("interpolation.node_removal_increment"), tag="interpolationRemovalText")
             dpg.add_slider_int(tag='removalInterpolationSlider', default_value=0, min_value=0, max_value=7, width=-1)
             dpg.add_checkbox(label=strings.t("interpolation.contour_approximation"), tag='approxPolyInterpolation')
-            dpg.add_slider_float(tag='approxPolySlider', default_value=0.001, min_value=0.001, max_value=0.01, width=-1)
+            dpg.add_slider_double(tag='approxPolySlider', default_value=0.001, min_value=0.001, max_value=0.01, width=-1)
             dpg.add_button(tag='interpolateButton', width=-1, label=strings.t("common.apply_method"), callback=lambda sender, app_data: callbacks.interpolation.interpolate(sender, app_data))
             dpg.add_separator()
             dpg.add_button(tag='interpolationToMesh', width=-1, label=strings.t("interpolation.export_to_mesh_generation"), callback=lambda sender, app_data: callbacks.interpolation.exportToMeshGeneration(sender, app_data))

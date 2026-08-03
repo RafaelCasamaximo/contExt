@@ -143,6 +143,16 @@ before moving to the next step.
   resolution reduction, with node removal and Ramer–Douglas–Peucker refinement.
 - **Mesh generation** — build sparse or adaptive rectangular meshes whose boundary approximates the
   extracted contour over mesh nodes.
+- **Contour connection modes** — preserve diagonal contour links or constrain the generated boundary to
+  horizontal and vertical segments with right-angle turns.
+- **Flexible node spacing** — enter `dx` and `dy` directly or derive them from a reference distance `d`
+  divided independently along the X and Y axes.
+- **Nested mesh subdivision** — apply `N` bisection levels (`2^N` refinement) while retaining every node
+  from the previous mesh, so the original point set `P` is always a subset of the refined set `P'`.
+- **Scientific numeric precision** — double-precision inputs and `float64` computation, with decimal-stable
+  grid snapping to avoid preventable binary floating-point node shifts.
+- **Responsive mesh-grid preview** — classify nodes with vectorized polygon operations in a background
+  worker and render the result as two aggregated segment series, with cancellation for obsolete plots.
 - **Export** — obtain the finite set of points/nodes for use in finite difference and CFD solvers.
 - **Cross-platform GUI** — Windows, macOS and Linux, with distributable binaries.
 

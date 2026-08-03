@@ -9,6 +9,7 @@ from ._meshGeneration import MeshGeneration
 from ._imageProcessing import ImageProcessing
 from ._interpolation import Interpolation
 from ..ui import strings
+from ._numeric import divide_distance, grid_count
 
 class ContourExtraction:
 
@@ -260,14 +261,14 @@ class ContourExtraction:
         xRes = current_resolution[0]
         yRes = current_resolution[1]
         w, h = self.getMappingDimensions()
-        dx = w/xRes
-        dy = h/yRes
+        dx = divide_distance(w, xRes)
+        dy = divide_distance(h, yRes)
         xmin = min(xarray)
         ymin = min(yarray)
         xmax = max(xarray)
         ymax = max(yarray)
-        nx = round((xmax - xmin)/dx) + 1
-        ny = round((ymax - ymin)/dy) + 1
+        nx = grid_count(xmin, xmax, dx)
+        ny = grid_count(ymin, ymax, dy)
         xarray.append(xarray[0])
         yarray.append(yarray[0])
         self.meshGeneration.originalX = [nx, xmin, xmax, dx] + xarray
@@ -470,14 +471,14 @@ class ContourExtraction:
             xRes = current_resolution[0]
             yRes = current_resolution[1]
             w, h = self.getMappingDimensions()
-            dx = w/xRes
-            dy = h/yRes
+            dx = divide_distance(w, xRes)
+            dy = divide_distance(h, yRes)
             xmin = min(xarray)
             ymin = min(yarray)
             xmax = max(xarray)
             ymax = max(yarray)
-            nx = round((xmax - xmin)/dx) + 1
-            ny = round((ymax - ymin)/dy) + 1
+            nx = grid_count(xmin, xmax, dx)
+            ny = grid_count(ymin, ymax, dy)
             xarray.append(xarray[0])
             yarray.append(yarray[0])
             Mesh.export_coords_mesh(path, xarray, yarray, nx, ny, xmin, ymin, xmax, ymax, dx, dy, self.meshGeneration.toggleOrderingFlag)

@@ -55,7 +55,9 @@ class Texture:
 
     def textureToData(texture):
         auxImg = cv2.cvtColor(texture, cv2.COLOR_RGB2BGRA)
-        auxImg = np.asarray(auxImg, dtype='f')
+        # DearPyGui dynamic textures require 32-bit RGBA buffers; this conversion
+        # is display-only and does not affect the scientific processing arrays.
+        auxImg = np.asarray(auxImg, dtype=np.float32)
         auxImg = auxImg.ravel()
         auxImg = np.true_divide(auxImg, 255.0)
         return auxImg

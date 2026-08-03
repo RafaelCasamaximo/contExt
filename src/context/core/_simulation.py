@@ -145,16 +145,16 @@ class Simulation:
             max_label = "--"
             status = strings.t("simulation.scale_pending")
         elif self.scaleIsConstant:
-            min_label = f"{self.scaleMinValue:.6g}"
-            max_label = f"{self.scaleMaxValue:.6g}"
-            status = strings.t("simulation.scale_constant", value=f"{self.scaleMinValue:.6g}")
+            min_label = f"{self.scaleMinValue:.12g}"
+            max_label = f"{self.scaleMaxValue:.12g}"
+            status = strings.t("simulation.scale_constant", value=f"{self.scaleMinValue:.12g}")
         else:
-            min_label = f"{self.scaleMinValue:.6g}"
-            max_label = f"{self.scaleMaxValue:.6g}"
+            min_label = f"{self.scaleMinValue:.12g}"
+            max_label = f"{self.scaleMaxValue:.12g}"
             status = strings.t(
                 "simulation.scale_range",
-                min=f"{self.scaleMinValue:.6g}",
-                max=f"{self.scaleMaxValue:.6g}",
+                min=f"{self.scaleMinValue:.12g}",
+                max=f"{self.scaleMaxValue:.12g}",
             )
         dpg.set_value("simulationColorScaleMinValue", min_label)
         dpg.set_value("simulationColorScaleMaxValue", max_label)
@@ -290,10 +290,10 @@ class Simulation:
             return
 
         dpg.set_value("simulationSystemSize", strings.t("simulation.system_size", value=self.result.system_size))
-        dpg.set_value("simulationResidual", strings.t("simulation.residual", value=f"{self.result.residual:.3e}"))
-        dpg.set_value("simulationMinValue", strings.t("simulation.min_value", value=f"{self.result.min_value:.6g}"))
-        dpg.set_value("simulationMaxValue", strings.t("simulation.max_value", value=f"{self.result.max_value:.6g}"))
-        dpg.set_value("simulationMeanValue", strings.t("simulation.mean_value", value=f"{self.result.mean_value:.6g}"))
+        dpg.set_value("simulationResidual", strings.t("simulation.residual", value=f"{self.result.residual:.6e}"))
+        dpg.set_value("simulationMinValue", strings.t("simulation.min_value", value=f"{self.result.min_value:.12g}"))
+        dpg.set_value("simulationMaxValue", strings.t("simulation.max_value", value=f"{self.result.max_value:.12g}"))
+        dpg.set_value("simulationMeanValue", strings.t("simulation.mean_value", value=f"{self.result.mean_value:.12g}"))
         dpg.set_value(
             "simulationSolveTime",
             strings.t("simulation.solve_time", value=f"{(self.solve_time_seconds or 0.0):.4f}s"),

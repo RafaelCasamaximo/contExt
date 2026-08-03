@@ -1,5 +1,6 @@
 
 from ._mesh import Mesh
+from ._numeric import divide_distance, fitted_grid_end, grid_coordinate, snap_down_to_grid, values_close
 
 
 class SparseMesh:
@@ -19,6 +20,16 @@ class SparseMesh:
         self.ranges = []
         self.dx = []
         self.dy = []
+
+    def subdivide(self, levels):
+        """Refine every range while retaining all nodes from the previous grid."""
+        factor = Mesh.subdivisionFactor(levels)
+        for meshRange in self.ranges:
+            meshRange["nx"] = (int(meshRange["nx"]) - 1) * factor + 1
+            meshRange["ny"] = (int(meshRange["ny"]) - 1) * factor + 1
+            meshRange["dx"] = divide_distance(meshRange["dx"], factor)
+            meshRange["dy"] = divide_distance(meshRange["dy"], factor)
+        self.setIntervals()
     
     """
     Adiciona informações da região da malha
@@ -28,30 +39,24 @@ class SparseMesh:
         if len(self.ranges) > 0:
             r = self.ranges[0]
             if xmin > r["xi"]:
-                xmin = (xmin - r["xi"]) // r["dx"] * r["dx"] + r["xi"]
+                xmin = snap_down_to_grid(xmin, r["xi"], r["dx"])
             elif xmin < r["xi"]:
                 xmin = r["xi"]
             if ymin > r["yi"]:
-                ymin = (ymin - r["yi"]) // r["dy"] * r["dy"] + r["yi"]
+                ymin = snap_down_to_grid(ymin, r["yi"], r["dy"])
             elif ymin < r["yi"]:
                 ymin = r["yi"]
-            xmax = (xmax - r["xi"]) // r["dx"] * r["dx"] + r["xi"]
-            ymax = (ymax - r["yi"]) // r["dy"] * r["dy"] + r["yi"]
+            xmax = snap_down_to_grid(xmax, r["xi"], r["dx"])
+            ymax = snap_down_to_grid(ymax, r["yi"], r["dy"])
             for i in self.ranges[1:]:
                 if i["xi"] <= xmin <= i["xf"] or i["xi"] <= xmax <= i["xf"] or i["yi"] <= ymin <= i["yf"] or i["yi"] <= ymax <= i["yf"]:
                     print("Invalid range: overlap detected")
                     return False
-            dxAux = r["dx"]/dxAux
-            dyAux = r["dy"]/dyAux
+            dxAux = divide_distance(r["dx"], int(dxAux))
+            dyAux = divide_distance(r["dy"], int(dyAux))
 
-        nx = round((xmax - xmin)/dxAux) + 1
-        ny = round((ymax - ymin)/dyAux) + 1
-        if (xmax - xmin)/dxAux != (xmax - xmin)//dxAux:
-            xmax = xmin + nx * dxAux
-            nx += 1
-        if (ymax - ymin)/dyAux != (ymax - ymin)//dyAux:
-            ymax = ymin + ny * dyAux
-            ny += 1
+        nx, xmax = fitted_grid_end(xmin, xmax, dxAux)
+        ny, ymax = fitted_grid_end(ymin, ymax, dyAux)
         aux = {
             "nx" : nx,
             "ny" : ny,
@@ -80,37 +85,26 @@ class SparseMesh:
                 r["xi"] = xmin
                 r["yi"] = ymin
             else:
-                auxX = originaldx//r["dx"]
-                r["dx"] = dxAux/auxX
-                auxY = originaldy//r["dy"]
-                r["dy"] = dyAux/auxY
+                auxX = max(1, int(round(originaldx / r["dx"])))
+                r["dx"] = divide_distance(dxAux, auxX)
+                auxY = max(1, int(round(originaldy / r["dy"])))
+                r["dy"] = divide_distance(dyAux, auxY)
                 if xmin > r["xi"]:
                     r["xi"] = xmin
                 elif xmin < r["xi"]:
-                    r["xi"] = (r["xi"] - xmin) // dxAux * dxAux + xmin
+                    r["xi"] = snap_down_to_grid(r["xi"], xmin, dxAux)
                 if ymin > r["yi"]:
                     r["yi"] = ymin
                 elif ymin < r["yi"]:
-                    r["yi"] = (r["yi"] - ymin) // dyAux * dyAux + ymin
+                    r["yi"] = snap_down_to_grid(r["yi"], ymin, dyAux)
 
             xminAux = r["xi"]
             yminAux = r["yi"]
             xmax = r["xf"]
             ymax = r["yf"]
 
-            if (xmax - xminAux)/r["dx"] != (xmax - xminAux)//r["dx"]:
-                nx = (xmax - xminAux)//self.ranges[0]["dx"]
-                if i == 0:
-                    nx += 1
-                r["xf"] = xminAux + nx * self.ranges[0]["dx"]
-            if (ymax - yminAux)/r["dy"] != (ymax - yminAux)//r["dy"]:
-                ny = (ymax - yminAux)//self.ranges[0]["dy"]
-                if i == 0:
-                    ny += 1
-                r["yf"] = yminAux + ny * self.ranges[0]["dy"]
-
-            r["nx"] = round((r["xf"] - xminAux)/r["dx"]) + 1
-            r["ny"] = round((r["yf"] - yminAux)/r["dy"]) + 1
+            r["nx"], r["xf"] = fitted_grid_end(xminAux, xmax, r["dx"])
+            r["ny"], r["yf"] = fitted_grid_end(yminAux, ymax, r["dy"])
 
             self.ranges[i] = r
 
@@ -128,7 +122,7 @@ class SparseMesh:
         aux = []
         for r in xaux:
             for i in range(r["nx"]):
-                x = r["xi"] + i * r["dx"]
+                x = grid_coordinate(r["xi"], r["dx"], i)
                 if all([x < a or x > b for a,b in aux]):
                     self.dx.append(x)
             aux.append([r["xi"], r["xf"]])
@@ -137,7 +131,7 @@ class SparseMesh:
         aux = []
         for r in yaux:
             for i in range(r["ny"]):
-                y = r["yi"] + i * r["dy"]
+                y = grid_coordinate(r["yi"], r["dy"], i)
                 if all([y < a or y > b for a,b in aux]):
                     self.dy.append(y)
             aux.append([r["yi"], r["yf"]])
@@ -148,7 +142,7 @@ class SparseMesh:
 
     def getIndex(item, itens):
         for i in range(len(itens)):
-            if item == itens[i]:
+            if values_close(item, itens[i]):
                 return i
         return None
 
@@ -157,11 +151,12 @@ class SparseMesh:
     """
 
     def getXNode(self, xpoint):
+        for coordinate in self.dx:
+            if values_close(xpoint, coordinate):
+                return coordinate
         for i in range(len(self.dx) - 1):
             if xpoint >= self.dx[i] and xpoint < self.dx[i + 1]:
                 return self.dx[i] 
-        if xpoint == self.dx[-1]:
-            return self.dx[-1]
         print("A figura é maior que os limites da malha")
         quit(1)
 
@@ -171,11 +166,12 @@ class SparseMesh:
     """
     
     def getYNode(self, ypoint):
+        for coordinate in self.dy:
+            if values_close(ypoint, coordinate):
+                return coordinate
         for i in range(len(self.dy) - 1):
             if ypoint >= self.dy[i] and ypoint < self.dy[i + 1]:
                 return self.dy[i] 
-        if ypoint == self.dy[-1]:
-            return self.dy[-1]
         print("A figura é maior que os limites da malha")
         quit(1)
 
@@ -185,7 +181,7 @@ class SparseMesh:
     e removendo nós irrelevantes.
     """
 
-    def get_adaptive_mesh(self, x, y):
+    def get_adaptive_mesh(self, x, y, allowDiagonal=True):
         self.setIntervals()
         xResult = []
         yResult = []
@@ -265,6 +261,9 @@ class SparseMesh:
                 else:
                     break
         
+        if not allowDiagonal:
+            xResult, yResult = Mesh.enforceRightAngles(xResult, yResult)
+
         return xResult, yResult
 
     """
@@ -277,8 +276,8 @@ class SparseMesh:
         flag = False
         for r in self.ranges[::-1]:
             if r["xi"] <= xpoint <= r["xf"] and r["yi"] <= ypoint <= r["yf"]:
-                auxX = (xpoint - r["xi"]) // r["dx"] * r["dx"] + r["xi"]
-                auxY = (ypoint - r["yi"]) // r["dy"] * r["dy"] + r["yi"]
+                auxX = snap_down_to_grid(xpoint, r["xi"], r["dx"])
+                auxY = snap_down_to_grid(ypoint, r["yi"], r["dy"])
                 flag = True
                 break
         if flag:
@@ -304,7 +303,7 @@ class SparseMesh:
     e removendo nós irrelevantes.
     """
 
-    def get_sparse_mesh(self, x, y):
+    def get_sparse_mesh(self, x, y, allowDiagonal=True):
         xResult = []
         yResult = []
         prevpoint = self.getNode(x[0], y[0])
@@ -373,12 +372,17 @@ class SparseMesh:
                 elif yResult[-1] - yAux[i] > dyAux:
                     offsetY = - dyAux
                 if offsetX != 0 or offsetY != 0:
-                    xResult.append(xResult[-1] + offsetX)
-                    yResult.append(yResult[-1] + offsetY)
+                    nextX = grid_coordinate(xResult[-1], abs(offsetX), 1 if offsetX > 0 else -1) if offsetX else xResult[-1]
+                    nextY = grid_coordinate(yResult[-1], abs(offsetY), 1 if offsetY > 0 else -1) if offsetY else yResult[-1]
+                    xResult.append(nextX)
+                    yResult.append(nextY)
                 else:
                     break
             xResult.append(xAux[i])
             yResult.append(yAux[i])
+
+        if not allowDiagonal:
+            xResult, yResult = Mesh.enforceRightAngles(xResult, yResult)
 
         return xResult, yResult
 

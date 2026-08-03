@@ -35,10 +35,21 @@ def showMeshGeneration(callbacks):
             dpg.add_button(label=strings.t("mesh.plot_mesh_grid"), width=-1, tag='plotGrid', callback=callbacks.meshGeneration.toggleGrid, enabled=False)
             with dpg.tooltip("plotGrid"):
                 dpg.add_text(strings.t("mesh.mesh_grid_tooltip"), tag="meshGridTooltipText")
+            dpg.add_text("", tag="meshGridStatus", show=False, wrap=270)
                 
             dpg.add_separator()
 
             dpg.add_text(strings.t("mesh.mesh_generation_options"), tag="meshGenerationOptionsText")
+            dpg.add_text(strings.t("mesh.connection_mode"), tag="meshConnectionModeText")
+            dpg.add_button(
+                tag="meshConnectionMode",
+                width=-1,
+                label=strings.option_label("mesh_connection_mode", "diagonal"),
+                callback=callbacks.meshGeneration.toggleConnectionMode,
+            )
+            with dpg.tooltip("meshConnectionMode"):
+                dpg.add_text(strings.t("mesh.connection_mode_tooltip"), tag="meshConnectionModeTooltipText")
+
             dpg.add_text(strings.t("mesh.original_node_count"), tag="nodeNumber")
             with dpg.tooltip("nodeNumber", tag="nodeNumberTooltip", show=False):
                 dpg.add_text(strings.t("mesh.node_number_tooltip"), tag="nodeNumberTooltipText")
@@ -52,12 +63,58 @@ def showMeshGeneration(callbacks):
             dpg.add_text(strings.fmt("dx", value="--"), tag='original_dx')
             dpg.add_text(strings.fmt("dy", value="--"), tag='original_dy')
             dpg.add_text(strings.t("mesh.node_spacing"), tag="meshNodeSpacingText")
-            with dpg.group(horizontal=True):
-                dpg.add_text(strings.fmt("dx", value=""), tag="meshDxLabel")
-                dpg.add_input_float(tag='dx', width=-1, default_value=1, min_value=0.000001, min_clamped=True, callback=lambda: dpg.configure_item("dxVector", x=[0, dpg.get_value('dx')]))
-            with dpg.group(horizontal=True):
-                dpg.add_text(strings.fmt("dy", value=""), tag="meshDyLabel")
-                dpg.add_input_float(tag='dy', width=-1, default_value=1, min_value=0.000001, min_clamped=True, callback=lambda: dpg.configure_item("dyVector", y=[0, dpg.get_value('dy')]))
+            dpg.add_text(strings.t("mesh.spacing_mode"), tag="meshSpacingModeText")
+            dpg.add_button(
+                tag="meshSpacingMode",
+                width=-1,
+                label=strings.option_label("mesh_spacing_mode", "direct"),
+                callback=callbacks.meshGeneration.toggleSpacingMode,
+            )
+            with dpg.tooltip("meshSpacingMode"):
+                dpg.add_text(strings.t("mesh.spacing_mode_tooltip"), tag="meshSpacingModeTooltipText")
+
+            with dpg.group(tag="meshDirectSpacingGroup"):
+                with dpg.group(horizontal=True):
+                    dpg.add_text(strings.fmt("dx", value=""), tag="meshDxLabel")
+                    dpg.add_input_double(tag='dx', width=-1, default_value=1, min_value=1.0e-15, min_clamped=True, format="%.15g", callback=lambda: dpg.configure_item("dxVector", x=[0, dpg.get_value('dx')]))
+                with dpg.group(horizontal=True):
+                    dpg.add_text(strings.fmt("dy", value=""), tag="meshDyLabel")
+                    dpg.add_input_double(tag='dy', width=-1, default_value=1, min_value=1.0e-15, min_clamped=True, format="%.15g", callback=lambda: dpg.configure_item("dyVector", y=[0, dpg.get_value('dy')]))
+
+            with dpg.group(tag="meshDividedSpacingGroup", show=False):
+                with dpg.group(horizontal=True):
+                    dpg.add_text(strings.t("mesh.reference_distance"), tag="meshReferenceDistanceLabel")
+                    dpg.add_input_double(
+                        tag="meshReferenceDistance",
+                        width=-1,
+                        default_value=1,
+                        min_value=1.0e-15,
+                        min_clamped=True,
+                        format="%.15g",
+                        callback=callbacks.meshGeneration.updateDividedSpacing,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text(strings.t("mesh.x_divisions"), tag="meshXDivisionsLabel")
+                    dpg.add_input_int(
+                        tag="meshXDivisions",
+                        width=-1,
+                        default_value=1,
+                        min_value=1,
+                        min_clamped=True,
+                        callback=callbacks.meshGeneration.updateDividedSpacing,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text(strings.t("mesh.y_divisions"), tag="meshYDivisionsLabel")
+                    dpg.add_input_int(
+                        tag="meshYDivisions",
+                        width=-1,
+                        default_value=1,
+                        min_value=1,
+                        min_clamped=True,
+                        callback=callbacks.meshGeneration.updateDividedSpacing,
+                    )
+                dpg.add_text(strings.fmt("dx", value=1), tag="meshCalculatedDx")
+                dpg.add_text(strings.fmt("dy", value=1), tag="meshCalculatedDy")
 
             dpg.add_text(strings.t("mesh.original_mesh_origin"), tag="meshOriginalOriginText")
             dpg.add_text(strings.fmt("x", value="--"), tag='original_xi')
@@ -65,11 +122,35 @@ def showMeshGeneration(callbacks):
             dpg.add_text(strings.t("mesh.mesh_origin"), tag="meshOriginText")
             with dpg.group(horizontal=True):
                 dpg.add_text(strings.fmt("x", value=""), tag="meshXiLabel")
-                dpg.add_input_float(tag='xi', width=-1)
+                dpg.add_input_double(tag='xi', width=-1, format="%.15g")
             with dpg.group(horizontal=True):
                 dpg.add_text(strings.fmt("y", value=""), tag="meshYiLabel")
-                dpg.add_input_float(tag='yi', width=-1)
+                dpg.add_input_double(tag='yi', width=-1, format="%.15g")
             dpg.add_button(tag="meshApplyChangesButton", label=strings.t("common.apply_changes"), width=-1, callback= callbacks.meshGeneration.updateMesh)
+            dpg.add_separator()
+
+            dpg.add_text(strings.t("mesh.nested_subdivision"), tag="meshNestedSubdivisionText")
+            with dpg.group(horizontal=True):
+                dpg.add_text(strings.t("mesh.subdivision_levels"), tag="meshSubdivisionLevelsLabel")
+                dpg.add_input_int(
+                    tag="meshSubdivisionLevels",
+                    width=-1,
+                    default_value=1,
+                    min_value=1,
+                    max_value=10,
+                    min_clamped=True,
+                    max_clamped=True,
+                )
+            dpg.add_button(
+                tag="subdivideMeshButton",
+                label=strings.t("mesh.subdivide_mesh"),
+                width=-1,
+                enabled=False,
+                callback=callbacks.meshGeneration.subdivideMesh,
+            )
+            with dpg.tooltip("subdivideMeshButton"):
+                dpg.add_text(strings.t("mesh.subdivision_tooltip"), tag="meshSubdivisionTooltipText", wrap=260)
+            dpg.add_text(strings.t("mesh.subdivision_too_large"), tag="meshSubdivisionError", show=False, wrap=260)
             dpg.add_separator()
                 
             with dpg.group(tag="sparseGroup"):
@@ -99,7 +180,7 @@ def showMeshGeneration(callbacks):
                         dpg.add_text(strings.t("mesh.subcontours_data"), tag="subcontoursDataText")
                         with dpg.table(tag='EditContourTable', header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True,
                             resizable=True, no_host_extendX=False, hideable=True,
-                            borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True,
+                            borders_innerV=True, borders_outerV=True, borders_innerH=True,
                             borders_outerH=True, parent='editContourColumn'):
                                 dpg.add_table_column(tag="editContourTableColorColumn", label=strings.t("contour_extraction.table.color"), width_fixed=True)
                                 dpg.add_table_column(tag="editContourTableSizeColumn", label=strings.t("contour_extraction.table.size"), width_fixed=True)
@@ -176,19 +257,19 @@ def showMeshGeneration(callbacks):
                 dpg.add_text(strings.t("mesh.zoom_bottom"), tag="zoomBottomText")
                 with dpg.group(horizontal=True):
                     dpg.add_text(strings.fmt("bottom_x", value=""), tag="zoomBottomXLabel")
-                    dpg.add_input_float(tag='xi_zoom')
+                    dpg.add_input_double(tag='xi_zoom', format="%.15g")
                 with dpg.group(horizontal=True):
                     dpg.add_text(strings.fmt("bottom_y", value=""), tag="zoomBottomYLabel")
-                    dpg.add_input_float(tag='yi_zoom')
+                    dpg.add_input_double(tag='yi_zoom', format="%.15g")
 
                 dpg.add_separator()
                 dpg.add_text(strings.t("mesh.zoom_top"), tag="zoomTopText")
                 with dpg.group(horizontal=True):
                     dpg.add_text(strings.fmt("top_x", value=""), tag="zoomTopXLabel")
-                    dpg.add_input_float(tag='xf_zoom')
+                    dpg.add_input_double(tag='xf_zoom', format="%.15g")
                 with dpg.group(horizontal=True):
                     dpg.add_text(strings.fmt("top_y", value=""), tag="zoomTopYLabel")
-                    dpg.add_input_float(tag='yf_zoom')
+                    dpg.add_input_double(tag='yf_zoom', format="%.15g")
                     
                 dpg.add_separator()
                 with dpg.group(horizontal=True):
@@ -202,7 +283,7 @@ def showMeshGeneration(callbacks):
                 dpg.add_separator()
                 dpg.add_text(strings.t("common.enter_file_name_before_directory"), tag="meshExportDirectoryHint")
                 dpg.add_button(tag="meshSelectDirectory", label=strings.t("common.select_directory"), width=-1, callback= callbacks.meshGeneration.openMeshDirectorySelector)
-                dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='meshDirectorySelectorFileDialog', id="meshDirectorySelectorFileDialog", callback=callbacks.meshGeneration.selectMeshFileFolder)
+                dpg.add_file_dialog(directory_selector=True, min_size=[400,300], show=False, tag='meshDirectorySelectorFileDialog', callback=callbacks.meshGeneration.selectMeshFileFolder)
                 dpg.add_separator()
                 dpg.add_text(strings.fmt("file_name", value=""), tag='exportMeshFileName')
                 dpg.add_text(strings.fmt("full_path", value=""), tag='exportMeshPathName')
@@ -246,18 +327,32 @@ def refreshMeshTranslations(old_locale=None):
     dpg.set_value("meshGridText", strings.t("mesh.mesh_grid"))
     dpg.set_value("meshGridTooltipText", strings.t("mesh.mesh_grid_tooltip"))
     dpg.set_value("meshGenerationOptionsText", strings.t("mesh.mesh_generation_options"))
+    dpg.set_value("meshConnectionModeText", strings.t("mesh.connection_mode"))
+    dpg.set_value("meshConnectionModeTooltipText", strings.t("mesh.connection_mode_tooltip"))
     dpg.set_value("nodeNumber", strings.t("mesh.original_node_count"))
     dpg.set_value("nodeNumberTooltipText", strings.t("mesh.node_number_tooltip"))
     dpg.set_value("meshNodeCountText", strings.t("mesh.node_count"))
     dpg.set_value("meshOriginalNodeSpacingText", strings.t("mesh.original_node_spacing"))
     dpg.set_value("meshNodeSpacingText", strings.t("mesh.node_spacing"))
+    dpg.set_value("meshSpacingModeText", strings.t("mesh.spacing_mode"))
+    dpg.set_value("meshSpacingModeTooltipText", strings.t("mesh.spacing_mode_tooltip"))
     dpg.set_value("meshDxLabel", strings.fmt("dx", value=""))
     dpg.set_value("meshDyLabel", strings.fmt("dy", value=""))
+    dpg.set_value("meshReferenceDistanceLabel", strings.t("mesh.reference_distance"))
+    dpg.set_value("meshXDivisionsLabel", strings.t("mesh.x_divisions"))
+    dpg.set_value("meshYDivisionsLabel", strings.t("mesh.y_divisions"))
+    dpg.set_value("meshCalculatedDx", strings.fmt("dx", value=dpg.get_value("dx")))
+    dpg.set_value("meshCalculatedDy", strings.fmt("dy", value=dpg.get_value("dy")))
     dpg.set_value("meshOriginalOriginText", strings.t("mesh.original_mesh_origin"))
     dpg.set_value("meshOriginText", strings.t("mesh.mesh_origin"))
     dpg.set_value("meshXiLabel", strings.fmt("x", value=""))
     dpg.set_value("meshYiLabel", strings.fmt("y", value=""))
     dpg.configure_item("meshApplyChangesButton", label=strings.t("common.apply_changes"))
+    dpg.set_value("meshNestedSubdivisionText", strings.t("mesh.nested_subdivision"))
+    dpg.set_value("meshSubdivisionLevelsLabel", strings.t("mesh.subdivision_levels"))
+    dpg.configure_item("subdivideMeshButton", label=strings.t("mesh.subdivide_mesh"))
+    dpg.set_value("meshSubdivisionTooltipText", strings.t("mesh.subdivision_tooltip"))
+    dpg.set_value("meshSubdivisionError", strings.t("mesh.subdivision_too_large"))
     dpg.set_value("meshSparseAdaptiveText", strings.t("mesh.sparse_and_adaptive_mesh"))
     dpg.configure_item("sparseButton", label=strings.t("mesh.add_mesh_zoom_region"))
     dpg.configure_item("resetMesh", label=strings.t("mesh.reset_mesh"))

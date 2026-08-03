@@ -8,6 +8,7 @@ import os.path
 from ._mesh import Mesh
 from ._scopeList  import ScopeList
 from ..ui import strings
+from ._numeric import divide_distance, grid_count
 
 class Interpolation:
     def __init__(self) -> None:
@@ -151,10 +152,10 @@ class Interpolation:
         self.areaBeforeResized = False
 
         if resizeCheckbox:
-            x = np.array(x) * spacingValue
-            y = np.array(y) * spacingValue
-            self.originalXResized = np.array(self.originalX) * spacingValue
-            self.originalYResized = np.array(self.originalY) * spacingValue
+            x = np.asarray(x, dtype=np.float64) * spacingValue
+            y = np.asarray(y, dtype=np.float64) * spacingValue
+            self.originalXResized = np.asarray(self.originalX, dtype=np.float64) * spacingValue
+            self.originalYResized = np.asarray(self.originalY, dtype=np.float64) * spacingValue
             dpg.add_line_series(self.originalXResized, self.originalYResized, label=strings.t("interpolation.original_contour_resized"), tag="originalResizedPlot", parent="Interpolation_y_axis")
             original_area = Mesh.get_area(self.originalX, self.originalY) * spacingValue * spacingValue
             self.areaBeforeResized = True
@@ -245,16 +246,16 @@ class Interpolation:
                 h = h * spacingValue
             self.methodApplied = False  # Resetar a flag após usar
 
-        dx = w/xRes
-        dy = h/yRes
+        dx = divide_distance(w, xRes)
+        dy = divide_distance(h, yRes)
         
         xmin = min(self.currentX)
         ymin = min(self.currentY)
         xmax = max(self.currentX)
         ymax = max(self.currentY)
             
-        nx = round((xmax - xmin)/dx) + 1
-        ny = round((ymax - ymin)/dy) + 1
+        nx = grid_count(xmin, xmax, dx)
+        ny = grid_count(ymin, ymax, dy)
 
         self.meshGeneration.originalX = [nx, xmin, xmax, dx] + self.currentX.copy()
         self.meshGeneration.originalY = [ny, ymin, ymax, dy] + self.currentY.copy()
@@ -301,14 +302,14 @@ class Interpolation:
 
         xRes, yRes = self.imageProcessing.getCurrentResolution()
         w, h = self.contourExtraction.getMappingDimensions()
-        dx = w/xRes
-        dy = h/yRes
+        dx = divide_distance(w, xRes)
+        dy = divide_distance(h, yRes)
         xmin = min(xarray)
         ymin = min(yarray)
         xmax = max(xarray)
         ymax = max(yarray)
-        nx = round((xmax - xmin)/dx) + 1
-        ny = round((ymax - ymin)/dy) + 1
+        nx = grid_count(xmin, xmax, dx)
+        ny = grid_count(ymin, ymax, dy)
         xarray.append(xarray[0])
         yarray.append(yarray[0])
         Mesh.export_coords_mesh(path, xarray, yarray, nx, ny, xmin, ymin, xmax, ymax, dx, dy, 1)

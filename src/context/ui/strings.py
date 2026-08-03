@@ -15,6 +15,8 @@ OPTION_GROUPS = {
     "frequency_filter_mode": ["none", "low_pass", "high_pass", "band_pass", "band_stop"],
     "interpolation_mode": ["nearest", "bilinear", "bicubic", "quadratic", "spline3"],
     "simulation_problem": ["laplace", "poisson"],
+    "mesh_connection_mode": ["diagonal", "right_angles"],
+    "mesh_spacing_mode": ["direct", "divided_distance"],
     "zoom_node_size": ["div2", "div4", "div8", "div16"],
     "theme": ["light", "dark"],
 }

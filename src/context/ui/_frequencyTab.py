@@ -22,7 +22,7 @@ def showFrequency(callbacks):
                 callback=lambda: callbacks.imageProcessing.executeQuery("gaborFilter"),
             )
             dpg.add_text(strings.t("frequency.gabor_sigma"), tag="frequencyGaborSigmaText")
-            dpg.add_slider_float(
+            dpg.add_slider_double(
                 tag="gaborSigmaSlider",
                 default_value=4.0,
                 min_value=0.1,
@@ -31,7 +31,7 @@ def showFrequency(callbacks):
                 callback=lambda: callbacks.imageProcessing.executeQuery("gaborFilter"),
             )
             dpg.add_text(strings.t("frequency.gabor_theta"), tag="frequencyGaborThetaText")
-            dpg.add_slider_float(
+            dpg.add_slider_double(
                 tag="gaborThetaSlider",
                 default_value=0.0,
                 min_value=0.0,
@@ -40,7 +40,7 @@ def showFrequency(callbacks):
                 callback=lambda: callbacks.imageProcessing.executeQuery("gaborFilter"),
             )
             dpg.add_text(strings.t("frequency.gabor_lambda"), tag="frequencyGaborLambdaText")
-            dpg.add_slider_float(
+            dpg.add_slider_double(
                 tag="gaborLambdaSlider",
                 default_value=10.0,
                 min_value=1.0,
@@ -49,7 +49,7 @@ def showFrequency(callbacks):
                 callback=lambda: callbacks.imageProcessing.executeQuery("gaborFilter"),
             )
             dpg.add_text(strings.t("frequency.gabor_gamma"), tag="frequencyGaborGammaText")
-            dpg.add_slider_float(
+            dpg.add_slider_double(
                 tag="gaborGammaSlider",
                 default_value=0.5,
                 min_value=0.1,
@@ -58,7 +58,7 @@ def showFrequency(callbacks):
                 callback=lambda: callbacks.imageProcessing.executeQuery("gaborFilter"),
             )
             dpg.add_text(strings.t("frequency.gabor_psi"), tag="frequencyGaborPsiText")
-            dpg.add_slider_float(
+            dpg.add_slider_double(
                 tag="gaborPsiSlider",
                 default_value=0.0,
                 min_value=0.0,

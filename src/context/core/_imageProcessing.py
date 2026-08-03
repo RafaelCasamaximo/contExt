@@ -507,16 +507,16 @@ class ImageProcessing:
         center_x = cols // 2
         yy, xx = np.ogrid[:rows, :cols]
         distance = np.sqrt((yy - center_y) ** 2 + (xx - center_x) ** 2)
-        mask = np.ones((rows, cols), dtype=np.float32)
+        mask = np.ones((rows, cols), dtype=np.float64)
 
         if mode == "low_pass":
-            mask = (distance <= cutoff).astype(np.float32)
+            mask = (distance <= cutoff).astype(np.float64)
         elif mode == "high_pass":
-            mask = (distance >= cutoff).astype(np.float32)
+            mask = (distance >= cutoff).astype(np.float64)
         elif mode == "band_pass":
-            mask = ((distance >= band_min) & (distance <= band_max)).astype(np.float32)
+            mask = ((distance >= band_min) & (distance <= band_max)).astype(np.float64)
         elif mode == "band_stop":
-            mask = ((distance < band_min) | (distance > band_max)).astype(np.float32)
+            mask = ((distance < band_min) | (distance > band_max)).astype(np.float64)
 
         return mask
 
@@ -538,7 +538,7 @@ class ImageProcessing:
 
         grayscale = self._grayscaleImage(source_image)
         self._ensureFrequencyMask(grayscale.shape)
-        shifted = np.fft.fftshift(np.fft.fft2(grayscale.astype(np.float32)))
+        shifted = np.fft.fftshift(np.fft.fft2(grayscale.astype(np.float64)))
         if self.blocks[Blocks.frequencyDomainFilter.value]['status']:
             shifted = shifted * self._combinedFrequencyMask(grayscale.shape)
         self._updateFrequencySpectrumTexture(self._frequencySpectrumPreviewImage(shifted))
@@ -917,7 +917,7 @@ class ImageProcessing:
         image = self.blocks[self.getLastActiveBeforeMethod('averageBlur')]['output']
 
         kernelSize = (2 * dpg.get_value('averageBlurSlider')) - 1
-        kernel = np.ones((kernelSize,kernelSize),np.float32)/(kernelSize*kernelSize)
+        kernel = np.ones((kernelSize, kernelSize), np.float64) / (kernelSize * kernelSize)
         dst = cv2.filter2D(image,-1,kernel)
 
         self._storeBlockOutput(Blocks.averageBlur.value, dst)
@@ -948,8 +948,8 @@ class ImageProcessing:
 
         grayscale = self._grayscaleImage(image)
         kernel_size, sigma, theta, lambd, gamma, psi = self._gaborParameters()
-        kernel = cv2.getGaborKernel((kernel_size, kernel_size), sigma, theta, lambd, gamma, psi, ktype=cv2.CV_32F)
-        filtered = cv2.filter2D(grayscale.astype(np.float32), cv2.CV_32F, kernel)
+        kernel = cv2.getGaborKernel((kernel_size, kernel_size), sigma, theta, lambd, gamma, psi, ktype=cv2.CV_64F)
+        filtered = cv2.filter2D(grayscale.astype(np.float64), cv2.CV_64F, kernel)
         normalized = cv2.normalize(np.abs(filtered), None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
         output_image = cv2.cvtColor(normalized, cv2.COLOR_GRAY2BGR)
 
@@ -961,7 +961,7 @@ class ImageProcessing:
         if image is None:
             return
 
-        grayscale = self._grayscaleImage(image).astype(np.float32)
+        grayscale = self._grayscaleImage(image).astype(np.float64)
         shifted = np.fft.fftshift(np.fft.fft2(grayscale))
         masked_shifted = shifted * self._combinedFrequencyMask(grayscale.shape)
         reconstructed = np.fft.ifft2(np.fft.ifftshift(masked_shifted))

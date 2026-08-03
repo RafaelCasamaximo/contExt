@@ -1,6 +1,96 @@
+from math import fsum
+
 from shapely.geometry import Point, Polygon
 
+from ._numeric import divide_distance, grid_coordinate, grid_count, interpolate_value, snap_down_to_grid, values_close
+
 class Mesh:
+
+    @staticmethod
+    def enforceRightAngles(x, y):
+        """Insert grid corners so every contour segment is axis-aligned."""
+        if len(x) != len(y):
+            raise ValueError("x and y must contain the same number of coordinates")
+        if not x:
+            return [], []
+
+        xResult = [x[0]]
+        yResult = [y[0]]
+
+        for xPoint, yPoint in zip(x[1:], y[1:]):
+            previousX = xResult[-1]
+            previousY = yResult[-1]
+
+            if not values_close(xPoint, previousX) and not values_close(yPoint, previousY):
+                # Move along X first, then Y. Both legs remain on grid lines.
+                xResult.append(xPoint)
+                yResult.append(previousY)
+
+            if not values_close(xPoint, xResult[-1]) or not values_close(yPoint, yResult[-1]):
+                xResult.append(xPoint)
+                yResult.append(yPoint)
+
+        return xResult, yResult
+
+    @staticmethod
+    def spacingFromDistance(distance, xParts, yParts):
+        """Convert a reference distance and axis divisions to dx and dy."""
+        if distance <= 0:
+            raise ValueError("distance must be greater than zero")
+        if xParts < 1 or yParts < 1:
+            raise ValueError("axis divisions must be at least one")
+        return divide_distance(distance, xParts), divide_distance(distance, yParts)
+
+    @staticmethod
+    def subdivisionFactor(levels):
+        if not isinstance(levels, int) or isinstance(levels, bool) or levels < 1:
+            raise ValueError("subdivision levels must be a positive integer")
+        return 2 ** levels
+
+    @staticmethod
+    def subdividePath(x, y, levels):
+        """Bisect every path segment while retaining every original point."""
+        if len(x) != len(y):
+            raise ValueError("x and y must contain the same number of coordinates")
+        if not x:
+            return [], [], []
+
+        factor = Mesh.subdivisionFactor(levels)
+        xResult = [x[0]]
+        yResult = [y[0]]
+        originalIndexMap = [0]
+
+        for index in range(1, len(x)):
+            startX = x[index - 1]
+            startY = y[index - 1]
+            endX = x[index]
+            endY = y[index]
+
+            if not values_close(startX, endX) or not values_close(startY, endY):
+                for subdivision in range(1, factor):
+                    xResult.append(interpolate_value(startX, endX, subdivision, factor))
+                    yResult.append(interpolate_value(startY, endY, subdivision, factor))
+
+            # Keep the original value itself, rather than a recomputed endpoint.
+            xResult.append(endX)
+            yResult.append(endY)
+            originalIndexMap.append(len(xResult) - 1)
+
+        return xResult, yResult, originalIndexMap
+
+    @staticmethod
+    def subdivideUniformMeshInfo(meshInfo, levels):
+        factor = Mesh.subdivisionFactor(levels)
+        required = ("nx", "ny", "xmin", "ymin", "dx", "dy")
+        if any(meshInfo.get(key) is None for key in required):
+            raise ValueError("mesh metadata is incomplete")
+
+        result = dict(meshInfo)
+        result["nx"] = (int(meshInfo["nx"]) - 1) * factor + 1
+        result["ny"] = (int(meshInfo["ny"]) - 1) * factor + 1
+        result["dx"] = divide_distance(meshInfo["dx"], factor)
+        result["dy"] = divide_distance(meshInfo["dy"], factor)
+        return result
 
 
     """
@@ -8,10 +98,10 @@ class Mesh:
     """
 
     def getNode(xpoint, ypoint, xmin, ymin, dx, dy):
-       point = []
-       point.append((xpoint - xmin)//dx * dx + xmin)
-       point.append((ypoint - ymin)//dy * dy + ymin)
-       return point
+       return [
+           snap_down_to_grid(xpoint, xmin, dx),
+           snap_down_to_grid(ypoint, ymin, dy),
+       ]
 
 
     """
@@ -19,7 +109,7 @@ class Mesh:
     e removendo nós irrelevantes
     """
 
-    def getMesh(x, y, xmin, ymin, dx, dy):
+    def getMesh(x, y, xmin, ymin, dx, dy, allowDiagonal=True):
         xResult = []
         yResult = []
         xmax = max(x)
@@ -81,21 +171,26 @@ class Mesh:
                 elif yResult[-1] - yAux[i] > dy:
                     offsetY = - dy
                 if offsetX != 0 or offsetY != 0:
-                    xResult.append(xResult[-1] + offsetX)
-                    yResult.append(yResult[-1] + offsetY)
+                    nextX = grid_coordinate(xResult[-1], abs(offsetX), 1 if offsetX > 0 else -1) if offsetX else xResult[-1]
+                    nextY = grid_coordinate(yResult[-1], abs(offsetY), 1 if offsetY > 0 else -1) if offsetY else yResult[-1]
+                    xResult.append(nextX)
+                    yResult.append(nextY)
                 else:
                     break
             xResult.append(xAux[i])
             yResult.append(yAux[i])
 
+        if not allowDiagonal:
+            xResult, yResult = Mesh.enforceRightAngles(xResult, yResult)
+
         aux = max(xResult)
         if aux != xmax:
             xmax = aux
-        nx = round((xmax - xmin)/dx) + 1
+        nx = grid_count(xmin, xmax, dx)
         aux = max(yResult)
         if aux != ymax:
             ymax = aux
-        ny = round((ymax - ymin)/dy) + 1
+        ny = grid_count(ymin, ymax, dy)
         xResult = [nx, xmin, xmax, dx] + xResult
         yResult = [ny, ymin, ymax, dy] + yResult
         return xResult, yResult
@@ -144,15 +239,13 @@ class Mesh:
     """
 
     def get_area(xarray,yarray):
-        area = 0
-
         x = xarray[::-1]
         y = yarray[::-1]
-        for index in range(0, len(x) - 1):
-            area += x[index] * y[index + 1] - y[index] * x[index + 1]
-        #area += x[index - 1] * y[index] - y[index - 1] * x[index]
-        area = area / 2
-        return area
+        terms = [
+            x[index] * y[index + 1] - y[index] * x[index + 1]
+            for index in range(0, len(x) - 1)
+        ]
+        return fsum(terms) / 2
 
     def convert_matlab(y, ymax):
         yarray = []
@@ -175,12 +268,19 @@ class Mesh:
         return x, y
 
     def insidePolygon(xarray, yarray, x, y):
+        if len(xarray) != len(yarray) or len(xarray) < 4:
+            return False
         point = Point((x,y))
-        polygon = Polygon(list(zip(xarray,yarray)))
+        try:
+            polygon = Polygon(list(zip(xarray,yarray)))
+        except ValueError:
+            return False
+        if polygon.is_empty:
+            return False
         return polygon.contains(point) or polygon.intersects(point)
     
     def getIndex(xarray, yarray, x, y):
         for i in range(len(xarray)):
-            if x == xarray[i] and y == yarray[i]:
+            if values_close(x, xarray[i]) and values_close(y, yarray[i]):
                 return i
-        return -1 
+        return -1

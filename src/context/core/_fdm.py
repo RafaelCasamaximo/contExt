@@ -8,6 +8,8 @@ from scipy.sparse.linalg import spsolve
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
 
+from ._numeric import FLOAT_DTYPE, coordinate_key, grid_coordinate
+
 
 SPARSE_INTERFACE_TOLERANCE = 1.0e-6
 SPARSE_MAX_ITERATIONS = 50
@@ -119,8 +121,8 @@ class SolveResult:
     mean_value: float
 
 
-def _coordinate_key(value: float) -> float:
-    return round(float(value), 12)
+def _coordinate_key(value: float) -> str:
+    return coordinate_key(value)
 
 
 def _minimum_spacing(coords: np.ndarray) -> float:
@@ -187,7 +189,7 @@ def _build_polygon(contour_x: list[float], contour_y: list[float]) -> Polygon:
 
 
 def _as_coordinate_array(values: list[float] | np.ndarray, *, name: str) -> np.ndarray:
-    coords = np.asarray(values, dtype=float)
+    coords = np.asarray(values, dtype=FLOAT_DTYPE)
     if coords.ndim != 1 or coords.size < 2:
         raise ValueError(f"{name} must contain at least two coordinates.")
     if np.any(np.diff(coords) <= 0.0):
@@ -391,8 +393,8 @@ def build_uniform_domain(
     if nx < 2 or ny < 2 or dx <= 0.0 or dy <= 0.0:
         raise ValueError("Mesh must be a positive uniform grid.")
 
-    x_coords = xmin + np.arange(nx, dtype=float) * dx
-    y_coords = ymin + np.arange(ny, dtype=float) * dy
+    x_coords = np.asarray([grid_coordinate(xmin, dx, index) for index in range(nx)], dtype=FLOAT_DTYPE)
+    y_coords = np.asarray([grid_coordinate(ymin, dy, index) for index in range(ny)], dtype=FLOAT_DTYPE)
     return build_structured_domain(
         contour_x,
         contour_y,
@@ -418,8 +420,14 @@ def build_sparse_composite_domain(
     regions = _build_regions(contour_x, contour_y, subcontours_ranges)
 
     base_range = sparse_mesh_handler.ranges[0]
-    coarse_x = base_range["xi"] + np.arange(base_range["nx"], dtype=float) * float(base_range["dx"])
-    coarse_y = base_range["yi"] + np.arange(base_range["ny"], dtype=float) * float(base_range["dy"])
+    coarse_x = np.asarray(
+        [grid_coordinate(base_range["xi"], base_range["dx"], index) for index in range(base_range["nx"])],
+        dtype=FLOAT_DTYPE,
+    )
+    coarse_y = np.asarray(
+        [grid_coordinate(base_range["yi"], base_range["dy"], index) for index in range(base_range["ny"])],
+        dtype=FLOAT_DTYPE,
+    )
 
     patch_bounds: list[tuple[int, tuple[float, float, float, float]]] = []
     for patch_id, patch_range in enumerate(sparse_mesh_handler.ranges[1:]):
@@ -457,8 +465,14 @@ def build_sparse_composite_domain(
     patches: list[PatchDomain] = []
     for patch_id, bounds in patch_bounds:
         patch_range = sparse_mesh_handler.ranges[patch_id + 1]
-        patch_x = patch_range["xi"] + np.arange(patch_range["nx"], dtype=float) * float(patch_range["dx"])
-        patch_y = patch_range["yi"] + np.arange(patch_range["ny"], dtype=float) * float(patch_range["dy"])
+        patch_x = np.asarray(
+            [grid_coordinate(patch_range["xi"], patch_range["dx"], index) for index in range(patch_range["nx"])],
+            dtype=FLOAT_DTYPE,
+        )
+        patch_y = np.asarray(
+            [grid_coordinate(patch_range["yi"], patch_range["dy"], index) for index in range(patch_range["ny"])],
+            dtype=FLOAT_DTYPE,
+        )
         try:
             patch_domain = build_structured_domain(
                 contour_x,
@@ -560,7 +574,7 @@ def _boundary_field_from_values(
     boundary_values: dict[int, float],
     fixed_boundary_values: np.ndarray | None = None,
 ) -> np.ndarray:
-    field = np.full((domain.ny, domain.nx), np.nan, dtype=float)
+    field = np.full((domain.ny, domain.nx), np.nan, dtype=FLOAT_DTYPE)
 
     if fixed_boundary_values is not None:
         if fixed_boundary_values.shape != field.shape:
@@ -611,7 +625,7 @@ def _solve_structured_problem(
 
     rhs_source = 0.0 if problem_key == "laplace" else float(source_term)
     boundary_field = _boundary_field_from_values(domain, boundary_values, fixed_boundary_values)
-    values = np.full((domain.ny, domain.nx), np.nan, dtype=float)
+    values = np.full((domain.ny, domain.nx), np.nan, dtype=FLOAT_DTYPE)
     values[domain.boundary_mask] = boundary_field[domain.boundary_mask]
 
     system_size = domain.internal_count
@@ -631,8 +645,8 @@ def _solve_structured_problem(
     for index, (row, col) in enumerate(internal_positions):
         equation_index[row, col] = index
 
-    matrix = lil_matrix((system_size, system_size), dtype=float)
-    vector = np.zeros(system_size, dtype=float)
+    matrix = lil_matrix((system_size, system_size), dtype=FLOAT_DTYPE)
+    vector = np.zeros(system_size, dtype=FLOAT_DTYPE)
 
     for row, col in internal_positions:
         row = int(row)
@@ -659,7 +673,7 @@ def _solve_structured_problem(
             raise ValueError("Discrete domain contains an unsupported boundary configuration.")
 
     matrix = matrix.tocsr()
-    solution = np.asarray(spsolve(matrix, vector), dtype=float).reshape(-1)
+    solution = np.asarray(spsolve(matrix, vector), dtype=FLOAT_DTYPE).reshape(-1)
     values[domain.internal_mask] = solution
     residual = float(np.max(np.abs(matrix @ solution - vector)))
     domain_values = values[domain.inside_mask]
@@ -692,8 +706,8 @@ def _build_edge_samples(
         if not samples:
             continue
         samples.sort(key=lambda item: item[0])
-        coordinates = np.asarray([sample[0] for sample in samples], dtype=float)
-        sample_values = np.asarray([sample[1] for sample in samples], dtype=float)
+        coordinates = np.asarray([sample[0] for sample in samples], dtype=FLOAT_DTYPE)
+        sample_values = np.asarray([sample[1] for sample in samples], dtype=FLOAT_DTYPE)
         unique_coordinates, unique_indices = np.unique(coordinates, return_index=True)
         interpolators[edge] = (unique_coordinates, sample_values[unique_indices])
 
@@ -707,11 +721,11 @@ def _sample_rectangle_boundary_values(
     bounds: tuple[float, float, float, float],
 ) -> np.ndarray:
     if not target_nodes:
-        return np.zeros(0, dtype=float)
+        return np.zeros(0, dtype=FLOAT_DTYPE)
 
     interpolators = _build_edge_samples(source_nodes, source_values, bounds)
     tolerance = max(abs(bounds[2] - bounds[0]), abs(bounds[3] - bounds[1]), 1.0) * 1.0e-12
-    result = np.zeros(len(target_nodes), dtype=float)
+    result = np.zeros(len(target_nodes), dtype=FLOAT_DTYPE)
 
     for index, node in enumerate(target_nodes):
         edge = _classify_rectangle_edge(node.x, node.y, bounds, tolerance)
@@ -725,7 +739,7 @@ def _sample_rectangle_boundary_values(
 
 
 def _boundary_field_from_samples(domain: DiscreteDomain, nodes: list[DomainNode], samples: np.ndarray) -> np.ndarray:
-    field = np.full((domain.ny, domain.nx), np.nan, dtype=float)
+    field = np.full((domain.ny, domain.nx), np.nan, dtype=FLOAT_DTYPE)
     for node, value in zip(nodes, samples):
         field[node.row, node.col] = float(value)
     return field
@@ -735,8 +749,8 @@ def _map_values_to_global(
     destination: np.ndarray,
     source_domain: DiscreteDomain,
     source_values: np.ndarray,
-    x_index: dict[float, int],
-    y_index: dict[float, int],
+    x_index: dict[str, int],
+    y_index: dict[str, int],
 ) -> None:
     for row, col in np.argwhere(source_domain.inside_mask):
         global_row = y_index[_coordinate_key(source_domain.y_coords[row])]
@@ -754,7 +768,7 @@ def _solve_sparse_composite_problem(
     if problem_key not in {"laplace", "poisson"}:
         raise ValueError("Unsupported problem type.")
 
-    interface_field = np.full((domain.coarse_domain.ny, domain.coarse_domain.nx), np.nan, dtype=float)
+    interface_field = np.full((domain.coarse_domain.ny, domain.coarse_domain.nx), np.nan, dtype=FLOAT_DTYPE)
     if domain.patches:
         background_result = _solve_structured_problem(
             domain.background_domain,
@@ -808,7 +822,7 @@ def _solve_sparse_composite_problem(
             )
             old_coarse_samples = np.asarray(
                 [interface_field[node.row, node.col] for node in patch.coarse_interface_nodes],
-                dtype=float,
+                dtype=FLOAT_DTYPE,
             )
             if old_coarse_samples.size > 0:
                 interface_delta = max(
@@ -830,7 +844,7 @@ def _solve_sparse_composite_problem(
 
     x_index = {_coordinate_key(value): index for index, value in enumerate(domain.x_coords)}
     y_index = {_coordinate_key(value): index for index, value in enumerate(domain.y_coords)}
-    values = np.full((domain.ny, domain.nx), np.nan, dtype=float)
+    values = np.full((domain.ny, domain.nx), np.nan, dtype=FLOAT_DTYPE)
 
     _map_values_to_global(values, domain.coarse_domain, last_coarse_result.values, x_index, y_index)
     for patch in domain.patches:
